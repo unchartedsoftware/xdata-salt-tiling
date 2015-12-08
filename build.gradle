@@ -1,0 +1,146 @@
+description = "XDATA pipeline operations"
+group = "software.uncharted.xdata"
+version = "0.1-SNAPSHOT"
+
+// projedt level shared version variables
+ext {
+  dependencyScalaVersion = "2.10"
+  scalaVersion = "2.10.3"
+  sparkVersion = "1.3.0-cdh5.4.1"
+}
+
+// extra jars for plugins
+buildscript {
+  repositories {
+    mavenCentral()
+    jcenter()
+  }
+
+  dependencies {
+    classpath "com.github.maiflai:gradle-scalatest:0.10"
+    classpath 'org.scoverage:gradle-scoverage:1.0.9'
+    classpath "org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.10:0.8.2"
+  }
+}
+
+apply plugin: 'scala'
+apply plugin: 'maven'
+apply plugin: 'distribution'
+apply plugin: 'idea'
+apply plugin: 'scalaStyle'
+apply plugin: 'scoverage'
+apply plugin: 'com.github.maiflai.scalatest'
+
+// Configure a jar task to build a fat jar, run it before the assembly step
+task assemblyJar(type: Jar) {
+  classifier = "assembly"
+  from files(sourceSets.main.output.classesDir)
+  from files(sourceSets.main.output.resourcesDir)
+  from {
+    (configurations.runtime - configurations.provided).collect {
+      it.isDirectory() ? it : zipTree(it)
+    }
+  }
+}
+assemblyJar.mustRunAfter "jar"
+assemble.dependsOn "assemblyJar"
+
+// run scala style and code coverage checks as part of the check phase
+check.dependsOn "scalaStyle"
+check.dependsOn "checkScoverage"
+
+
+// task to update the gradle wrapper
+task wrapper(type: Wrapper) {
+  gradleVersion = '2.9'
+}
+
+// extra configurations
+configurations {
+  provided
+  dist
+}
+
+// Add scripts zip to the artifacts of the dist assembly.  This can be used by downstream builds.
+artifacts {
+  dist assemblyJar
+}
+
+// configure the idea plugin
+idea {
+  module {
+    inheritOutputDirs = false
+    outputDir = file("$buildDir/classes/main/")
+    scopes.PROVIDED.plus += [ configurations.provided ]
+  }
+}
+
+// configure scala style checking plugin
+scalaStyle {
+  configLocation = "scalastyle_config.xml"
+  includeTestSourceDirectory = true
+  source = sourceSets.main.allScala
+  testSource = sourceSets.test.allScala
+  failOnWarning = true
+}
+
+// configure scoverage plugin
+checkScoverage {
+  minimumRate = 1.0
+}
+
+// Creation of a distribution archive containing the pipeline assembly jar and the baseline
+// execution scripts.
+distributions {
+  main {
+    baseName = 'xdata-pipeline-ops'
+    contents {
+      // Copy the run scripts over
+      into ("scripts"){
+        from("src/scripts")
+        fileMode 0755
+      }
+
+      // Copy assembly jar, stripping off the version info.
+      into("lib") {
+        from configurations.dist.artifacts.files.filter {
+          it.name =~ /assembly\w*\.jar/
+        }
+        rename "(.*)-$version-assembly(.*)", "\$1\$2"
+      }
+    }
+  }
+}
+
+// target 1.7 JVM
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
+// repositories for dependencies
+repositories {
+  mavenCentral()
+  mavenLocal()
+  maven {
+    url = "https://repository.cloudera.com/artifactory/cloudera-repos"
+  }
+}
+
+// Jars this project depends on.
+dependencies {
+	// Compile config - needed to build and required at runtime
+  compile "software.uncharted.salt:salt-core:1.0.0"
+  compile "software.uncharted.sparkpipe:sparkpipe-core:0.9.0"
+	compile "org.clapper:grizzled-slf4j_2.10:1.0.2"
+
+  // Provided config - needed to compile, expected to be available when deployed
+  provided "org.apache.spark:spark-core_$dependencyScalaVersion:$sparkVersion"
+	provided "org.apache.spark:spark-sql_$dependencyScalaVersion:$sparkVersion"
+
+  // Test related
+	testCompile "org.scalatest:scalatest_$dependencyScalaVersion:2.1.1"
+  testCompile 'org.scalatest:scalatest_2.10:2+'
+  testRuntime 'org.pegdown:pegdown:1.1.0'
+  scoverage 'org.scoverage:scalac-scoverage-plugin_2.10:1.1.0', 'org.scoverage:scalac-scoverage-runtime_2.10:1.1.0'
+}
+
+
