@@ -16,7 +16,9 @@ import org.apache.spark.sql.{DataFrame, SQLContext}
 import org.apache.spark.{SparkConf, SparkContext}
 import org.scalatest.{BeforeAndAfter, FunSpec}
 
-case class TestData(lon: Double, lat: Double, value: Double)
+// scalastyle:off magic.number
+
+case class TestData(lon: Double, lat: Double, value: Double, time: Long)
 
 class GeoHeatmapOpTest extends FunSpec with BeforeAndAfter {
 
@@ -44,14 +46,26 @@ class GeoHeatmapOpTest extends FunSpec with BeforeAndAfter {
 
   def genData: DataFrame = {
     val testData =
-      TestData(-91.0, -46.0, 1.0) ::
-        TestData(-89.0, -44.0, 2.0) ::
-        TestData(91.0, -44.0, 3.0) ::
-        TestData(89.0, -46.0, 4.0)::
-        TestData(89.0, 44.0, 5.0) ::
-        TestData(91.0, 46.0, 6.0)::
-        TestData(-91.0, 44.0, 7.0) ::
-        TestData(-89.0, 46.0, 8.0) :: Nil
+      // 1st time bucket
+      TestData(-91.0, -46.0, 1.0, 101L) ::
+        TestData(-89.0, -44.0, 2.0, 101L) ::
+        TestData(91.0, -44.0, 3.0, 101L) ::
+        TestData(89.0, -46.0, 4.0, 101L)::
+        TestData(89.0, 44.0, 5.0, 101L) ::
+        TestData(91.0, 46.0, 6.0, 101L)::
+        TestData(-91.0, 44.0, 7.0, 101L) ::
+        TestData(-89.0, 46.0, 8.0, 101L) ::
+        // 2nd time bucket
+        TestData(-91.0, -46.0, 1.0, 201L) ::
+        TestData(-89.0, -44.0, 2.0, 201L) ::
+        TestData(91.0, -44.0, 3.0, 201L) ::
+        TestData(89.0, -46.0, 4.0, 201L)::
+        TestData(89.0, 44.0, 5.0, 201L) ::
+        TestData(91.0, 46.0, 6.0, 201L)::
+        TestData(-91.0, 44.0, 7.0, 201L) ::
+        TestData(-89.0, 46.0, 8.0, 201L) ::
+        TestData(-179, MercatorTimeProjection.maxLat - 1.0, 0.5, 301L) ::
+        TestData(-179, MercatorTimeProjection.maxLat - 1.0, 0.5, 301L) :: Nil
 
     val tsqlc = sqlc
     import tsqlc.implicits._
@@ -60,14 +74,23 @@ class GeoHeatmapOpTest extends FunSpec with BeforeAndAfter {
   }
 
   describe("A GeoHeatmapOp") {
-    it("should create a quad tree of tiles") {
-      val geoOp = GeoHeatmapOp.geoHeatmapOp(3, 0, 1, Some(2))(genData).collect()
-      assertResult(13)(geoOp.length)
+    it("should create a quadtree of tiles where empty tiles are skipped") {
+      val conf = GeoHeatmapOpConf(3, 0, 1, 3, Some(2), RangeDescription.fromCount(0, 800, 10), 10)
+      val result = GeoHeatmapOp.geoHeatmapOp(conf)(genData).collect()
+      assertResult(14)(result.length)
     }
 
-//    it("should create tiles without a value column set") {
-//      val geoOp = GeoHeatmapOp.geoHeatmapOp(2, 0, 1, None)(testDf).collect()
-//      pending
-//    }
+    it("should create time bins from a range and bucket count") {
+      val conf = GeoHeatmapOpConf(1, 0, 1, 3, Some(2), RangeDescription.fromCount(0, 800, 10), 10)
+      val result = GeoHeatmapOp.geoHeatmapOp(conf)(genData).collect()
+      assertResult(10 * 10 * 10)(result(0).bins.length)
+    }
+
+    it("should sum values that are in the same bin ") {
+      val conf = GeoHeatmapOpConf(1, 0, 1, 3, Some(2), RangeDescription.fromCount(0, 800, 10), 10)
+      val result = GeoHeatmapOp.geoHeatmapOp(conf)(genData).collect()
+      val proj = new MercatorTimeProjection(RangeDescription.fromCount(0, 800, 10))
+      assertResult(1)(result(0).bins(proj.binTo1D((0, 0, 3), (9, 9, 9))))
+    }
   }
 }

@@ -132,6 +132,7 @@ dependencies {
   compile "software.uncharted.salt:salt-core:1.0.0"
   compile "software.uncharted.sparkpipe:sparkpipe-core:0.9.0"
 	compile "org.clapper:grizzled-slf4j_2.10:1.0.2"
+  compile "org.spire-math:spire_2.10:0.11.0"
 
   // Provided config - needed to compile, expected to be available when deployed
   provided "org.apache.spark:spark-core_$dependencyScalaVersion:$sparkVersion"

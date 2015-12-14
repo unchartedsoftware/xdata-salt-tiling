@@ -19,24 +19,31 @@ import software.uncharted.salt.core.generation.Series
 import software.uncharted.salt.core.generation.mapreduce.MapReduceTileGenerator
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.generation.request.TileLevelRequest
-import software.uncharted.salt.core.projection.numeric.MercatorProjection
+
+case class GeoHeatmapOpConf(levels: Int,
+                            lonCol: Int,
+                            latCol: Int,
+                            timeCol: Int,
+                            valueCol: Option[Int] = None,
+                            timeRange: RangeDescription[Int],
+                            xyBinCount: Int)
 
 object GeoHeatmapOp {
 
-  def geoHeatmapOp(levels: Int, lonCol: Int, latCol: Int, valueCol: Option[Int])(dataFrame: DataFrame):
+  def geoHeatmapOp(conf: GeoHeatmapOpConf)(dataFrame: DataFrame):
     RDD[SeriesData[(Int, Int, Int), java.lang.Double, (java.lang.Double, java.lang.Double)]] = {
 
     // Extracts lat / lon coordinates from row
     val coordExtractor = (r: Row) => {
-      if (!r.isNullAt(lonCol) && !r.isNullAt(latCol)) {
-        Some(r.getAs[Double](lonCol), r.getAs[Double](latCol))
+      if (!r.isNullAt(conf.lonCol) && !r.isNullAt(conf.latCol) && !r.isNullAt(conf.timeCol)) {
+        Some(r.getAs[Double](conf.lonCol), r.getAs[Double](conf.latCol), r.getAs[Long](conf.timeCol))
       } else {
         None
       }
     }
 
     // Extracts value data from row
-    val valueExtractor: Option[(Row) => Option[Double]] = valueCol match {
+    val valueExtractor: Option[(Row) => Option[Double]] = conf.valueCol match {
       case Some(idx: Int) => Some((r: Row) => {
         if (!r.isNullAt(idx)) Some(r.getAs[Double](idx)) else None
       })
@@ -44,11 +51,11 @@ object GeoHeatmapOp {
     }
 
     // create a default projection from data-space into mercator tile space
-    val projection = new MercatorProjection()
+    val projection = new MercatorTimeProjection(conf.timeRange)
 
     // create the series to tie everything together
     val series = new Series(
-      (255, 255),
+      (conf.xyBinCount-1, conf.xyBinCount-1, conf.timeRange.count-1),
       coordExtractor,
       projection,
       valueExtractor,
@@ -58,7 +65,7 @@ object GeoHeatmapOp {
 
     val generator = new MapReduceTileGenerator(dataFrame.sqlContext.sparkContext)
 
-    val request = new TileLevelRequest(List.range(0, levels), (tc: (Int, Int, Int)) => tc._1)
+    val request = new TileLevelRequest(List.range(0, conf.levels), (tc: (Int, Int, Int)) => tc._1)
 
     generator.generate(dataFrame.rdd, series, request).map(t => series(t))
   }

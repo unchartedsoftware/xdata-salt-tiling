@@ -14,6 +14,7 @@ package software.uncharted.xdata.ops.salt
 
 import org.scalatest.FunSpec
 
+// scalastyle:off magic.number
 class MercatorTimeProjectionTest extends FunSpec {
   describe("MercatorTimeProjectionTest") {
     describe("#project()") {
@@ -23,25 +24,25 @@ class MercatorTimeProjectionTest extends FunSpec {
       }
 
       it("should return None when the time coord is out of range") {
-        val proj = new MercatorTimeProjection(0, 100, 10)
+        val proj = new MercatorTimeProjection(RangeDescription.fromCount(0, 100, 10))
         assertResult(None)(proj.project(Some(0.0, 0.0, 101L), 0, (32, 32, 32)))
       }
 
       it("should return None when the geo coords are out of range") {
-        val proj = new MercatorTimeProjection(0, 100, 10)
+        val proj = new MercatorTimeProjection(RangeDescription.fromCount(0, 100, 10))
         assertResult(None)(proj.project(Some(0.0, MercatorTimeProjection.minLat - 1.0, 10L), 0, (32, 32, 32)))
       }
 
       it("should assign values to the correct time bucket") {
-        val proj = new MercatorTimeProjection(0, 100, 10)
-        assertResult(Some(((0, 0, 0), (50, 50, 2))))(proj.project(Some(0.0, 0.0, 23L), 0, (100, 100, 100)))
+        val proj = new MercatorTimeProjection(RangeDescription.fromCount(10, 210, 10))
+        assertResult(Some(((0, 0, 0), (50, 50, 2))))(proj.project(Some(0.0, 0.0, 53L), 0, (100, 100, 10)))
       }
     }
 
     describe("#binTo1D()") {
       it("should convert a (lon,lat,time) tuple into a linear coordinate") {
         val proj = new MercatorTimeProjection()
-        assertResult(7444)(proj.binTo1D((4, 8, 12), (30, 20, 10)))
+        assertResult(8064)(proj.binTo1D((4, 8, 12), (30, 20, 10)))
       }
     }
   }

@@ -27,10 +27,10 @@ class MercatorTimeProjection(min: (Double, Double, Long) = (MercatorTimeProjecti
                              tms: Boolean = true)
   extends NumericProjection[(Double, Double, Long), (Int, Int, Int), (Int, Int, Int)](min, max) {
 
-  def this(minTime: Long, maxTime: Long, buckets: Long) = {
-    this((MercatorTimeProjection.minLon, MercatorTimeProjection.minLat, minTime),
-      (MercatorTimeProjection.maxLon, MercatorTimeProjection.maxLat, maxTime),
-    buckets)
+  def this(timeRange: RangeDescription[Int]) = {
+    this((MercatorTimeProjection.minLon, MercatorTimeProjection.minLat, timeRange.min),
+      (MercatorTimeProjection.maxLon, MercatorTimeProjection.maxLat, timeRange.max),
+    timeRange.count)
   }
 
   // Baseline mercator projection to compute X,Y coords
@@ -41,7 +41,8 @@ class MercatorTimeProjection(min: (Double, Double, Long) = (MercatorTimeProjecti
     dCoords.flatMap { coords =>
       mercatorProjection.project(Some((coords._1, coords._2)), z, (maxBin._1, maxBin._2)).flatMap { proj =>
         if (coords._3 >= min._3 && coords._3 <= max._3) {
-          val timeBin = (coords._3 - min._3) / rangeBuckets
+          val binSize = (max._3 - min._3) / rangeBuckets
+          val timeBin = (coords._3 - min._3) / binSize
           Some((proj._1, (proj._2._1, proj._2._2, timeBin.asInstanceOf[Int])))
         } else {
           None
@@ -51,6 +52,7 @@ class MercatorTimeProjection(min: (Double, Double, Long) = (MercatorTimeProjecti
   }
 
   override def binTo1D(bin: (Int, Int, Int), maxBin: (Int, Int, Int)): Int = {
-    maxBin._1 * maxBin._2 * bin._3 + maxBin._1 * bin._2 + bin._1
+    val result = (maxBin._1 + 1) * (maxBin._2 + 1) * bin._3 + (maxBin._1 + 1) * bin._2 + bin._1
+    result
   }
 }
