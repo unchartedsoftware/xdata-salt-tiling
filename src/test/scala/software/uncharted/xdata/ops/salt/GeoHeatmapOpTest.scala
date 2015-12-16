@@ -68,7 +68,7 @@ class GeoHeatmapOpTest extends FunSpec with BeforeAndAfter {
         TestData(-179, MercatorTimeProjection.maxLat - 1.0, 0.5, 301L) :: Nil
 
     val tsqlc = sqlc
-    import tsqlc.implicits._
+    import tsqlc.implicits._ // scalastyle:ignore
 
     sc.parallelize(testData).toDF()
   }
@@ -91,6 +91,13 @@ class GeoHeatmapOpTest extends FunSpec with BeforeAndAfter {
       val result = GeoHeatmapOp.geoHeatmapOp(conf)(genData).collect()
       val proj = new MercatorTimeProjection(RangeDescription.fromCount(0, 800, 10))
       assertResult(1)(result(0).bins(proj.binTo1D((0, 0, 3), (9, 9, 9))))
+    }
+
+    it("should use a value of 1.0 for each bin when no value column is specified") {
+      val conf = GeoHeatmapOpConf(1, 0, 1, 3, None, RangeDescription.fromCount(0, 800, 10), 10)
+      val result = GeoHeatmapOp.geoHeatmapOp(conf)(genData).collect()
+      val proj = new MercatorTimeProjection(RangeDescription.fromCount(0, 800, 10))
+      assertResult(2)(result(0).bins(proj.binTo1D((0, 0, 3), (9, 9, 9))))
     }
   }
 }

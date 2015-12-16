@@ -13,7 +13,7 @@
 package software.uncharted.xdata.ops.salt
 
 import spire.math.Numeric
-import spire.implicits._
+import spire.implicits._ // scalastyle:ignore
 
 object RangeDescription {
   def fromMin[T : Numeric](min: T, step: T, count: Int): RangeDescription[T] = RangeDescription(min, step*count, count, step)
