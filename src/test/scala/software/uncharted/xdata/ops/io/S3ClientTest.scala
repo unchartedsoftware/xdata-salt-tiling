@@ -20,9 +20,10 @@ class S3ClientTest extends FunSpec with BeforeAndAfterAll {
   private val nonexistentBucket = "nonexistent-bucket"
   val tempTestBucket = "uncharted-s3-client-test-temp"
 
-  private val test0 = "test0"
-  private val test1 = "test1"
-  private val test2 = "test2"
+  private val test0 = "folder/test0.bin"
+  private val test1 = "folder/test1.bin"
+  private val test2 = "folder/test2.bin"
+  private val test3 = "folder/test3.bin"
 
   private val data = Array[Byte](0, 1, 2, 3, 4, 5)
   private val data_dl = Array[Byte](0, 11, 22, 33, 44, 55) // scalastyle:ignore
@@ -81,8 +82,8 @@ class S3ClientTest extends FunSpec with BeforeAndAfterAll {
       }
 
       it("should return true if deleted data exists") {
-        s3.upload(data_dl, testBucket, "test3")
-        assertResult(s3.delete(testBucket, "test3"))(true)
+        s3.upload(data_dl, testBucket, test3)
+        assertResult(s3.delete(testBucket, test3))(true)
       }
     }
 
