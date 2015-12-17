@@ -12,37 +12,14 @@
  */
 package software.uncharted.xdata.ops.salt
 
-import org.apache.spark.sql.{DataFrame, SQLContext}
-import org.apache.spark.{SparkConf, SparkContext}
-import org.scalatest.{BeforeAndAfter, FunSpec}
+import org.apache.spark.sql.DataFrame
+import software.uncharted.xdata.spark.SparkFunSpec
 
 // scalastyle:off magic.number
 
 case class TestData(lon: Double, lat: Double, value: Double, time: Long)
 
-class GeoHeatmapOpTest extends FunSpec with BeforeAndAfter {
-
-  @transient private var sc: SparkContext = _
-  @transient private var sqlc: SQLContext = _
-
-  before {
-    System.clearProperty("spark.driver.port")
-    System.clearProperty("spark.hostPort")
-
-    val conf = new SparkConf()
-      .setMaster("local")
-      .setAppName("test")
-      .set("spark.driver.allowMultipleContexts", "true")
-
-    sc = new SparkContext(conf)
-    sqlc = new SQLContext(sc)
-  }
-
-  after {
-    System.clearProperty("spark.driver.port")
-    System.clearProperty("spark.hostPort")
-    sc.stop()
-  }
+class GeoHeatmapOpTest extends SparkFunSpec {
 
   def genData: DataFrame = {
     val testData =
@@ -91,6 +68,18 @@ class GeoHeatmapOpTest extends FunSpec with BeforeAndAfter {
       val result = GeoHeatmapOp.geoHeatmapOp(conf)(genData).collect()
       val proj = new MercatorTimeProjection(RangeDescription.fromCount(0, 800, 10))
       assertResult(1)(result(0).bins(proj.binTo1D((0, 0, 3), (9, 9, 9))))
+    }
+
+    it("should not aggregate across time buckets") {
+      val conf = GeoHeatmapOpConf(3, 0, 1, 3, None, RangeDescription.fromCount(0, 800, 10), 10)
+      val result = GeoHeatmapOp.geoHeatmapOp(conf)(genData).collect()
+      val proj = new MercatorTimeProjection(RangeDescription.fromCount(0, 800, 10))
+
+      val tile = (t: (Int, Int, Int)) => result.find(s => s.coords == t)
+
+      assertResult(2)(tile((0, 0, 0)).getOrElse(fail()).bins(proj.binTo1D((0, 0, 3), (9, 9, 9))))
+      assertResult(2)(tile((1, 0, 1)).getOrElse(fail()).bins(proj.binTo1D((0, 0, 3), (9, 9, 9))))
+      assertResult(2)(tile((2, 0, 3)).getOrElse(fail()).bins(proj.binTo1D((0, 1, 3), (9, 9, 9))))
     }
 
     it("should use a value of 1.0 for each bin when no value column is specified") {
