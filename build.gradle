@@ -2,7 +2,7 @@ description = "XDATA pipeline operations"
 group = "software.uncharted.xdata"
 version = "0.1-SNAPSHOT"
 
-// projedt level shared version variables
+// project level shared version variables
 ext {
   dependencyScalaVersion = "2.10"
   scalaVersion = "2.10.6"
@@ -88,6 +88,14 @@ scalaStyle {
 // configure scoverage plugin
 checkScoverage {
   minimumRate = 1.0
+}
+
+test {
+  // There is an issue with the interop between the scoverage plugin and the scalatest plugin
+  // that causes this argument to be ignored when tests run via 'gradle build'.  The arg is
+  // respected when 'gradle test' is used.  Current workaround is to force test cases involving
+  // Spark (which needs to be run single threaded) to be executed serially via mutex.
+  maxParallelForks = 1
 }
 
 // Creation of a distribution archive containing the pipeline assembly jar and the baseline

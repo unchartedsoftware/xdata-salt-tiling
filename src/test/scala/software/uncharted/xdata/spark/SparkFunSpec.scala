@@ -12,26 +12,37 @@
  */
 package software.uncharted.xdata.spark
 
+import java.util.concurrent.Semaphore
+
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.SQLContext
 import org.scalatest.{FunSpec, BeforeAndAfter}
+
+object SparkFunSpec {
+  // Semaphore to force all Spark test cases to run serially, regardless
+  // of test framework parallelism settings.
+  protected val sparkLock = new Semaphore(1, true)
+}
 
 /**
  * Makes a spark context available to test subclasses.  The context is created before
  * a test case is run, and destroyed after it completes.
  */
 abstract class SparkFunSpec extends FunSpec with BeforeAndAfter {
-  @transient protected var sc: SparkContext = _
-  @transient protected var sqlc: SQLContext = _
+  protected var sc: SparkContext = _
+  protected var sqlc: SQLContext = _
+
 
   before {
+    // Force Spark test cases to be run single threaded.
+    SparkFunSpec.sparkLock.acquire()
+
     System.clearProperty("spark.driver.port")
     System.clearProperty("spark.hostPort")
 
     val conf = new SparkConf()
       .setMaster("local")
       .setAppName("test")
-      .set("spark.driver.allowMultipleContexts", "true")
 
     sc = new SparkContext(conf)
     sqlc = new SQLContext(sc)
@@ -41,5 +52,7 @@ abstract class SparkFunSpec extends FunSpec with BeforeAndAfter {
     System.clearProperty("spark.driver.port")
     System.clearProperty("spark.hostPort")
     sc.stop()
+
+    SparkFunSpec.sparkLock.release()
   }
 }

@@ -50,7 +50,7 @@ class GeoHeatmapOpTest extends SparkFunSpec {
     sc.parallelize(testData).toDF()
   }
 
-  describe("A GeoHeatmapOp") {
+  describe("GeoHeatmapOpTest") {
     it("should create a quadtree of tiles where empty tiles are skipped") {
       val conf = GeoHeatmapOpConf(3, 0, 1, 3, Some(2), RangeDescription.fromCount(0, 800, 10), 10)
       val result = GeoHeatmapOp.geoHeatmapOp(conf)(genData).collect()
