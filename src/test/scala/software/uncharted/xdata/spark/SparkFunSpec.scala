@@ -14,29 +14,25 @@ package software.uncharted.xdata.spark
 
 import java.util.concurrent.Semaphore
 
-import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.SQLContext
-import org.scalatest.{FunSpec, BeforeAndAfter}
+import org.apache.spark.{SparkConf, SparkContext}
+import org.scalatest.{FunSpec, Outcome}
 
 object SparkFunSpec {
   // Semaphore to force all Spark test cases to run serially, regardless
   // of test framework parallelism settings.
-  protected val sparkLock = new Semaphore(1, true)
+  val sparkLock = new Semaphore(1, true)
 }
 
 /**
  * Makes a spark context available to test subclasses.  The context is created before
  * a test case is run, and destroyed after it completes.
  */
-abstract class SparkFunSpec extends FunSpec with BeforeAndAfter {
+abstract class SparkFunSpec extends FunSpec {
   protected var sc: SparkContext = _
   protected var sqlc: SQLContext = _
 
-
-  before {
-    // Force Spark test cases to be run single threaded.
-    SparkFunSpec.sparkLock.acquire()
-
+  def before(): Unit = {
     System.clearProperty("spark.driver.port")
     System.clearProperty("spark.hostPort")
 
@@ -48,11 +44,25 @@ abstract class SparkFunSpec extends FunSpec with BeforeAndAfter {
     sqlc = new SQLContext(sc)
   }
 
-  after {
+  def after(): Unit = {
     System.clearProperty("spark.driver.port")
     System.clearProperty("spark.hostPort")
     sc.stop()
+  }
 
-    SparkFunSpec.sparkLock.release()
+  // Use an override here instead of BeforeAndAfter trait to allow for lock release
+  // on exceptions.
+  override protected def withFixture(test: NoArgTest): Outcome = {
+    // make sure spark lock is alway released after test is run
+    try {
+      // Force Spark test cases to be run single threaded.
+      SparkFunSpec.sparkLock.acquire()
+      before()
+      val res = super.withFixture(test)
+      after()
+      res
+    } finally {
+      SparkFunSpec.sparkLock.release()
+    }
   }
 }
