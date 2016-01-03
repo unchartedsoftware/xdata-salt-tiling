@@ -31,9 +31,9 @@ object Schema extends Logging {
   def apply(config: Config): Option[StructType] = {
     try {
       // Extract and sort fields
-      val fieldNames = config.getObject("fields").keySet().asScala
+      val fieldNames = config.getObject("csvSchema").keySet().asScala
       val fieldData = fieldNames.map { f =>
-        val fieldCfg = config.getConfig("fields").getConfig(f)
+        val fieldCfg = config.getConfig("csvSchema").getConfig(f)
         FieldData(f, fieldCfg.getString("type"), fieldCfg.getInt("index"))
       }
       val sortedFields = fieldData.toSeq.sortBy(_.index)

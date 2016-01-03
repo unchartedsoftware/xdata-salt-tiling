@@ -17,12 +17,13 @@ import org.apache.spark.sql.types.{BooleanType, ByteType, DateType, DoubleType, 
   LongType, ShortType, StringType, StructField, TimestampType}
 import org.scalatest.FunSpec
 
+// scalastyle:off multiple.string.literals
 class SchemaTest extends FunSpec {
   describe("SchemaTest") {
     describe("#apply") {
       it("should create a schema object from a Java Properties instance") {
-        val fields = """
-                       |fields {
+        val csvSchema = """
+                       |csvSchema {
                        | a { type = boolean, index = 0}
                        | b { type = byte, index = 1}
                        | c { type = int, index = 2}
@@ -36,7 +37,7 @@ class SchemaTest extends FunSpec {
                        |}
                      """.stripMargin
 
-        val config = ConfigFactory.parseString(fields)
+        val config = ConfigFactory.parseString(csvSchema)
         val schema = Schema(config).getOrElse(fail())
 
         info(schema.treeString)
@@ -54,15 +55,15 @@ class SchemaTest extends FunSpec {
       }
 
       it("should fill in unspecified columns with suitable defaults") {
-        val fields = """
-                       |fields {
+        val csvSchema = """
+                       |csvSchema {
                        | a { type = boolean, index = 0}
                        | b { type = byte, index = 2}
                        | c { type = int, index = 4}
                        |}
                      """.stripMargin
 
-        val config = ConfigFactory.parseString(fields)
+        val config = ConfigFactory.parseString(csvSchema)
         val schema = Schema(config).getOrElse(fail())
         info(schema.treeString)
 
@@ -74,25 +75,25 @@ class SchemaTest extends FunSpec {
       }
 
       it("should fail on duplicate variable indices") {
-        val fields = """
-                       |fields {
+        val csvSchema = """
+                       |csvSchema {
                        | a { type = boolean, index = 1}
                        | b { type = byte, index = 1}
                        |}
                      """.stripMargin
-        val config = ConfigFactory.parseString(fields)
+        val config = ConfigFactory.parseString(csvSchema)
         assertResult(None)(Schema(config))
       }
 
       it("should fail on unsupported variable types") {
-        val fields = "fields { a { type = blarg, index = 0} }"
-        val config = ConfigFactory.parseString(fields)
+        val csvSchema = "csvSchema { a { type = blarg, index = 0} }"
+        val config = ConfigFactory.parseString(csvSchema)
         assertResult(None)(Schema(config))
       }
 
       it("should fail on variables that don't have both type and index") {
-        val fields = "fields { a { index = 0} } "
-        val config = ConfigFactory.parseString(fields)
+        val csvSchema = "csvSchema { a { index = 0} } "
+        val config = ConfigFactory.parseString(csvSchema)
         assertResult(None)(Schema(config))
       }
     }
