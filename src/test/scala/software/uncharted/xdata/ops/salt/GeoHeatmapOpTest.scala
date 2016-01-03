@@ -66,14 +66,14 @@ class GeoHeatmapOpTest extends SparkFunSpec {
     it("should sum values that are in the same bin ") {
       val conf = GeoHeatmapOpConf(1, 0, 1, 3, Some(2), RangeDescription.fromCount(0, 800, 10), 10)
       val result = GeoHeatmapOp.geoHeatmapOp(conf)(genData).collect()
-      val proj = new MercatorTimeProjection(RangeDescription.fromCount(0, 800, 10))
+      val proj = new MercatorTimeProjection(RangeDescription.fromCount(0L, 800L, 10))
       assertResult(1)(result(0).bins(proj.binTo1D((0, 0, 3), (9, 9, 9))))
     }
 
     it("should not aggregate across time buckets") {
       val conf = GeoHeatmapOpConf(3, 0, 1, 3, None, RangeDescription.fromCount(0, 800, 10), 10)
       val result = GeoHeatmapOp.geoHeatmapOp(conf)(genData).collect()
-      val proj = new MercatorTimeProjection(RangeDescription.fromCount(0, 800, 10))
+      val proj = new MercatorTimeProjection(RangeDescription.fromCount(0L, 800L, 10))
 
       val tile = (t: (Int, Int, Int)) => result.find(s => s.coords == t)
 
@@ -85,7 +85,7 @@ class GeoHeatmapOpTest extends SparkFunSpec {
     it("should use a value of 1.0 for each bin when no value column is specified") {
       val conf = GeoHeatmapOpConf(1, 0, 1, 3, None, RangeDescription.fromCount(0, 800, 10), 10)
       val result = GeoHeatmapOp.geoHeatmapOp(conf)(genData).collect()
-      val proj = new MercatorTimeProjection(RangeDescription.fromCount(0, 800, 10))
+      val proj = new MercatorTimeProjection(RangeDescription.fromCount(0L, 800L, 10))
       assertResult(2)(result(0).bins(proj.binTo1D((0, 0, 3), (9, 9, 9))))
     }
   }

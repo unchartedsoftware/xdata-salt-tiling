@@ -27,7 +27,7 @@ class MercatorTimeProjection(min: (Double, Double, Long) = (MercatorTimeProjecti
                              tms: Boolean = true)
   extends NumericProjection[(Double, Double, Long), (Int, Int, Int), (Int, Int, Int)](min, max) {
 
-  def this(timeRange: RangeDescription[Int]) = {
+  def this(timeRange: RangeDescription[Long]) = {
     this((MercatorTimeProjection.minLon, MercatorTimeProjection.minLat, timeRange.min),
       (MercatorTimeProjection.maxLon, MercatorTimeProjection.maxLat, timeRange.max),
     timeRange.count)
