@@ -25,10 +25,15 @@ case class GeoHeatmapOpConf(levels: Int,
                             latCol: Int,
                             timeCol: Int,
                             valueCol: Option[Int] = None,
-                            timeRange: RangeDescription[Int],
+                            timeRange: RangeDescription[Long],
                             xyBinCount: Int)
 
 object GeoHeatmapOp {
+
+  def apply(conf: GeoHeatmapOpConf)(dataFrame: DataFrame):
+    RDD[SeriesData[(Int, Int, Int), java.lang.Double, (java.lang.Double, java.lang.Double)]] = {
+    geoHeatmapOp(conf)(dataFrame)
+  }
 
   def geoHeatmapOp(conf: GeoHeatmapOpConf)(dataFrame: DataFrame):
     RDD[SeriesData[(Int, Int, Int), java.lang.Double, (java.lang.Double, java.lang.Double)]] = {

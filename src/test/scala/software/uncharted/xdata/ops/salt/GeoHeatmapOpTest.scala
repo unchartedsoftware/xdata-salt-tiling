@@ -22,27 +22,29 @@ case class TestData(lon: Double, lat: Double, value: Double, time: Long)
 class GeoHeatmapOpTest extends SparkFunSpec {
 
   def genData: DataFrame = {
+
     val testData =
       // 1st time bucket
-      TestData(-91.0, -46.0, 1.0, 101L) ::
-        TestData(-89.0, -44.0, 2.0, 101L) ::
-        TestData(91.0, -44.0, 3.0, 101L) ::
-        TestData(89.0, -46.0, 4.0, 101L)::
-        TestData(89.0, 44.0, 5.0, 101L) ::
-        TestData(91.0, 46.0, 6.0, 101L)::
-        TestData(-91.0, 44.0, 7.0, 101L) ::
-        TestData(-89.0, 46.0, 8.0, 101L) ::
+      List(TestData(-91.0, -67.0, 1.0, 101L),
+        TestData(-89.0, -65.0, 2.0, 101L),
+        TestData(91.0, -65.0, 3.0, 101L),
+        TestData(89.0, -67.0, 4.0, 101L),
+        TestData(89.0, 65.0, 5.0, 101L),
+        TestData(91.0, 67.0, 6.0, 101L),
+        TestData(-91.0, 65.0, 7.0, 101L),
+        TestData(-89.0, 67.0, 8.0, 101L),
         // 2nd time bucket
-        TestData(-91.0, -46.0, 1.0, 201L) ::
-        TestData(-89.0, -44.0, 2.0, 201L) ::
-        TestData(91.0, -44.0, 3.0, 201L) ::
-        TestData(89.0, -46.0, 4.0, 201L)::
-        TestData(89.0, 44.0, 5.0, 201L) ::
-        TestData(91.0, 46.0, 6.0, 201L)::
-        TestData(-91.0, 44.0, 7.0, 201L) ::
-        TestData(-89.0, 46.0, 8.0, 201L) ::
-        TestData(-179, MercatorTimeProjection.maxLat - 1.0, 0.5, 301L) ::
-        TestData(-179, MercatorTimeProjection.maxLat - 1.0, 0.5, 301L) :: Nil
+        TestData(-91.0, -67.0, 9.0, 201L),
+        TestData(-89.0, -65.0, 10.0, 201L),
+        TestData(91.0, -65.0, 11.0, 201L),
+        TestData(89.0, -67.0, 12.0, 201L),
+        TestData(89.0, 65.0, 13.0, 201L),
+        TestData(91.0, 67.0, 14.0, 201L),
+        TestData(-91.0, 65.0, 15.0, 201L),
+        TestData(-89.0, 67.0, 16.0, 201L),
+
+        TestData(-179, MercatorTimeProjection.maxLat - 1.0, 0.5, 301L),
+        TestData(-179, MercatorTimeProjection.maxLat - 1.0, 0.5, 301L))
 
     val tsqlc = sqlc
     import tsqlc.implicits._ // scalastyle:ignore
@@ -53,8 +55,12 @@ class GeoHeatmapOpTest extends SparkFunSpec {
   describe("GeoHeatmapOpTest") {
     it("should create a quadtree of tiles where empty tiles are skipped") {
       val conf = GeoHeatmapOpConf(3, 0, 1, 3, Some(2), RangeDescription.fromCount(0, 800, 10), 10)
-      val result = GeoHeatmapOp.geoHeatmapOp(conf)(genData).collect()
-      assertResult(14)(result.length)
+      val result = GeoHeatmapOp.geoHeatmapOp(conf)(genData).collect().map(_.coords).toSet
+      val expectedSet = Set(
+        (0,0,0), // l0
+        (1,0,0), (1,1,0), (1,1,1), (1,0,1), // l1
+        (2, 0, 0), (2, 2, 0), (2, 1, 1), (2, 3, 1), (2, 0, 2), (2, 2, 2), (2, 1, 3), (2, 3, 3), (2, 0, 3)) // l2
+      assertResult((Set(), Set()))((expectedSet diff result, result diff expectedSet))
     }
 
     it("should create time bins from a range and bucket count") {
