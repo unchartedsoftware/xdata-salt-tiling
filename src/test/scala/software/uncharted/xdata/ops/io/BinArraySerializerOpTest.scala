@@ -24,7 +24,7 @@ import software.uncharted.xdata.spark.SparkFunSpec
 
 class BinArraySerializerOpTest extends SparkFunSpec {
 
-  private val testDir = "./test_data"
+  private val testDir = "build/tmp/test_data"
   private val testLayer = "test_layer"
 
   private val testBucket = "uncharted-s3-client-test"

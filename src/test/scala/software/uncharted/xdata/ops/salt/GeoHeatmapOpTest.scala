@@ -42,9 +42,9 @@ class GeoHeatmapOpTest extends SparkFunSpec {
         TestData(91.0, 67.0, 14.0, 201L),
         TestData(-91.0, 65.0, 15.0, 201L),
         TestData(-89.0, 67.0, 16.0, 201L),
-
-        TestData(-179, MercatorTimeProjection.maxLat - 1.0, 0.5, 301L),
-        TestData(-179, MercatorTimeProjection.maxLat - 1.0, 0.5, 301L))
+        // 3rd time bucket
+        TestData(-179, 84.0, 0.5, 301L),
+        TestData(-179, 84.0, 0.5, 301L))
 
     val tsqlc = sqlc
     import tsqlc.implicits._ // scalastyle:ignore
