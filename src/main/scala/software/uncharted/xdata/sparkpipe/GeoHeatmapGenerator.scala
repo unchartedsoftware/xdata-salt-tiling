@@ -25,34 +25,18 @@ import software.uncharted.xdata.ops.salt.{GeoHeatmapOp, GeoHeatmapOpConf}
 
 object GeoHeatmapGenerator extends Logging {
 
-  def execute(args: Array[String]): Unit = {
-
-    // get the properties file path
-    if (args.length < 1) {
-      logger.error("Path to conf file required")
-      sys.exit(-1)
-    }
-
-    // load properties file from supplied URI
-    val config = ConfigFactory.parseReader(scala.io.Source.fromFile(args(0)).bufferedReader())
-
+  def execute(config: Config): Unit = {
     // parse the schema, and exit on any errors
     val schema = Schema(config).getOrElse {
       error("Couldn't create schema - exiting")
       sys.exit(-1)
     }
 
-    // Create the spark context from the supplied config
-    val sqlc = SparkConfig(config)
-
     // Parse tiling parameters out of supplied config
     val tilingConfig = TilingConfig(config).getOrElse {
       logger.error("Invalid tiling config")
       sys.exit(-1)
     }
-
-    // Create the dataframe from the input config
-    val df = setupDataframe(config, tilingConfig.source, schema, sqlc)
 
     // Parse geo heatmap parameters out of supplied config
     val geoHeatmapConfig = GeoHeatmapConfig(config).getOrElse {
@@ -62,16 +46,40 @@ object GeoHeatmapGenerator extends Logging {
 
     val nullOp = (df: DataFrame) => df
 
-    // Pipe the dataframe
-    Pipe(df)
-      .to(numericRangeFilter(Seq((geoHeatmapConfig.timeCol, geoHeatmapConfig.timeRange.min, geoHeatmapConfig.timeRange.max))))
-      .to(geoHeatmapConfig.timeFormat.map(p => parseDate(geoHeatmapConfig.timeCol, "dateCol", geoHeatmapConfig.timeFormat.get)(_)).getOrElse(nullOp))
-      .to(GeoHeatmapOp(GeoHeatmapOpConf(tilingConfig.levels, 0, 1, 3, None, geoHeatmapConfig.timeRange, tilingConfig.xBins)))
-      .to(BinArraySerializerOp.binArraySerializeOp)
-      .to(OutputConfig(config))
-      .run()
+    // Create the spark context from the supplied config
+    val sqlc = SparkConfig(config)
+    try {
+      // Create the dataframe from the input config
+      val df = setupDataframe(config, tilingConfig.source, schema, sqlc)
 
-    sqlc.sparkContext.stop()
+      // Pipe the dataframe
+      Pipe(df)
+        .to {
+          geoHeatmapConfig.timeFormat
+            .map(p => parseDate(geoHeatmapConfig.timeCol, "convertedTime", geoHeatmapConfig.timeFormat.get)(_))
+            .getOrElse(nullOp)
+        }.to {
+          val timeCol = geoHeatmapConfig.timeFormat.map(s => "convertedTime").getOrElse("time")
+          GeoHeatmapOp(GeoHeatmapOpConf("lon", "lat", timeCol, None, None, geoHeatmapConfig.timeRange, tilingConfig.levels))
+        }
+        .to(BinArraySerializerOp.binArraySerializeOp)
+        .to(OutputConfig(config))
+        .run()
+    } finally {
+      sqlc.sparkContext.stop()
+    }
+  }
+
+  def execute(args: Array[String]): Unit = {
+    // get the properties file path
+    if (args.length < 1) {
+      logger.error("Path to conf file required")
+      sys.exit(-1)
+    }
+
+    // load properties file from supplied URI
+    val config = ConfigFactory.parseReader(scala.io.Source.fromFile(args(0)).bufferedReader())
+    execute(config)
   }
 
   private def setupDataframe(config: Config, source: String, schema: StructType, sqlc: SQLContext) = {
