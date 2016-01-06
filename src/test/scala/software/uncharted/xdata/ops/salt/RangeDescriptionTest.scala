@@ -37,25 +37,25 @@ class RangeDescriptionTest extends FunSpec {
 
     describe("#fromMin") {
       it("should create a range with the correct max given min, count and step") {
-        assertResult(RangeDescription(0.0, 10.0, 10, 1.0))(RangeDescription.fromMin(0.0, 1.0, 10))
+        assertResult(RangeDescription(10.0, 20.0, 10, 1.0))(RangeDescription.fromMin(10.0, 1.0, 10))
       }
     }
 
     describe("#fromMax") {
       it("should create a range with the correct min given max, count and step") {
-        assertResult(RangeDescription(0.0, 10.0, 10, 1.0))(RangeDescription.fromMax(10.0, 1.0, 10))
+        assertResult(RangeDescription(10.0, 20.0, 10, 1.0))(RangeDescription.fromMax(20.0, 1.0, 10))
       }
     }
 
     describe("#fromCount") {
       it("should create a range with the correct count given min, max and step") {
-        assertResult(RangeDescription(0.0, 10.0, 10, 1.0))(RangeDescription.fromCount(0.0, 10.0, 10))
+        assertResult(RangeDescription(10.0, 20.0, 10, 1.0))(RangeDescription.fromCount(10.0, 20.0, 10))
       }
     }
 
     describe("#fromStep") {
       it("should create a range with the correct count given min, max, and step") {
-        assertResult(RangeDescription(0.0, 10.0, 10, 1.0))(RangeDescription.fromStep(0.0, 10.0, 1.0))
+        assertResult(RangeDescription(10.0, 20.0, 10, 1.0))(RangeDescription.fromStep(10.0, 20.0, 1.0))
       }
     }
   }
