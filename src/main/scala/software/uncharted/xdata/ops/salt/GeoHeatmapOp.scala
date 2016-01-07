@@ -46,16 +46,16 @@ object GeoHeatmapOp {
     RDD[SeriesData[(Int, Int, Int), java.lang.Double, (java.lang.Double, java.lang.Double)]] = {
 
     // Use the pipeline to cast columns to expected values and select them into a new dataframe
-    val selectCols = Seq(conf.latCol, conf.lonCol, conf.timeCol).union(input.schema.map(_.name)).distinct.map(new Column(_))
+    val selectCols = Seq(conf.latCol, conf.lonCol, conf.timeCol).map(new Column(_))
     val frame = Pipe(input)
-      .to(castColumns(Map(conf.latCol -> "double", conf.lonCol -> "double", conf.timeCol -> "long")))
+      .to(castColumns(Map(conf.latCol -> "double", conf.lonCol -> "double", conf.timeCol -> "timestamp")))
       .to(_.select(selectCols:_*))
       .run()
 
     // Extracts lat, lon, time coordinates from row - can assume (0,1,2) indices given select above
     val coordExtractor = (r: Row) => {
       if (!r.isNullAt(0) && !r.isNullAt(1) && !r.isNullAt(2)) {
-        Some(r.getDouble(1), r.getDouble(0), r.getLong(2))
+        Some(r.getDouble(1), r.getDouble(0), r.getTimestamp(2).getTime)
       } else {
         None
       }
