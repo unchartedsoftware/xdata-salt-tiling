@@ -57,6 +57,7 @@ class SchemaTest extends FunSpec {
       it("should fill in unspecified columns with suitable defaults") {
         val csvSchema = """
                        |csvSchema {
+											 | rowSize = 6
                        | a { type = boolean, index = 0}
                        | b { type = byte, index = 2}
                        | c { type = int, index = 4}
@@ -72,6 +73,7 @@ class SchemaTest extends FunSpec {
         assertResult(StructField("b", ByteType))(schema("b"))
         assertResult(StructField("__unspecified_3__", StringType))(schema("__unspecified_3__"))
         assertResult(StructField("c", IntegerType))(schema("c"))
+        assertResult(StructField("__unspecified_5__", StringType))(schema("__unspecified_5__"))
       }
 
       it("should fail on duplicate variable indices") {
