@@ -52,7 +52,7 @@ class GeoHeatmapGeneratorTest extends FunSpec {
         try {
           val path = classOf[GeoHeatmapGeneratorTest].getResource("/tiling-file-io.conf").toURI.getPath
           val config = ConfigFactory.parseReader(scala.io.Source.fromFile(path).bufferedReader())
-          val dateConfig = config.withFallback(config.getConfig("geoHeatmap").withValue("timeFormat", ConfigValueFactory.fromAnyRef("yyyy-MM-dd HH:mm:ss")))
+          val dateConfig = config.withFallback(config.withValue("geoHeatmap.timeFormat", ConfigValueFactory.fromAnyRef("yyyy-MM-dd HH:mm:ss")))
 
           // run the job
           GeoHeatmapGenerator.execute(dateConfig)
