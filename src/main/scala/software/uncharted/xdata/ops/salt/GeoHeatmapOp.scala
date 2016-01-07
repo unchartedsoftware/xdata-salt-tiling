@@ -13,6 +13,7 @@
 package software.uncharted.xdata.ops.salt
 
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.types.{TimestampType, DoubleType}
 import org.apache.spark.sql.{Column, Row, DataFrame}
 import software.uncharted.salt.core.analytic.numeric.{SumAggregator, MinMaxAggregator}
 import software.uncharted.salt.core.generation.Series
@@ -39,16 +40,15 @@ object GeoHeatmapOp {
 
   def apply(conf: GeoHeatmapOpConf)(dataFrame: DataFrame):
     RDD[SeriesData[(Int, Int, Int), java.lang.Double, (java.lang.Double, java.lang.Double)]] = {
-    geoHeatmapOp(conf)(dataFrame)
-  }
-
-  def geoHeatmapOp(conf: GeoHeatmapOpConf)(input: DataFrame):
-    RDD[SeriesData[(Int, Int, Int), java.lang.Double, (java.lang.Double, java.lang.Double)]] = {
-
     // Use the pipeline to cast columns to expected values and select them into a new dataframe
-    val selectCols = Seq(conf.latCol, conf.lonCol, conf.timeCol).map(new Column(_))
+    val selectCols = (Seq(conf.latCol, conf.lonCol, conf.timeCol) ++ conf.valueCol)
+      .map(new Column(_))
+
+    val castCols = (Seq(conf.latCol -> DoubleType.typeName, conf.lonCol -> DoubleType.typeName, conf.timeCol -> TimestampType.typeName) ++
+      conf.valueCol.map(v => v -> DoubleType.typeName)).toMap
+
     val frame = Pipe(input)
-      .to(castColumns(Map(conf.latCol -> "double", conf.lonCol -> "double", conf.timeCol -> "timestamp")))
+      .to(castColumns(castCols))
       .to(_.select(selectCols:_*))
       .run()
 
@@ -85,9 +85,7 @@ object GeoHeatmapOp {
     )
 
     val generator = new MapReduceTileGenerator(frame.sqlContext.sparkContext)
-
     val request = new TileLevelRequest(List.range(0, conf.levels), (tc: (Int, Int, Int)) => tc._1)
-
     generator.generate(frame.rdd, series, request).map(t => series(t))
   }
 }

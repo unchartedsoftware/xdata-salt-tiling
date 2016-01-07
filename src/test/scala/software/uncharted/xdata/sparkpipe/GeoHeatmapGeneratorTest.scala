@@ -50,12 +50,8 @@ class GeoHeatmapGeneratorTest extends FunSpec {
       it("should convert string date to timestamp") {
         SparkFunSpec.sparkLock.acquire()
         try {
-          val path = classOf[GeoHeatmapGeneratorTest].getResource("/tiling-file-io.conf").toURI.getPath
-          val config = ConfigFactory.parseReader(scala.io.Source.fromFile(path).bufferedReader())
-          val dateConfig = config.withFallback(config.withValue("geoHeatmap.timeFormat", ConfigValueFactory.fromAnyRef("yyyy-MM-dd HH:mm:ss")))
-
-          // run the job
-          GeoHeatmapGenerator.execute(dateConfig)
+          val path = classOf[GeoHeatmapGeneratorTest].getResource("/tiling-date-file-io.conf").toURI.getPath
+          GeoHeatmapGenerator.execute(Array(path))
 
           val files = collectFiles
           val expected = Set(
