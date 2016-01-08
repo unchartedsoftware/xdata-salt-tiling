@@ -38,7 +38,7 @@ object GeoHeatmapOp {
   val maxLat = 85.05112878
   val defaultTileSize = 256
 
-  def apply(conf: GeoHeatmapOpConf)(dataFrame: DataFrame):
+  def apply(conf: GeoHeatmapOpConf)(input: DataFrame):
     RDD[SeriesData[(Int, Int, Int), java.lang.Double, (java.lang.Double, java.lang.Double)]] = {
     // Use the pipeline to cast columns to expected values and select them into a new dataframe
     val selectCols = (Seq(conf.latCol, conf.lonCol, conf.timeCol) ++ conf.valueCol)

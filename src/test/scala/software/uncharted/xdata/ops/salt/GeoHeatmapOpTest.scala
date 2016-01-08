@@ -60,7 +60,7 @@ class GeoHeatmapOpTest extends SparkFunSpec {
   describe("GeoHeatmapOpTest") {
     it("should create a quadtree of tiles where empty tiles are skipped") {
       val conf = GeoHeatmapOpConf(lonCol, latCol, timeCol, Some(value), None, RangeDescription.fromCount(0, 800, 10), 3, 10)
-      val result = GeoHeatmapOp.geoHeatmapOp(conf)(genData).collect().map(_.coords).toSet
+      val result = GeoHeatmapOp(conf)(genData).collect().map(_.coords).toSet
       val expectedSet = Set(
         (0,0,0), // l0
         (1,0,0), (1,1,0), (1,1,1), (1,0,1), // l1
@@ -70,20 +70,20 @@ class GeoHeatmapOpTest extends SparkFunSpec {
 
     it("should create time bins from a range and bucket count") {
       val conf = GeoHeatmapOpConf(lonCol, latCol, timeCol, Some(value), None, RangeDescription.fromCount(0, 800, 10), 3, 10)
-      val result = GeoHeatmapOp.geoHeatmapOp(conf)(genData).collect()
+      val result = GeoHeatmapOp(conf)(genData).collect()
       assertResult(10 * 10 * 10)(result(0).bins.length)
     }
 
     it("should sum values that are in the same bin ") {
       val conf = GeoHeatmapOpConf(lonCol, latCol, timeCol, Some(value), None, RangeDescription.fromCount(0, 800, 10), 1, 10)
-      val result = GeoHeatmapOp.geoHeatmapOp(conf)(genData).collect()
+      val result = GeoHeatmapOp(conf)(genData).collect()
       val proj = new MercatorTimeProjection(RangeDescription.fromCount(0L, 800L, 10))
       assertResult(0.2)(result(0).bins(proj.binTo1D((0, 0, 3), (9, 9, 9))))
     }
 
     it("should not aggregate across time buckets") {
       val conf = GeoHeatmapOpConf(lonCol, latCol, timeCol, None, None, RangeDescription.fromCount(0, 800, 10), 3, 10)
-      val result = GeoHeatmapOp.geoHeatmapOp(conf)(genData).collect()
+      val result = GeoHeatmapOp(conf)(genData).collect()
       val proj = new MercatorTimeProjection(RangeDescription.fromCount(0L, 800L, 10))
 
       val tile = (t: (Int, Int, Int)) => result.find(s => s.coords == t)
@@ -95,7 +95,7 @@ class GeoHeatmapOpTest extends SparkFunSpec {
 
     it("should use a value of 1.0 for each bin when no value column is specified") {
       val conf = GeoHeatmapOpConf(lonCol, latCol, timeCol, None, None, RangeDescription.fromCount(0, 800, 10), 1, 10)
-      val result = GeoHeatmapOp.geoHeatmapOp(conf)(genData).collect()
+      val result = GeoHeatmapOp(conf)(genData).collect()
       val proj = new MercatorTimeProjection(RangeDescription.fromCount(0L, 800L, 10))
       assertResult(2)(result(0).bins(proj.binTo1D((0, 0, 3), (9, 9, 9))))
     }
