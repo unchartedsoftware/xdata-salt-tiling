@@ -16,6 +16,7 @@ import java.io.{ByteArrayOutputStream, ByteArrayInputStream}
 
 import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.services.s3.AmazonS3Client
+import com.amazonaws.services.s3.model.{CannedAccessControlList, Grant, AccessControlList}
 import grizzled.slf4j.Logging
 
 object S3Client {
@@ -53,7 +54,9 @@ class S3Client(accessKey: String, secretKey: String) extends Logging {
   def upload(data: Array[Byte], bucketName: String, key: String): Boolean = {
     val bos = new ByteArrayInputStream(data)
     try {
-      s3Client.putObject(bucketName, key, bos, null); true // scalastyle:ignore
+      s3Client.putObject(bucketName, key, bos, null) // scalastyle:ignore
+      s3Client.setObjectAcl(bucketName, key, CannedAccessControlList.PublicRead)
+      true
     } catch {
       case e: Exception => error(s"Failed to upload $key", e); false
     }
