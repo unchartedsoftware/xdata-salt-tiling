@@ -16,7 +16,7 @@ import java.io.{ByteArrayOutputStream, ByteArrayInputStream}
 
 import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.services.s3.AmazonS3Client
-import com.amazonaws.services.s3.model.{CannedAccessControlList, Grant, AccessControlList}
+import com.amazonaws.services.s3.model.{PutObjectRequest, CannedAccessControlList, Grant, AccessControlList}
 import grizzled.slf4j.Logging
 
 object S3Client {
@@ -29,6 +29,7 @@ class S3Client(accessKey: String, secretKey: String) extends Logging {
 
   def createBucket(bucketName: String): Boolean = {
     try {
+      // TODO: Make CORS support an argument, enable static web serving
       if (!s3Client.doesBucketExist(bucketName)) { s3Client.createBucket(bucketName); true } else false
     } catch {
       case e: Exception => error(s"Failed to create bucket $bucketName"); false // scalastyle:ignore
@@ -54,8 +55,8 @@ class S3Client(accessKey: String, secretKey: String) extends Logging {
   def upload(data: Array[Byte], bucketName: String, key: String): Boolean = {
     val bos = new ByteArrayInputStream(data)
     try {
-      s3Client.putObject(bucketName, key, bos, null) // scalastyle:ignore
-      s3Client.setObjectAcl(bucketName, key, CannedAccessControlList.PublicRead)
+      s3Client.putObject(new PutObjectRequest(bucketName, key, bos, null) // scalastyle:ignore
+        .withCannedAcl(CannedAccessControlList.PublicRead))
       true
     } catch {
       case e: Exception => error(s"Failed to upload $key", e); false
