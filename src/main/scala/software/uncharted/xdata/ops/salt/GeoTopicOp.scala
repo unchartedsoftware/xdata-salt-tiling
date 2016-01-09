@@ -30,14 +30,12 @@ case class GeoTopicOpConf(latCol: String,
                           latLonBounds: Option[(Double, Double, Double, Double)],
                           timeRange: RangeDescription[Long],
                           topicLimit: Int,
-                          levels: Int,
-                          tileSize: Int = GeoTopicOp.defaultTileSize)
+                          levels: Int)
 
 object GeoTopicOp extends Logging {
 
   val maxLon = 180
   val maxLat = 85.05112878
-  val defaultTileSize = 256
 
   def apply(conf: GeoTopicOpConf)(input: DataFrame): RDD[SeriesData[(Int, Int, Int), List[(String, Int)], Nothing]] = {
     // Use the pipeline to cast columns to expected values and select them into a new dataframe
@@ -76,7 +74,7 @@ object GeoTopicOp extends Logging {
 
     // create the series to tie everything together
     val series = new Series(
-      (conf.tileSize-1, conf.tileSize-1, conf.timeRange.count-1),
+      (0, 0, conf.timeRange.count-1),
       coordExtractor,
       projection,
       valueExtractor,

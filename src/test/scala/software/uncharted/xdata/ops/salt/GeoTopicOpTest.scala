@@ -57,7 +57,7 @@ class GeoTopicOpTest extends SparkFunSpec {
 
   describe("GeoTopicOpTest") {
     it("\"should create a quadtree of tiles where empty tiles are skipped") {
-      val conf = GeoTopicOpConf(lonCol, latCol, timeCol, countsCol, None, RangeDescription.fromCount(0, 800, 10), 3, 3, 10)
+      val conf = GeoTopicOpConf(lonCol, latCol, timeCol, countsCol, None, RangeDescription.fromCount(0, 800, 10), 3, 3)
       val result = GeoTopicOp(conf)(genData).collect().map(_.coords).toSet
       val expectedSet = Set(
         (0,0,0), // l0
@@ -67,28 +67,28 @@ class GeoTopicOpTest extends SparkFunSpec {
     }
 
     it("should create time bins from a range and bucket count") {
-      val conf = GeoTopicOpConf(lonCol, latCol, timeCol, countsCol, None, RangeDescription.fromCount(0, 800, 10), 3, 3, 10)
+      val conf = GeoTopicOpConf(lonCol, latCol, timeCol, countsCol, None, RangeDescription.fromCount(0, 800, 10), 3, 3)
       val result = GeoTopicOp(conf)(genData).collect()
-      assertResult(10 * 10 * 10)(result(0).bins.length)
+      assertResult(10)(result(0).bins.length)
     }
 
-    it("should sum values that are in the same bin ") {
-      val conf = GeoTopicOpConf(lonCol, latCol, timeCol, countsCol, None, RangeDescription.fromCount(0, 800, 10), 3, 1, 10)
+    it("should sum values that are in the same same tile") {
+      val conf = GeoTopicOpConf(lonCol, latCol, timeCol, countsCol, None, RangeDescription.fromCount(0, 800, 10), 3, 1)
       val result = GeoTopicOp(conf)(genData).collect()
-      val proj = new MercatorTimeProjection(RangeDescription.fromCount(0L, 800L, 10))
-      assertResult(List("b" -> 3535, "a" -> 35))(result(0).bins(proj.binTo1D((0, 0, 3), (9, 9, 9))))
+      val proj = new MercatorTimeProjection(RangeDescription.fromCount(0L, 800L, 1))
+      assertResult(List("b" -> 3535, "a" -> 35))(result(0).bins(proj.binTo1D((0, 0, 3), (0, 0, 9))))
     }
 
     it("should not aggregate across time buckets") {
-      val conf = GeoTopicOpConf(lonCol, latCol, timeCol, countsCol, None, RangeDescription.fromCount(0, 800, 10), 3, 3, 10)
+      val conf = GeoTopicOpConf(lonCol, latCol, timeCol, countsCol, None, RangeDescription.fromCount(0, 800, 10), 3, 3)
       val result = GeoTopicOp(conf)(genData).collect()
       val proj = new MercatorTimeProjection(RangeDescription.fromCount(0L, 800L, 10))
 
       val tile = (t: (Int, Int, Int)) => result.find(s => s.coords == t)
 
-      assertResult(List("b" -> 3535, "a" -> 35))(tile((0, 0, 0)).getOrElse(fail()).bins(proj.binTo1D((0, 0, 3), (9, 9, 9))))
-      assertResult(List("b" -> 3535, "a" -> 35))(tile((1, 0, 1)).getOrElse(fail()).bins(proj.binTo1D((0, 0, 3), (9, 9, 9))))
-      assertResult(List("b" -> 3535, "a" -> 35))(tile((2, 0, 3)).getOrElse(fail()).bins(proj.binTo1D((0, 1, 3), (9, 9, 9))))
+      assertResult(List("b" -> 3535, "a" -> 35))(tile((0, 0, 0)).getOrElse(fail()).bins(proj.binTo1D((0, 0, 3), (0, 0, 9))))
+      assertResult(List("b" -> 3535, "a" -> 35))(tile((1, 0, 1)).getOrElse(fail()).bins(proj.binTo1D((0, 0, 3), (0, 0, 9))))
+      assertResult(List("b" -> 3535, "a" -> 35))(tile((2, 0, 3)).getOrElse(fail()).bins(proj.binTo1D((0, 0, 3), (0, 0, 9))))
     }
   }
 }
