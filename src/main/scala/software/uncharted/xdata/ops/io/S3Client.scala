@@ -16,7 +16,7 @@ import java.io.{ByteArrayOutputStream, ByteArrayInputStream}
 
 import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.services.s3.AmazonS3Client
-import com.amazonaws.services.s3.model.{PutObjectRequest, CannedAccessControlList, Grant, AccessControlList}
+import com.amazonaws.services.s3.model.{PutObjectRequest, CannedAccessControlList}
 import grizzled.slf4j.Logging
 
 object S3Client {
@@ -52,8 +52,8 @@ class S3Client(accessKey: String, secretKey: String) extends Logging {
     }
   }
 
-  def upload(data: Array[Byte], bucketName: String, key: String): Boolean = {
-    val bos = new ByteArrayInputStream(data)
+  def upload(data: Seq[Byte], bucketName: String, key: String): Boolean = {
+    val bos = new ByteArrayInputStream(data.toArray)
     try {
       s3Client.putObject(new PutObjectRequest(bucketName, key, bos, null) // scalastyle:ignore
         .withCannedAcl(CannedAccessControlList.PublicRead))
@@ -63,7 +63,7 @@ class S3Client(accessKey: String, secretKey: String) extends Logging {
     }
   }
 
-  def download(bucketName: String, key: String): Option[Array[Byte]]= {
+  def download(bucketName: String, key: String): Option[Seq[Byte]]= {
     // Iteratively read chunks of the input stream into a fixed size buffer and write the
     // results out to a byte array output stream.
     val bufferSize = 8192
@@ -76,7 +76,7 @@ class S3Client(accessKey: String, secretKey: String) extends Logging {
         bos.write(buffer, 0, bytesRead)
         bytesRead = dis.read(buffer)
       }
-      Some(bos.toByteArray)
+      Some(bos.toByteArray.toSeq)
     } catch {
       case e: Exception => error(s"Failed to download $key", e); None
     }

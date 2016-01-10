@@ -10,34 +10,19 @@
  * accordance with the terms of the license agreement you entered into
  * with Uncharted Software Inc.
  */
-package software.uncharted.xdata.ops.io
+package software.uncharted.xdata.ops
 
-import java.io.{File, FileOutputStream, BufferedOutputStream}
+import java.io.{BufferedOutputStream, FileOutputStream, File}
 
 import grizzled.slf4j.Logging
 import org.apache.spark.rdd.RDD
 import software.uncharted.salt.core.generation.output.SeriesData
 
-object BinArraySerializerOp extends Logging {
+import scala.util.parsing.json.JSONObject
+
+package object io extends Logging {
 
   val doubleBytes = 8
-
-  /**
-   * Serializes series data from a sequence of Doubles into a sequence of Bytes, where
-   * each Double is converted into its byte-based equivalent via java.Double.doubleToLongBits.
-   *
-   * @param tiles input series data
-   * @return An RDD of tile coord / byte array tuples
-   */
-  def binArraySerializeOp(tiles: RDD[SeriesData[(Int, Int, Int), java.lang.Double, (java.lang.Double, java.lang.Double)]]): RDD[((Int, Int, Int), Seq[Byte])] = {
-    tiles.map { tile =>
-      val data = for (bin <- tile.bins; i <- 0 until doubleBytes) yield {
-        val data = java.lang.Double.doubleToLongBits(bin)
-        ((data >> (i * doubleBytes)) & 0xff).asInstanceOf[Byte]
-      }
-      (tile.coords, data)
-    }
-  }
 
   /**
    * Write binary array data to the file system.  Folder structure is
@@ -46,14 +31,14 @@ object BinArraySerializerOp extends Logging {
    *
    * @param baseFilePath Baseline output directory - can store multiple layers.
    * @param layerName Unique name for the layer .
-   * @param data tile coordinate / byte array tuples of tile data
+   * @param input tile coordinate / byte array tuples of tile data
    * @return input data unchanged
    */
-  def binArrayFileStoreOp(baseFilePath: String, layerName: String)(data: RDD[((Int, Int, Int), Seq[Byte])]): RDD[((Int, Int, Int), Seq[Byte])] = {
-    data.collect().foreach { tileData =>
+  def writeToFile(baseFilePath: String, layerName: String, extension: String)(input: RDD[((Int, Int, Int), Seq[Byte])]): RDD[((Int, Int, Int), Seq[Byte])] = {
+    input.collect().foreach { tileData =>
       val coord = tileData._1
-      val dirPath = s"$baseFilePath/$layerName/${coord._1}/${coord._2}"
-      val path = s"$dirPath/${coord._3}.bin"
+      val dirPath = s"$baseFilePath/$layerName/${coord._1}/${coord._2}" //scalastyle:ignore
+      val path = s"$dirPath/${coord._3}.$extension"
       try {
         // create path if necessary
         val file = new File(dirPath)
@@ -66,7 +51,7 @@ object BinArraySerializerOp extends Logging {
         case e: Exception => error(s"Failed to write file $path", e)
       }
     }
-    data
+    input
   }
 
   /**
@@ -74,16 +59,15 @@ object BinArraySerializerOp extends Logging {
    * Indexing is TMS style with (0,0) in lower left, y increasing as it moves north
    *
    * @param layerName Unique name for the layer .
-   * @param data tile coordinate / byte array tuples of tile data
+   * @param input tile coordinate / byte array tuples of tile data
    * @return input data unchanged
    */
-  def binArrayS3StoreOp(accessKey: String, secretKey: String, bucketName: String, layerName: String)
-               (data: RDD[((Int, Int, Int), Seq[Byte])]):
+  def writeToS3(accessKey: String, secretKey: String, bucketName: String, layerName: String)(input: RDD[((Int, Int, Int), Seq[Byte])]):
   RDD[((Int, Int, Int), Seq[Byte])] = {
     // Upload tiles to S3 using the supplied bucket and layer.  Use foreachPartition to avoid incurring
     // the cost of initializing the S3Client per record.  This can't be done outside the RDD closure
     // because the Amazon S3 API classes are not marked serializable.
-    data.foreachPartition { tileDataIter =>
+    input.foreachPartition { tileDataIter =>
       val s3Client = S3Client(accessKey, secretKey)
       tileDataIter.foreach { tileData =>
         val coord = tileData._1
@@ -92,6 +76,23 @@ object BinArraySerializerOp extends Logging {
         s3Client.upload(tileData._2.toArray, bucketName, key)
       }
     }
-    data
+    input
+  }
+
+  def serializeBinArray(tiles: RDD[SeriesData[(Int, Int, Int), java.lang.Double, (java.lang.Double, java.lang.Double)]]): RDD[((Int, Int, Int), Seq[Byte])] = {
+    tiles.map { tile =>
+      val data = for (bin <- tile.bins; i <- 0 until doubleBytes) yield {
+        val data = java.lang.Double.doubleToLongBits(bin)
+        ((data >> (i * doubleBytes)) & 0xff).asInstanceOf[Byte]
+      }
+      (tile.coords, data)
+    }
+  }
+
+  def serializeElementScore(tiles: RDD[SeriesData[(Int, Int, Int), List[(String, Int)], Nothing]]): RDD[((Int, Int, Int), Seq[Byte])] = {
+    tiles.map { t =>
+      val bytes = new JSONObject(t.bins.head.toMap).toString().getBytes
+      (t.coords, bytes.toSeq)
+    }
   }
 }

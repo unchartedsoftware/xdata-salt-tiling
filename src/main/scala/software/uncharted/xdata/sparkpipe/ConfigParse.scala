@@ -17,7 +17,7 @@ import grizzled.slf4j.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.{SparkConf, SparkContext}
-import software.uncharted.xdata.ops.io.BinArraySerializerOp
+import software.uncharted.xdata.ops.io.{writeToFile, writeToS3}
 import software.uncharted.xdata.ops.salt.RangeDescription
 
 import scala.collection.JavaConverters.asScalaSetConverter
@@ -53,11 +53,10 @@ object OutputConfig {
   def apply(config: Config): (RDD[((Int, Int, Int), Seq[Byte])]) => RDD[((Int, Int, Int), Seq[Byte])] = {
     if (config.hasPath("fileOutput")) {
       val serializerConfig = config.getConfig("fileOutput")
-      BinArraySerializerOp.binArrayFileStoreOp(serializerConfig.getString("dest"), serializerConfig.getString("layer"))
+      writeToFile(serializerConfig.getString("dest"), serializerConfig.getString("layer"), "bin")
     } else if (config.hasPath("s3Output")) {
       val serializerConfig = config.getConfig("s3Output")
-      BinArraySerializerOp.binArrayS3StoreOp(sys.env("AWS_ACCESS_KEY"), sys.env("AWS_SECRET_KEY"),
-        serializerConfig.getString("bucket"), serializerConfig.getString("layer"))
+      writeToS3(sys.env("AWS_ACCESS_KEY"), sys.env("AWS_SECRET_KEY"), serializerConfig.getString("bucket"), serializerConfig.getString("layer"))
     } else {
       throw new ConfigException.Missing("Failure parsing output - [s3Output] or [fileOutput] required")
     }

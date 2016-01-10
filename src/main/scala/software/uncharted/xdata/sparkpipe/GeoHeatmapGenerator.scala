@@ -15,12 +15,11 @@ package software.uncharted.xdata.sparkpipe
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, DataFrameReader, SQLContext}
+import org.apache.spark.sql.{DataFrame, SQLContext}
+import software.uncharted.xdata.ops.io.serializeBinArray
 import scala.collection.JavaConverters._ // scalastyle:ignore
 import software.uncharted.sparkpipe.Pipe
-import software.uncharted.xdata.ops.io.BinArraySerializerOp
 import software.uncharted.sparkpipe.ops.core.dataframe.temporal.parseDate
-import software.uncharted.xdata.ops.numeric.numericRangeFilter
 import software.uncharted.xdata.ops.salt.{GeoHeatmapOp, GeoHeatmapOpConf}
 
 object GeoHeatmapGenerator extends Logging {
@@ -62,7 +61,7 @@ object GeoHeatmapGenerator extends Logging {
           val timeCol = geoHeatmapConfig.timeFormat.map(s => "convertedTime").getOrElse("time")
           GeoHeatmapOp(GeoHeatmapOpConf("lon", "lat", timeCol, None, None, geoHeatmapConfig.timeRange, tilingConfig.levels))
         }
-        .to(BinArraySerializerOp.binArraySerializeOp)
+        .to(serializeBinArray)
         .to(OutputConfig(config))
         .run()
     } finally {
