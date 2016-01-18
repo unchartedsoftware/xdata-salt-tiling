@@ -60,7 +60,7 @@ class PackageTest extends SparkFunSpec {
       try {
         val data = sc.parallelize(Seq(((2, 2, 2), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))))
         writeToFile(s"${testDir}_3", testLayer, extension)(data)
-        val bytes = Files.readAllBytes(Paths.get(s"${testDir}_3/$testLayer/2/2/2.bin"))
+        val bytes = Files.readAllBytes(Paths.get(s"${testDir}_3/$testLayer/2/2/2.tst"))
         assertResult(Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))(bytes)
       } finally {
         FileUtils.deleteDirectory(new File(s"${testDir}_3"))
@@ -71,8 +71,8 @@ class PackageTest extends SparkFunSpec {
   describe("#writeToS3") {
     val awsAccessKey = sys.env("AWS_ACCESS_KEY")
     val awsSecretKey = sys.env("AWS_SECRET_KEY")
-    val testKey0 = s"$testLayer/2-2-2.bin"
-    val testKey1 = s"$testLayer/2-2-3.bin"
+    val testKey0 = s"$testLayer/2/2/2.bin"
+    val testKey1 = s"$testLayer/2/2/3.bin"
 
     it("should add tiles to the s3 bucket using key names based on TMS coords") {
       val data = sc.parallelize(Seq(

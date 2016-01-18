@@ -72,7 +72,7 @@ package object io extends Logging {
       tileDataIter.foreach { tileData =>
         val coord = tileData._1
         // store tile in bucket as layerName/level-xIdx-yIdx.bin
-        val key = s"$layerName/${coord._1}-${coord._2}-${coord._3}.bin"
+        val key = s"$layerName/${coord._1}/${coord._2}/${coord._3}.bin"
         s3Client.upload(tileData._2.toArray, bucketName, key)
       }
     }
