@@ -33,6 +33,7 @@ object SparkConfig {
   }
 }
 
+
 // Parse tiling parameter and store results
 case class TilingConfig(levels: Int, xBins: Int, yBins: Int, source: String)
 object TilingConfig extends Logging {
@@ -48,6 +49,7 @@ object TilingConfig extends Logging {
   }
 }
 
+
 // Parse output configuration and return output function
 object OutputConfig {
   def apply(config: Config): (RDD[((Int, Int, Int), Seq[Byte])]) => RDD[((Int, Int, Int), Seq[Byte])] = {
@@ -62,6 +64,7 @@ object OutputConfig {
     }
   }
 }
+
 
 // Parse config for geoheatmap sparkpipe op
 case class GeoHeatmapConfig(lonCol: String, latCol: String, timeCol: String, timeRange: RangeDescription[Long], timeFormat: Option[String] = None)
@@ -83,3 +86,32 @@ object GeoHeatmapConfig extends Logging {
     }
   }
 }
+
+
+// Parse config for geoheatmap sparkpipe op
+case class GeoTopicConfig(lonCol: String, latCol: String, timeCol: String, textCol: String,
+                          timeRange: RangeDescription[Long], timeFormat: Option[String] = None,
+                          topicLimit: Int)
+object GeoTopicConfig extends Logging {
+  def apply(config: Config): Option[GeoTopicConfig] = {
+    try {
+      val geoTopicConfig = config.getConfig("geoTopics")
+      Some(GeoTopicConfig(
+        geoTopicConfig.getString("longitudeColumn"),
+        geoTopicConfig.getString("latitudeColumn"),
+        geoTopicConfig.getString("timeColumn"),
+        geoTopicConfig.getString("textColumn"),
+        RangeDescription.fromMin(geoTopicConfig.getLong("min"), geoTopicConfig.getLong("step"), geoTopicConfig.getInt("count")),
+        if (geoTopicConfig.hasPath("timeFormat")) Some(geoTopicConfig.getString("timeFormat")) else None,
+        geoTopicConfig.getInt("topicLimit"))
+      )
+    } catch {
+      case e: ConfigException =>
+        error("Failure parsing arguments from [geoTopics]", e)
+        None
+    }
+  }
+}
+
+
+

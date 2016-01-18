@@ -16,6 +16,7 @@ import grizzled.slf4j.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.{TimestampType, DoubleType}
 import org.apache.spark.sql.{Row, Column, DataFrame}
+import software.uncharted.salt.core.analytic.collection.TopElementsAggregator
 import software.uncharted.salt.core.generation.Series
 import software.uncharted.salt.core.generation.mapreduce.MapReduceTileGenerator
 import software.uncharted.salt.core.generation.output.SeriesData
@@ -23,14 +24,14 @@ import software.uncharted.salt.core.generation.request.TileLevelRequest
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.castColumns
 
-case class GeoTopicOpConf(latCol: String,
-                          lonCol: String,
+case class GeoTopicOpConf(lonCol: String,
+                          latCol: String,
                           timeCol: String,
-                          countsCol: String,
-                          latLonBounds: Option[(Double, Double, Double, Double)],
+                          textCol: String,
                           timeRange: RangeDescription[Long],
                           topicLimit: Int,
-                          levels: Int)
+                          levels: Int,
+                          latLonBounds: Option[(Double, Double, Double, Double)])
 
 object GeoTopicOp extends Logging {
 
@@ -39,7 +40,7 @@ object GeoTopicOp extends Logging {
 
   def apply(conf: GeoTopicOpConf)(input: DataFrame): RDD[SeriesData[(Int, Int, Int), List[(String, Int)], Nothing]] = {
     // Use the pipeline to cast columns to expected values and select them into a new dataframe
-    val selectCols = Seq(conf.latCol, conf.lonCol, conf.timeCol, conf.countsCol).map(new Column(_))
+    val selectCols = Seq(conf.lonCol, conf.latCol, conf.timeCol, conf.textCol).map(new Column(_))
 
     val castCols = Seq(
       conf.latCol -> DoubleType.simpleString,
@@ -61,8 +62,8 @@ object GeoTopicOp extends Logging {
     }
 
     // Extracts value data from row
-    val valueExtractor: Option[(Row) => Option[Seq[(String, Int)]]] = Some((r: Row) => {
-      if (!r.isNullAt(3)) Some(r.getMap(3).toSeq) else None
+    val valueExtractor: Option[(Row) => Option[Seq[String]]] = Some((r: Row) => {
+      if (!r.isNullAt(3)) Some(r.getSeq(3)) else None
     })
 
     // create a default projection from data-space into mercator tile space
@@ -70,7 +71,7 @@ object GeoTopicOp extends Logging {
       new MercatorTimeProjection((b._2, b._1, conf.timeRange.min), (b._4, b._3, conf.timeRange.max), conf.timeRange.count)
     }.getOrElse(new MercatorTimeProjection(conf.timeRange))
 
-    val aggregator = new ElementScoreAggregator[String](conf.topicLimit)
+    val aggregator = new TopElementsAggregator[String](conf.topicLimit)
 
     // create the series to tie everything together
     val series = new Series(

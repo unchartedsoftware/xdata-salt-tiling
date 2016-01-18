@@ -15,39 +15,42 @@ package software.uncharted.xdata.ops.salt
 import org.apache.spark.sql.DataFrame
 import software.uncharted.xdata.spark.SparkFunSpec
 
+
 // scalastyle:off multiple.string.literals magic.number
-case class TopicTestData(lon: Double, lat: Double, time: Long, counts: Map[String, Int])
+case class TopicTestData(lon: Double, lat: Double, time: Long, text: List[String])
 
 class GeoTopicOpTest extends SparkFunSpec {
 
   private val lonCol = "lon"
   private val latCol = "lat"
   private val timeCol = "time"
-  private val countsCol = "counts"
+  private val textCol = "text"
+
+  private def createTestString(aCount: Int, bCount: Int) = List.fill(aCount)("a") ++ List.fill(bCount)("b")
 
   def genData: DataFrame = {
     val testData =
     // 1st time bucket
-      List(TopicTestData(-91.0, -67.0, 101L, Map("a" -> 1, "b" -> 11)),
-        TopicTestData(-89.0, -65.0, 101L, Map("a" -> 2, "b" -> 22)),
-        TopicTestData(91.0, -65.0, 101L, Map("a" -> 3, "b" -> 33)),
-        TopicTestData(89.0, -67.0, 101L, Map("a" -> 4, "b" -> 44)),
-        TopicTestData(89.0, 65.0, 101L, Map("a" -> 5, "b" -> 55)),
-        TopicTestData(91.0, 67.0, 101L, Map("a" -> 6, "b" -> 66)),
-        TopicTestData(-91.0, 65.0, 101L, Map("a" -> 7, "b" -> 77)),
-        TopicTestData(-89.0, 67.0, 101L, Map("a" -> 8, "b" -> 88)),
+      List(TopicTestData(-91.0, -67.0, 101L, createTestString(1, 11)),
+        TopicTestData(-89.0, -65.0, 101L, createTestString(2, 22)),
+        TopicTestData(91.0, -65.0, 101L, createTestString(3, 33)),
+        TopicTestData(89.0, -67.0, 101L, createTestString(4, 44)),
+        TopicTestData(89.0, 65.0, 101L, createTestString(5, 55)),
+        TopicTestData(91.0, 67.0, 101L, createTestString(6, 66)),
+        TopicTestData(-91.0, 65.0, 101L, createTestString(7, 77)),
+        TopicTestData(-89.0, 67.0, 101L, createTestString(8, 88)),
         // 2nd time bucket
-        TopicTestData(-91.0, -67.0, 201L, Map("a" -> 9, "b" -> 99)),
-        TopicTestData(-89.0, -65.0, 201L, Map("a" -> 10, "b" -> 1010)),
-        TopicTestData(91.0, -65.0, 201L, Map("a" -> 11, "b" -> 1111)),
-        TopicTestData(89.0, -67.0, 201L, Map("a" -> 12, "b" -> 1212)),
-        TopicTestData(89.0, 65.0, 201L, Map("a" -> 13, "b" -> 1313)),
-        TopicTestData(91.0, 67.0, 201L, Map("a" -> 14, "b" -> 1414)),
-        TopicTestData(-91.0, 65.0, 201L, Map("a" -> 15, "b" -> 1515)),
-        TopicTestData(-89.0, 67.0, 201L, Map("a" -> 16, "b" -> 1616)),
+        TopicTestData(-91.0, -67.0, 201L, createTestString(9, 99)),
+        TopicTestData(-89.0, -65.0, 201L, createTestString(10, 1010)),
+        TopicTestData(91.0, -65.0, 201L, createTestString(11, 1111)),
+        TopicTestData(89.0, -67.0, 201L, createTestString(12, 1212)),
+        TopicTestData(89.0, 65.0, 201L, createTestString(13, 1313)),
+        TopicTestData(91.0, 67.0, 201L, createTestString(14, 1414)),
+        TopicTestData(-91.0, 65.0, 201L, createTestString(15, 1515)),
+        TopicTestData(-89.0, 67.0, 201L, createTestString(16, 1616)),
         // 3rd time bucket
-        TopicTestData(-179, 84.0, 301L, Map("a" -> 17, "b" -> 1717)),
-        TopicTestData(-179, 84.0, 301L, Map("a" -> 18, "b" -> 1818)))
+        TopicTestData(-179, 84.0, 301L, createTestString(17, 1717)),
+        TopicTestData(-179, 84.0, 301L, createTestString(18, 1818)))
 
     val tsqlc = sqlc
     import tsqlc.implicits._ // scalastyle:ignore
@@ -57,7 +60,7 @@ class GeoTopicOpTest extends SparkFunSpec {
 
   describe("GeoTopicOpTest") {
     it("\"should create a quadtree of tiles where empty tiles are skipped") {
-      val conf = GeoTopicOpConf(lonCol, latCol, timeCol, countsCol, None, RangeDescription.fromCount(0, 800, 10), 3, 3)
+      val conf = GeoTopicOpConf(lonCol, latCol, timeCol, textCol, RangeDescription.fromCount(0, 800, 10), 3, 3, None)
       val result = GeoTopicOp(conf)(genData).collect().map(_.coords).toSet
       val expectedSet = Set(
         (0,0,0), // l0
@@ -67,20 +70,20 @@ class GeoTopicOpTest extends SparkFunSpec {
     }
 
     it("should create time bins from a range and bucket count") {
-      val conf = GeoTopicOpConf(lonCol, latCol, timeCol, countsCol, None, RangeDescription.fromCount(0, 800, 10), 3, 3)
+      val conf = GeoTopicOpConf(lonCol, latCol, timeCol, textCol, RangeDescription.fromCount(0, 800, 10), 3, 3, None)
       val result = GeoTopicOp(conf)(genData).collect()
       assertResult(10)(result(0).bins.length)
     }
 
     it("should sum values that are in the same same tile") {
-      val conf = GeoTopicOpConf(lonCol, latCol, timeCol, countsCol, None, RangeDescription.fromCount(0, 800, 10), 3, 1)
+      val conf = GeoTopicOpConf(lonCol, latCol, timeCol, textCol, RangeDescription.fromCount(0, 800, 10), 3, 1, None)
       val result = GeoTopicOp(conf)(genData).collect()
       val proj = new MercatorTimeProjection(RangeDescription.fromCount(0L, 800L, 1))
       assertResult(List("b" -> 3535, "a" -> 35))(result(0).bins(proj.binTo1D((0, 0, 3), (0, 0, 9))))
     }
 
     it("should not aggregate across time buckets") {
-      val conf = GeoTopicOpConf(lonCol, latCol, timeCol, countsCol, None, RangeDescription.fromCount(0, 800, 10), 3, 3)
+      val conf = GeoTopicOpConf(lonCol, latCol, timeCol, textCol, RangeDescription.fromCount(0, 800, 10), 3, 3, None)
       val result = GeoTopicOp(conf)(genData).collect()
       val proj = new MercatorTimeProjection(RangeDescription.fromCount(0L, 800L, 10))
 
