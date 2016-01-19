@@ -64,7 +64,7 @@ object GeoTopicOp extends Logging {
 
     // Extracts value data from row
     val valueExtractor: Option[(Row) => Option[Seq[String]]] = Some((r: Row) => {
-      if (!r.isNullAt(3)) Some(r.getSeq(3)) else None
+      if (!r.isNullAt(3) && r.getSeq(3).nonEmpty) Some(r.getSeq(3)) else None
     })
 
     // create a default projection from data-space into mercator tile space

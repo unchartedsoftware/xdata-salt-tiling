@@ -23,6 +23,7 @@ import software.uncharted.xdata.spark.SparkFunSpec
 import scala.util.parsing.json.JSONObject
 
 // scalastyle:off magic.number
+// scalastyle:off multiple.string.literals
 class PackageTest extends SparkFunSpec {
 
   private val testDir = "/test_data"
@@ -56,7 +57,7 @@ class PackageTest extends SparkFunSpec {
       }
     }
 
-    it("should serialize the byte without changing it") {
+    it("should serialize the byte array without changing it") {
       try {
         val data = sc.parallelize(Seq(((2, 2, 2), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))))
         writeToFile(s"${testDir}_3", testLayer, extension)(data)
@@ -130,6 +131,16 @@ class PackageTest extends SparkFunSpec {
     }
   }
 
+  describe("#serializeBinArray") {
+    it("should ignore tiles with no updated bins") {
+      val series = sc.parallelize(
+        Seq(new SeriesData[(Int, Int, Int), java.lang.Double, (java.lang.Double, java.lang.Double)]
+          ((1, 2, 3), Seq(0.0, 1.0, 2.0, 3.0), 0, 0.0, None, new MercatorTimeProjection())))
+      val result = serializeBinArray(series).collect()
+      assertResult(0)(result.length)
+    }
+  }
+
   describe("#serializeElementScore") {
     it("should create an RDD of JSON strings serialized to bytes from series data ") {
       val series = sc.parallelize(
@@ -148,6 +159,15 @@ class PackageTest extends SparkFunSpec {
 
       assertResult(result(1)._1)((4, 5, 6))
       assertResult(json(1))(result(1)._2)
+    }
+  }
+
+  describe("#serializeElementScore") {
+    it("should ignore tiles with no updated bins ") {
+      val series = sc.parallelize(
+        Seq(new SeriesData[(Int, Int, Int), List[(String, Int)], Nothing]((1, 2, 3), Seq(List("aa" -> 1, "bb" -> 2)), 0, List(), None, new MercatorTimeProjection())))
+      val result = serializeElementScore(series).collect()
+      assertResult(0)(result.length)
     }
   }
 }

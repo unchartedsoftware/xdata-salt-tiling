@@ -80,19 +80,21 @@ package object io extends Logging {
   }
 
   def serializeBinArray(tiles: RDD[SeriesData[(Int, Int, Int), java.lang.Double, (java.lang.Double, java.lang.Double)]]): RDD[((Int, Int, Int), Seq[Byte])] = {
-    tiles.map { tile =>
-      val data = for (bin <- tile.bins; i <- 0 until doubleBytes) yield {
-        val data = java.lang.Double.doubleToLongBits(bin)
-        ((data >> (i * doubleBytes)) & 0xff).asInstanceOf[Byte]
+    tiles.filter(t => t.binsTouched > 0)
+      .map { tile =>
+        val data = for (bin <- tile.bins; i <- 0 until doubleBytes) yield {
+          val data = java.lang.Double.doubleToLongBits(bin)
+          ((data >> (i * doubleBytes)) & 0xff).asInstanceOf[Byte]
+        }
+        (tile.coords, data)
       }
-      (tile.coords, data)
-    }
   }
 
   def serializeElementScore(tiles: RDD[SeriesData[(Int, Int, Int), List[(String, Int)], Nothing]]): RDD[((Int, Int, Int), Seq[Byte])] = {
-    tiles.map { t =>
-      val bytes = new JSONObject(t.bins.head.toMap).toString().getBytes
-      (t.coords, bytes.toSeq)
-    }
+    tiles.filter(t => t.binsTouched > 0)
+      .map { t =>
+        val bytes = new JSONObject(t.bins.head.toMap).toString().getBytes
+        (t.coords, bytes.toSeq)
+      }
   }
 }
