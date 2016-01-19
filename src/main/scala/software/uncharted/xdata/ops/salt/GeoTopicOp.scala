@@ -14,7 +14,7 @@ package software.uncharted.xdata.ops.salt
 
 import grizzled.slf4j.Logging
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.types.{TimestampType, DoubleType}
+import org.apache.spark.sql.types.{LongType, DoubleType}
 import org.apache.spark.sql.{Row, Column, DataFrame}
 import software.uncharted.salt.core.analytic.collection.TopElementsAggregator
 import software.uncharted.salt.core.generation.Series
@@ -45,17 +45,18 @@ object GeoTopicOp extends Logging {
     val castCols = Seq(
       conf.latCol -> DoubleType.simpleString,
       conf.lonCol -> DoubleType.simpleString,
-      conf.timeCol -> TimestampType.simpleString).toMap
+      conf.timeCol -> LongType.simpleString).toMap
 
     val frame = Pipe(input)
       .to(castColumns(castCols))
       .to(_.select(selectCols:_*))
+      .to{x => x.show(); x}
       .run()
 
     // Extracts lat, lon, time coordinates from row - can assume (0,1,2) indices given select above
     val coordExtractor = (r: Row) => {
       if (!r.isNullAt(0) && !r.isNullAt(1) && !r.isNullAt(2)) {
-        Some(r.getDouble(0), r.getDouble(1), r.getTimestamp(2).getTime)
+        Some(r.getDouble(0), r.getDouble(1), r.getLong(2))
       } else {
         None
       }

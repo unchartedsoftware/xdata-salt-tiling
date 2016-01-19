@@ -12,15 +12,18 @@
  */
 package software.uncharted.xdata.sparkpipe
 
+import java.io.{File, FileReader}
+
 import com.typesafe.config.{Config, ConfigException}
 import grizzled.slf4j.Logging
+import org.apache.commons.csv.{CSVParser, CSVFormat}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.{SparkConf, SparkContext}
 import software.uncharted.xdata.ops.io.{writeToFile, writeToS3}
 import software.uncharted.xdata.ops.salt.RangeDescription
 
-import scala.collection.JavaConverters.asScalaSetConverter
+import scala.collection.JavaConverters.{asScalaSetConverter, asScalaIteratorConverter}
 
 // Parse spark configuration and instantiate context from it
 object SparkConfig {
@@ -90,12 +93,13 @@ object GeoHeatmapConfig extends Logging {
 
 // Parse config for geoheatmap sparkpipe op
 case class GeoTopicConfig(lonCol: String, latCol: String, timeCol: String, textCol: String,
-                          timeRange: RangeDescription[Long], timeFormat: Option[String] = None,
-                          topicLimit: Int)
+                          timeRange: RangeDescription[Long], timeFormat: Option[String],
+                          topicLimit: Int, termList: Map[String, String])
 object GeoTopicConfig extends Logging {
   def apply(config: Config): Option[GeoTopicConfig] = {
     try {
       val geoTopicConfig = config.getConfig("geoTopics")
+
       Some(GeoTopicConfig(
         geoTopicConfig.getString("longitudeColumn"),
         geoTopicConfig.getString("latitudeColumn"),
@@ -103,13 +107,24 @@ object GeoTopicConfig extends Logging {
         geoTopicConfig.getString("textColumn"),
         RangeDescription.fromMin(geoTopicConfig.getLong("min"), geoTopicConfig.getLong("step"), geoTopicConfig.getInt("count")),
         if (geoTopicConfig.hasPath("timeFormat")) Some(geoTopicConfig.getString("timeFormat")) else None,
-        geoTopicConfig.getInt("topicLimit"))
+        geoTopicConfig.getInt("topicLimit"),
+        readTerms(geoTopicConfig.getString("terms")))
       )
     } catch {
       case e: ConfigException =>
         error("Failure parsing arguments from [geoTopics]", e)
         None
     }
+  }
+
+  private def readTerms(path: String) = {
+    val in = new FileReader(path)
+    val records = CSVFormat.DEFAULT
+      .withAllowMissingColumnNames()
+      .withCommentMarker('#')
+      .withIgnoreSurroundingSpaces()
+      .parse(in)
+    records.iterator().asScala.map(x => (x.get(0), x.get(1))).toMap
   }
 }
 
