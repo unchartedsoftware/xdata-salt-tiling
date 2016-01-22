@@ -23,7 +23,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 import software.uncharted.xdata.ops.io.{writeToFile, writeToS3}
 import software.uncharted.xdata.ops.salt.RangeDescription
 
-import scala.collection.JavaConverters.{asScalaSetConverter, asScalaIteratorConverter}
+import scala.collection.JavaConverters._ //scalastyle:ignore
 
 // Parse spark configuration and instantiate context from it
 object SparkConfig {
@@ -38,12 +38,16 @@ object SparkConfig {
 
 
 // Parse tiling parameter and store results
-case class TilingConfig(levels: Int, xBins: Int, yBins: Int, source: String)
+case class TilingConfig(levels: List[Int], xBins: Int, yBins: Int, source: String)
 object TilingConfig extends Logging {
   def apply(config: Config): Option[TilingConfig] = {
     try {
       val tilingConfig = config.getConfig("tiling")
-      Some(TilingConfig(tilingConfig.getInt("levels"), tilingConfig.getInt("xBins"), tilingConfig.getInt("yBins"), tilingConfig.getString("source")))
+      Some(TilingConfig(
+        tilingConfig.getIntList("levels").asScala.map(_.asInstanceOf[Int]).toList,
+        tilingConfig.getInt("xBins"),
+        tilingConfig.getInt("yBins"),
+        tilingConfig.getString("source")))
     } catch {
       case e: ConfigException =>
         error("Failure parsing arguments from [tiling]", e)
@@ -74,17 +78,17 @@ case class MercatorTimeHeatmapConfig(lonCol: String, latCol: String, timeCol: St
 object MercatorTimeHeatmapConfig extends Logging {
   def apply(config: Config): Option[MercatorTimeHeatmapConfig] = {
     try {
-      val geoHeatmapConfig = config.getConfig("geoHeatmap")
+      val heatmapConfig = config.getConfig("mercatorTimeHeatmap")
       Some(MercatorTimeHeatmapConfig(
-        geoHeatmapConfig.getString("longitudeColumn"),
-        geoHeatmapConfig.getString("latitudeColumn"),
-        geoHeatmapConfig.getString("timeColumn"),
-        RangeDescription.fromMin(geoHeatmapConfig.getLong("min"), geoHeatmapConfig.getLong("step"), geoHeatmapConfig.getInt("count")),
-        if (geoHeatmapConfig.hasPath("timeFormat")) Some(geoHeatmapConfig.getString("timeFormat")) else None)
+        heatmapConfig.getString("longitudeColumn"),
+        heatmapConfig.getString("latitudeColumn"),
+        heatmapConfig.getString("timeColumn"),
+        RangeDescription.fromMin(heatmapConfig.getLong("min"), heatmapConfig.getLong("step"), heatmapConfig.getInt("count")),
+        if (heatmapConfig.hasPath("timeFormat")) Some(heatmapConfig.getString("timeFormat")) else None)
       )
     } catch {
       case e: ConfigException =>
-        error("Failure parsing arguments from [geoHeatmap]", e)
+        error("Failure parsing arguments from [mercatorTimeHeatmap]", e)
         None
     }
   }
@@ -98,21 +102,21 @@ case class MercatorTimeTopicsConfig(lonCol: String, latCol: String, timeCol: Str
 object MercatorTimeTopicsConfig extends Logging {
   def apply(config: Config): Option[MercatorTimeTopicsConfig] = {
     try {
-      val geoTopicConfig = config.getConfig("geoTopics")
+      val topicConfig = config.getConfig("mercatorTimeTopics")
 
       Some(MercatorTimeTopicsConfig(
-        geoTopicConfig.getString("longitudeColumn"),
-        geoTopicConfig.getString("latitudeColumn"),
-        geoTopicConfig.getString("timeColumn"),
-        geoTopicConfig.getString("textColumn"),
-        RangeDescription.fromMin(geoTopicConfig.getLong("min"), geoTopicConfig.getLong("step"), geoTopicConfig.getInt("count")),
-        if (geoTopicConfig.hasPath("timeFormat")) Some(geoTopicConfig.getString("timeFormat")) else None,
-        geoTopicConfig.getInt("topicLimit"),
-        readTerms(geoTopicConfig.getString("terms")))
+        topicConfig.getString("longitudeColumn"),
+        topicConfig.getString("latitudeColumn"),
+        topicConfig.getString("timeColumn"),
+        topicConfig.getString("textColumn"),
+        RangeDescription.fromMin(topicConfig.getLong("min"), topicConfig.getLong("step"), topicConfig.getInt("count")),
+        if (topicConfig.hasPath("timeFormat")) Some(topicConfig.getString("timeFormat")) else None,
+        topicConfig.getInt("topicLimit"),
+        readTerms(topicConfig.getString("terms")))
       )
     } catch {
       case e: ConfigException =>
-        error("Failure parsing arguments from [geoTopics]", e)
+        error("Failure parsing arguments from [mercatorTimeTopics]", e)
         None
     }
   }

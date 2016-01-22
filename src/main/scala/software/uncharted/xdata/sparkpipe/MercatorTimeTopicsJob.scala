@@ -18,12 +18,13 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SQLContext}
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.temporal.parseDate
-import software.uncharted.sparkpipe.ops.core.dataframe.text._
+import software.uncharted.sparkpipe.ops.core.dataframe.text.{includeTermFilter, split}
 import software.uncharted.xdata.ops.io.serializeElementScore
 import software.uncharted.xdata.ops.salt.MercatorTimeTopics
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters._ // scalastyle:ignore
 
+// scalastyle:off method.length
 object MercatorTimeTopicsJob extends Logging {
 
   def execute(config: Config): Unit = {
@@ -72,7 +73,7 @@ object MercatorTimeTopicsJob extends Logging {
             None,
             topicsConfig.timeRange,
             topicsConfig.topicLimit,
-            0 until tilingConfig.levels)
+            tilingConfig.levels)
         }
         .to(serializeElementScore)
         .to(OutputConfig(config))

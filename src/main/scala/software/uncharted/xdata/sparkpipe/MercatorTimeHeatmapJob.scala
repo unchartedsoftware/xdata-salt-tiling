@@ -23,6 +23,7 @@ import software.uncharted.xdata.ops.salt.MercatorTimeHeatmap
 
 import scala.collection.JavaConverters._ // scalastyle:ignore
 
+// scalastyle:off method.length
 object MercatorTimeHeatmapJob extends Logging {
 
   def execute(config: Config): Unit = {
@@ -59,10 +60,15 @@ object MercatorTimeHeatmapJob extends Logging {
             .map(p => parseDate(heatmapConfig.timeCol, "convertedTime", heatmapConfig.timeFormat.get)(_))
             .getOrElse(nullOp)
         }
-        .to (x => { x.show(); x })
         .to {
-          val timeCol = heatmapConfig.timeFormat.map(s => "convertedTime").getOrElse("time")
-          MercatorTimeHeatmap(heatmapConfig.latCol, heatmapConfig.lonCol, timeCol, None, None, heatmapConfig.timeRange, 0 until tilingConfig.levels)
+          MercatorTimeHeatmap(
+            heatmapConfig.latCol,
+            heatmapConfig.lonCol,
+            heatmapConfig.timeFormat.map(s => "convertedTime").getOrElse("time"),
+            None,
+            None,
+            heatmapConfig.timeRange,
+            tilingConfig.levels)
         }
         .to(serializeBinArray)
         .to(OutputConfig(config))
