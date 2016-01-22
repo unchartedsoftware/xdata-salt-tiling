@@ -96,6 +96,8 @@ object MercatorTimeHeatmapJob extends Logging {
             .map(p => parseDate(heatmapConfig.timeCol, convertedTime, heatmapConfig.timeFormat.get)(_))
             .getOrElse((df: DataFrame) => df)
         }
+        .to(_.select(heatmapConfig.lonCol, heatmapConfig.latCol, heatmapConfig.timeCol))
+        .to(_.cache())
         .to {
           MercatorTimeHeatmap(
             heatmapConfig.latCol,

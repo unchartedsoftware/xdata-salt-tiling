@@ -75,7 +75,7 @@ object MercatorTimeTopicsConfig extends Logging {
   }
 
 
-  
+
   private def readTerms(path: String) = {
     val in = new FileReader(path)
     val records = CSVFormat.DEFAULT
@@ -133,6 +133,8 @@ object MercatorTimeTopicsJob extends Logging {
         }
         .to(split(topicsConfig.textCol, "\\b+"))
         .to(includeTermFilter(topicsConfig.textCol, topicsConfig.termList.keySet))
+        .to(_.select(topicsConfig.lonCol, topicsConfig.latCol, topicsConfig.timeCol, topicsConfig.textCol))
+        .to(_.cache())
         .to {
           MercatorTimeTopics(
             topicsConfig.latCol,
