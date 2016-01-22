@@ -12,23 +12,25 @@
  */
 package software.uncharted.xdata.sparkpipe
 
-import java.io.{File, FileReader}
+import java.io.FileReader
 
 import com.typesafe.config.{Config, ConfigException}
 import grizzled.slf4j.Logging
-import org.apache.commons.csv.{CSVParser, CSVFormat}
-import org.apache.spark.rdd.RDD
+import org.apache.commons.csv.CSVFormat
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.{SparkConf, SparkContext}
-import software.uncharted.xdata.ops.io.{writeToFile, writeToS3}
 import software.uncharted.xdata.ops.salt.RangeDescription
 
 import scala.collection.JavaConverters._ //scalastyle:ignore
 
+// scalastyle:off multiple.string.literals
+
 // Parse spark configuration and instantiate context from it
 object SparkConfig {
+  val sparkKey = "spark"
+
   def apply(config: Config): SQLContext = {
-    val sparkConfig = config.getConfig("spark")
+    val sparkConfig = config.getConfig(sparkKey)
     val conf = new SparkConf()
     sparkConfig.entrySet().asScala.foreach(e => conf.set(s"spark.${e.getKey}", e.getValue.unwrapped().asInstanceOf[String]))
     val sc = new SparkContext(conf)
@@ -40,34 +42,76 @@ object SparkConfig {
 // Parse tiling parameter and store results
 case class TilingConfig(levels: List[Int], xBins: Int, yBins: Int, source: String)
 object TilingConfig extends Logging {
+  val tilingKey= "tiling"
+  val levelsKey = "levels"
+  val xBinKey = "xBins"
+  val yBinKey = "yBins"
+  val sourceKey = "source"
+
   def apply(config: Config): Option[TilingConfig] = {
     try {
-      val tilingConfig = config.getConfig("tiling")
+      val tilingConfig = config.getConfig(tilingKey)
       Some(TilingConfig(
-        tilingConfig.getIntList("levels").asScala.map(_.asInstanceOf[Int]).toList,
-        tilingConfig.getInt("xBins"),
-        tilingConfig.getInt("yBins"),
-        tilingConfig.getString("source")))
+        tilingConfig.getIntList(levelsKey).asScala.map(_.asInstanceOf[Int]).toList,
+        tilingConfig.getInt(xBinKey),
+        tilingConfig.getInt(yBinKey),
+        tilingConfig.getString(sourceKey)))
     } catch {
       case e: ConfigException =>
-        error("Failure parsing arguments from [tiling]", e)
+        error(s"Failure parsing arguments from [$tilingKey]", e)
+        None
+    }
+  }
+}
+
+case class FileOutputConfig(destPath: String, layer: String, extension: String)
+object FileOutputConfig extends Logging {
+  val fileOutputKey = "fileOutput"
+  val pathKey = "dest"
+  val layerKey = "layer"
+  val extensionKey = "ext"
+  val defaultExtensionKey = "bin"
+
+  def apply(config: Config): Option[FileOutputConfig] = {
+    try {
+      val fileConfig = config.getConfig(fileOutputKey)
+      val path = fileConfig.getString(pathKey)
+      val layer = fileConfig.getString(layerKey)
+      val extension = if (fileConfig.hasPath(extensionKey)) fileConfig.getString(extensionKey) else defaultExtensionKey
+      Some(FileOutputConfig(path, layer, extension))
+    } catch {
+      case e: ConfigException =>
+        error(s"Failure parsing arguments from [$fileOutputKey]", e)
         None
     }
   }
 }
 
 
-// Parse output configuration and return output function
-object OutputConfig {
-  def apply(config: Config): (RDD[((Int, Int, Int), Seq[Byte])]) => RDD[((Int, Int, Int), Seq[Byte])] = {
-    if (config.hasPath("fileOutput")) {
-      val serializerConfig = config.getConfig("fileOutput")
-      writeToFile(serializerConfig.getString("dest"), serializerConfig.getString("layer"), "bin")
-    } else if (config.hasPath("s3Output")) {
-      val serializerConfig = config.getConfig("s3Output")
-      writeToS3(sys.env("AWS_ACCESS_KEY"), sys.env("AWS_SECRET_KEY"), serializerConfig.getString("bucket"), serializerConfig.getString("layer"))
-    } else {
-      throw new ConfigException.Missing("Failure parsing output - [s3Output] or [fileOutput] required")
+// parse S3 output config
+case class S3OutputConfig(accessKey: String, secretKey: String, bucket: String, layer: String, extension: String)
+object S3OutputConfig extends Logging {
+  val s3OutputKey = "s3Output"
+  val awsAccessKey = "awsAccessKey"
+  val awsSecretKey = "awsSecretKey"
+  val bucketKey = "bucket"
+  val layerKey = "layer"
+  val extensionKey = "ext"
+  val defaultExtension = "bin"
+
+  def apply(config: Config): Option[S3OutputConfig] = {
+    try {
+      val s3Config = config.getConfig(s3OutputKey)
+      val awsAccess = s3Config.getString(awsAccessKey)
+      val awsSecret = s3Config.getString(awsSecretKey)
+      val bucket = s3Config.getString(bucketKey)
+      val layer = s3Config.getString(layerKey)
+      val extension = if (s3Config.hasPath(extensionKey)) s3Config.getString(extensionKey) else defaultExtension
+      Some(S3OutputConfig(awsAccessKey, awsSecretKey, bucket, layer, extension))
+    } catch {
+      case e: ConfigException =>
+        error(s"Failure parsing arguments from [$s3OutputKey]", e)
+        None
     }
   }
 }
@@ -76,50 +120,74 @@ object OutputConfig {
 // Parse config for geoheatmap sparkpipe op
 case class MercatorTimeHeatmapConfig(lonCol: String, latCol: String, timeCol: String, timeRange: RangeDescription[Long], timeFormat: Option[String] = None)
 object MercatorTimeHeatmapConfig extends Logging {
+
+  val mercatorTimeHeatmapKey = "mercatorTimeHeatmap"
+  val timeFormatKey = "timeFormat"
+  val longitudeColumnKey = "longitudeColumn"
+  val latitudeColumnKey = "latitudeColumn"
+  val timeColumnKey = "timeColumn"
+  val timeMinKey = "min"
+  val timeStepKey = "step"
+  val timeCountKey =  "count"
+
   def apply(config: Config): Option[MercatorTimeHeatmapConfig] = {
     try {
-      val heatmapConfig = config.getConfig("mercatorTimeHeatmap")
+      val heatmapConfig = config.getConfig(mercatorTimeHeatmapKey)
       Some(MercatorTimeHeatmapConfig(
-        heatmapConfig.getString("longitudeColumn"),
-        heatmapConfig.getString("latitudeColumn"),
-        heatmapConfig.getString("timeColumn"),
-        RangeDescription.fromMin(heatmapConfig.getLong("min"), heatmapConfig.getLong("step"), heatmapConfig.getInt("count")),
-        if (heatmapConfig.hasPath("timeFormat")) Some(heatmapConfig.getString("timeFormat")) else None)
+        heatmapConfig.getString(longitudeColumnKey),
+        heatmapConfig.getString(latitudeColumnKey),
+        heatmapConfig.getString(timeColumnKey),
+        RangeDescription.fromMin(heatmapConfig.getLong(timeMinKey), heatmapConfig.getLong(timeStepKey), heatmapConfig.getInt(timeCountKey)),
+        if (heatmapConfig.hasPath(timeFormatKey)) Some(heatmapConfig.getString(timeFormatKey)) else None)
       )
     } catch {
       case e: ConfigException =>
-        error("Failure parsing arguments from [mercatorTimeHeatmap]", e)
+        error("Failure parsing arguments from [" + mercatorTimeHeatmapKey + "]", e)
         None
     }
   }
 }
 
 
-// Parse config for geoheatmap sparkpipe op
+// Parse config for mercator time heatmap sparkpipe op
 case class MercatorTimeTopicsConfig(lonCol: String, latCol: String, timeCol: String, textCol: String,
                           timeRange: RangeDescription[Long], timeFormat: Option[String],
                           topicLimit: Int, termList: Map[String, String])
 object MercatorTimeTopicsConfig extends Logging {
+
+  val mercatorTimeTopicKey = "mercatorTimeTopics"
+  val timeFormatKey = "timeFormat"
+  val longitudeColumnKey = "longitudeColumn"
+  val latitudeColumnKey = "latitudeColumn"
+  val timeColumnKey = "timeColumn"
+  val timeMinKey = "min"
+  val timeStepKey = "step"
+  val timeCountKey =  "count"
+  val textColumnKey = "textColumn"
+  val topicLimitKey = "topicLimit"
+  val termPathKey = "terms"
+
   def apply(config: Config): Option[MercatorTimeTopicsConfig] = {
     try {
-      val topicConfig = config.getConfig("mercatorTimeTopics")
+      val topicConfig = config.getConfig(mercatorTimeTopicKey)
 
       Some(MercatorTimeTopicsConfig(
-        topicConfig.getString("longitudeColumn"),
-        topicConfig.getString("latitudeColumn"),
-        topicConfig.getString("timeColumn"),
-        topicConfig.getString("textColumn"),
-        RangeDescription.fromMin(topicConfig.getLong("min"), topicConfig.getLong("step"), topicConfig.getInt("count")),
-        if (topicConfig.hasPath("timeFormat")) Some(topicConfig.getString("timeFormat")) else None,
-        topicConfig.getInt("topicLimit"),
-        readTerms(topicConfig.getString("terms")))
+        topicConfig.getString(longitudeColumnKey),
+        topicConfig.getString(latitudeColumnKey),
+        topicConfig.getString(timeColumnKey),
+        topicConfig.getString(textColumnKey),
+        RangeDescription.fromMin(topicConfig.getLong(timeMinKey), topicConfig.getLong(timeStepKey), topicConfig.getInt(timeCountKey)),
+        if (topicConfig.hasPath(timeFormatKey)) Some(topicConfig.getString(timeFormatKey)) else None,
+        topicConfig.getInt(topicLimitKey),
+        readTerms(topicConfig.getString(termPathKey)))
       )
     } catch {
       case e: ConfigException =>
-        error("Failure parsing arguments from [mercatorTimeTopics]", e)
+        error(s"Failure parsing arguments from [$mercatorTimeTopicKey]", e)
         None
     }
   }
+
 
   private def readTerms(path: String) = {
     val in = new FileReader(path)

@@ -54,6 +54,7 @@ package object io extends Logging {
     input
   }
 
+
   /**
    * Write binary array data to Amazon S3 bucket.  Key format is layerName/level-xIdx-yIdx.bin.
    * Indexing is TMS style with (0,0) in lower left, y increasing as it moves north

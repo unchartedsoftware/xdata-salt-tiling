@@ -14,17 +14,17 @@ package software.uncharted.xdata.sparkpipe
 
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
-import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, SQLContext}
+import org.apache.spark.sql.DataFrame
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.temporal.parseDate
 import software.uncharted.xdata.ops.io.serializeBinArray
 import software.uncharted.xdata.ops.salt.MercatorTimeHeatmap
-
-import scala.collection.JavaConverters._ // scalastyle:ignore
+import software.uncharted.xdata.sparkpipe.JobUtil.{dataframeFromSparkCsv, createOutputOperation}
 
 // scalastyle:off method.length
 object MercatorTimeHeatmapJob extends Logging {
+
+  private val convertedTime: String = "convertedTime"
 
   def execute(config: Config): Unit = {
     // parse the schema, and exit on any errors
@@ -45,33 +45,37 @@ object MercatorTimeHeatmapJob extends Logging {
       sys.exit(-1)
     }
 
-    val nullOp = (df: DataFrame) => df
+    // Parse output parameters and return the correspoding write function
+    val outputOperation = createOutputOperation(config).getOrElse {
+      logger.error("Output opeation config")
+      sys.exit(-1)
+    }
 
     // Create the spark context from the supplied config
     val sqlc = SparkConfig(config)
     try {
       // Create the dataframe from the input config
-      val df = setupDataframe(config, tilingConfig.source, schema, sqlc)
+      val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc)
 
       // Pipe the dataframe
       Pipe(df)
         .to {
           heatmapConfig.timeFormat
-            .map(p => parseDate(heatmapConfig.timeCol, "convertedTime", heatmapConfig.timeFormat.get)(_))
-            .getOrElse(nullOp)
+            .map(p => parseDate(heatmapConfig.timeCol, convertedTime, heatmapConfig.timeFormat.get)(_))
+            .getOrElse((df: DataFrame) => df)
         }
         .to {
           MercatorTimeHeatmap(
             heatmapConfig.latCol,
             heatmapConfig.lonCol,
-            heatmapConfig.timeFormat.map(s => "convertedTime").getOrElse("time"),
+            heatmapConfig.timeFormat.map(s => convertedTime).getOrElse(heatmapConfig.timeCol),
             None,
             None,
             heatmapConfig.timeRange,
             tilingConfig.levels)
         }
         .to(serializeBinArray)
-        .to(OutputConfig(config))
+        .to(outputOperation)
         .run()
     } finally {
       sqlc.sparkContext.stop()
@@ -88,20 +92,6 @@ object MercatorTimeHeatmapJob extends Logging {
     // load properties file from supplied URI
     val config = ConfigFactory.parseReader(scala.io.Source.fromFile(args(0)).bufferedReader())
     execute(config)
-  }
-
-  private def setupDataframe(config: Config, source: String, schema: StructType, sqlc: SQLContext) = {
-    val sparkCsvConfig = config.getConfig("sparkCsv")
-      .entrySet()
-      .asScala
-      .map(e => e.getKey -> e.getValue.unwrapped().toString)
-      .toMap
-
-    sqlc.read
-      .format("com.databricks.spark.csv")
-      .options(sparkCsvConfig)
-      .schema(schema)
-      .load(source)
   }
 
   def main (args: Array[String]): Unit = {

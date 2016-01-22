@@ -21,6 +21,7 @@ import software.uncharted.sparkpipe.ops.core.dataframe.temporal.parseDate
 import software.uncharted.sparkpipe.ops.core.dataframe.text.{includeTermFilter, split}
 import software.uncharted.xdata.ops.io.serializeElementScore
 import software.uncharted.xdata.ops.salt.MercatorTimeTopics
+import software.uncharted.xdata.sparkpipe.JobUtil.{dataframeFromSparkCsv, createOutputOperation}
 
 import scala.collection.JavaConverters._ // scalastyle:ignore
 
@@ -46,13 +47,18 @@ object MercatorTimeTopicsJob extends Logging {
       sys.exit(-1)
     }
 
+    val outputOperation = createOutputOperation(config).getOrElse {
+      logger.error("Output opeation config")
+      sys.exit(-1)
+    }
+
     val nullOp = (df: DataFrame) => df
 
     // Create the spark context from the supplied config
     val sqlc = SparkConfig(config)
     try {
       // Create the dataframe from the input config
-      val df = setupDataframe(config, tilingConfig.source, schema, sqlc)
+      val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc)
 
       // Pipe the dataframe
       Pipe(df)
@@ -63,7 +69,6 @@ object MercatorTimeTopicsJob extends Logging {
         }
         .to(split(topicsConfig.textCol, "\\b+"))
         .to(includeTermFilter(topicsConfig.textCol, topicsConfig.termList.keySet))
-        .to(x => {x.show(); x})
         .to {
           MercatorTimeTopics(
             topicsConfig.latCol,
@@ -76,12 +81,13 @@ object MercatorTimeTopicsJob extends Logging {
             tilingConfig.levels)
         }
         .to(serializeElementScore)
-        .to(OutputConfig(config))
+        .to(outputOperation)
         .run()
     } finally {
       sqlc.sparkContext.stop()
     }
   }
+
 
   def execute(args: Array[String]): Unit = {
     // get the properties file path
@@ -95,19 +101,6 @@ object MercatorTimeTopicsJob extends Logging {
     execute(config)
   }
 
-  private def setupDataframe(config: Config, source: String, schema: StructType, sqlc: SQLContext) = {
-    val sparkCsvConfig = config.getConfig("sparkCsv")
-      .entrySet()
-      .asScala
-      .map(e => e.getKey -> e.getValue.unwrapped().toString)
-      .toMap
-
-    sqlc.read
-      .format("com.databricks.spark.csv")
-      .options(sparkCsvConfig)
-      .schema(schema)
-      .load(source)
-  }
 
   def main (args: Array[String]): Unit = {
     MercatorTimeTopicsJob.execute(args)

@@ -14,12 +14,10 @@ package software.uncharted.xdata.sparkpipe
 
 import java.io.File
 
-import com.typesafe.config.{ConfigValueFactory, ConfigFactory}
-
-import scala.collection.JavaConversions._ // scalastyle:ignore
 import org.apache.commons.io.FileUtils
-import org.scalatest.{FunSpec, BeforeAndAfter}
+import org.scalatest.FunSpec
 import software.uncharted.xdata.spark.SparkFunSpec
+import scala.collection.JavaConversions._ // scalastyle:ignore
 
 class MercatorTimeHeatmapJobTest extends FunSpec {
 
