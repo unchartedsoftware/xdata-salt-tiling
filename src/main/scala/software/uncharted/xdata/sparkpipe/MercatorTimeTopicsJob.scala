@@ -12,18 +12,82 @@
  */
 package software.uncharted.xdata.sparkpipe
 
-import com.typesafe.config.{Config, ConfigFactory}
+import java.io.FileReader
+
+import com.typesafe.config.{ConfigException, Config, ConfigFactory}
 import grizzled.slf4j.Logging
+import org.apache.commons.csv.CSVFormat
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SQLContext}
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.temporal.parseDate
 import software.uncharted.sparkpipe.ops.core.dataframe.text.{includeTermFilter, split}
 import software.uncharted.xdata.ops.io.serializeElementScore
-import software.uncharted.xdata.ops.salt.MercatorTimeTopics
+import software.uncharted.xdata.ops.salt.{RangeDescription, MercatorTimeTopics}
 import software.uncharted.xdata.sparkpipe.JobUtil.{dataframeFromSparkCsv, createOutputOperation}
+import software.uncharted.xdata.sparkpipe.MercatorTimeTopicsConfig
 
 import scala.collection.JavaConverters._ // scalastyle:ignore
+
+
+// Parse config for mercator time heatmap sparkpipe op
+case class MercatorTimeTopicsConfig(lonCol: String,
+                                    latCol: String,
+                                    timeCol: String,
+                                    textCol: String,
+                                    timeRange: RangeDescription[Long],
+                                    timeFormat: Option[String],
+                                    topicLimit: Int,
+                                    termList: Map[String, String])
+object MercatorTimeTopicsConfig extends Logging {
+
+  val mercatorTimeTopicKey = "mercatorTimeTopics"
+  val timeFormatKey = "timeFormat"
+  val longitudeColumnKey = "longitudeColumn"
+  val latitudeColumnKey = "latitudeColumn"
+  val timeColumnKey = "timeColumn"
+  val timeMinKey = "min"
+  val timeStepKey = "step"
+  val timeCountKey =  "count"
+  val textColumnKey = "textColumn"
+  val topicLimitKey = "topicLimit"
+  val termPathKey = "terms"
+
+  def apply(config: Config): Option[MercatorTimeTopicsConfig] = {
+    try {
+      val topicConfig = config.getConfig(mercatorTimeTopicKey)
+
+      Some(MercatorTimeTopicsConfig(
+        topicConfig.getString(longitudeColumnKey),
+        topicConfig.getString(latitudeColumnKey),
+        topicConfig.getString(timeColumnKey),
+        topicConfig.getString(textColumnKey),
+        RangeDescription.fromMin(topicConfig.getLong(timeMinKey), topicConfig.getLong(timeStepKey), topicConfig.getInt(timeCountKey)),
+        if (topicConfig.hasPath(timeFormatKey)) Some(topicConfig.getString(timeFormatKey)) else None,
+        topicConfig.getInt(topicLimitKey),
+        readTerms(topicConfig.getString(termPathKey)))
+      )
+    } catch {
+      case e: ConfigException =>
+        error(s"Failure parsing arguments from [$mercatorTimeTopicKey]", e)
+        None
+    }
+  }
+
+
+  
+  private def readTerms(path: String) = {
+    val in = new FileReader(path)
+    val records = CSVFormat.DEFAULT
+      .withAllowMissingColumnNames()
+      .withCommentMarker('#')
+      .withIgnoreSurroundingSpaces()
+      .parse(in)
+    records.iterator().asScala.map(x => (x.get(0), x.get(1))).toMap
+  }
+}
+
+
 
 // scalastyle:off method.length
 object MercatorTimeTopicsJob extends Logging {

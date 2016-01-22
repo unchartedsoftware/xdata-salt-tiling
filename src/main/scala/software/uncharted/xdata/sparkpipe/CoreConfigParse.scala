@@ -64,6 +64,8 @@ object TilingConfig extends Logging {
   }
 }
 
+
+
 case class FileOutputConfig(destPath: String, layer: String, extension: String)
 object FileOutputConfig extends Logging {
   val fileOutputKey = "fileOutput"
@@ -86,6 +88,7 @@ object FileOutputConfig extends Logging {
     }
   }
 }
+
 
 
 // parse S3 output config
@@ -115,90 +118,3 @@ object S3OutputConfig extends Logging {
     }
   }
 }
-
-
-// Parse config for geoheatmap sparkpipe op
-case class MercatorTimeHeatmapConfig(lonCol: String, latCol: String, timeCol: String, timeRange: RangeDescription[Long], timeFormat: Option[String] = None)
-object MercatorTimeHeatmapConfig extends Logging {
-
-  val mercatorTimeHeatmapKey = "mercatorTimeHeatmap"
-  val timeFormatKey = "timeFormat"
-  val longitudeColumnKey = "longitudeColumn"
-  val latitudeColumnKey = "latitudeColumn"
-  val timeColumnKey = "timeColumn"
-  val timeMinKey = "min"
-  val timeStepKey = "step"
-  val timeCountKey =  "count"
-
-  def apply(config: Config): Option[MercatorTimeHeatmapConfig] = {
-    try {
-      val heatmapConfig = config.getConfig(mercatorTimeHeatmapKey)
-      Some(MercatorTimeHeatmapConfig(
-        heatmapConfig.getString(longitudeColumnKey),
-        heatmapConfig.getString(latitudeColumnKey),
-        heatmapConfig.getString(timeColumnKey),
-        RangeDescription.fromMin(heatmapConfig.getLong(timeMinKey), heatmapConfig.getLong(timeStepKey), heatmapConfig.getInt(timeCountKey)),
-        if (heatmapConfig.hasPath(timeFormatKey)) Some(heatmapConfig.getString(timeFormatKey)) else None)
-      )
-    } catch {
-      case e: ConfigException =>
-        error("Failure parsing arguments from [" + mercatorTimeHeatmapKey + "]", e)
-        None
-    }
-  }
-}
-
-
-// Parse config for mercator time heatmap sparkpipe op
-case class MercatorTimeTopicsConfig(lonCol: String, latCol: String, timeCol: String, textCol: String,
-                          timeRange: RangeDescription[Long], timeFormat: Option[String],
-                          topicLimit: Int, termList: Map[String, String])
-object MercatorTimeTopicsConfig extends Logging {
-
-  val mercatorTimeTopicKey = "mercatorTimeTopics"
-  val timeFormatKey = "timeFormat"
-  val longitudeColumnKey = "longitudeColumn"
-  val latitudeColumnKey = "latitudeColumn"
-  val timeColumnKey = "timeColumn"
-  val timeMinKey = "min"
-  val timeStepKey = "step"
-  val timeCountKey =  "count"
-  val textColumnKey = "textColumn"
-  val topicLimitKey = "topicLimit"
-  val termPathKey = "terms"
-
-  def apply(config: Config): Option[MercatorTimeTopicsConfig] = {
-    try {
-      val topicConfig = config.getConfig(mercatorTimeTopicKey)
-
-      Some(MercatorTimeTopicsConfig(
-        topicConfig.getString(longitudeColumnKey),
-        topicConfig.getString(latitudeColumnKey),
-        topicConfig.getString(timeColumnKey),
-        topicConfig.getString(textColumnKey),
-        RangeDescription.fromMin(topicConfig.getLong(timeMinKey), topicConfig.getLong(timeStepKey), topicConfig.getInt(timeCountKey)),
-        if (topicConfig.hasPath(timeFormatKey)) Some(topicConfig.getString(timeFormatKey)) else None,
-        topicConfig.getInt(topicLimitKey),
-        readTerms(topicConfig.getString(termPathKey)))
-      )
-    } catch {
-      case e: ConfigException =>
-        error(s"Failure parsing arguments from [$mercatorTimeTopicKey]", e)
-        None
-    }
-  }
-
-
-  private def readTerms(path: String) = {
-    val in = new FileReader(path)
-    val records = CSVFormat.DEFAULT
-      .withAllowMissingColumnNames()
-      .withCommentMarker('#')
-      .withIgnoreSurroundingSpaces()
-      .parse(in)
-    records.iterator().asScala.map(x => (x.get(0), x.get(1))).toMap
-  }
-}
-
-
-
