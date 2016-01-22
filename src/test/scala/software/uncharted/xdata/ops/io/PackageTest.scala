@@ -106,9 +106,9 @@ class PackageTest extends SparkFunSpec {
     it("should create an RDD of bin coordinate / byte array tuples from series data") {
       val series = sc.parallelize(
         Seq(
-          new SeriesData[(Int, Int, Int), java.lang.Double, (java.lang.Double, java.lang.Double)]
+          new SeriesData[(Int, Int, Int), Double, (Double, Double)]
           ((1, 2, 3), Seq(0.0, 1.0, 2.0, 3.0), 4, 0.0, None, new MercatorTimeProjection()),
-          new SeriesData[(Int, Int, Int), java.lang.Double, (java.lang.Double, java.lang.Double)]
+          new SeriesData[(Int, Int, Int), Double, (Double, Double)]
           ((4, 5, 6), Seq(4.0, 5.0, 6.0, 7.0), 4, 0.0, None, new MercatorTimeProjection())
         ))
       val result = serializeBinArray(series).collect()
@@ -134,7 +134,7 @@ class PackageTest extends SparkFunSpec {
   describe("#serializeBinArray") {
     it("should ignore tiles with no updated bins") {
       val series = sc.parallelize(
-        Seq(new SeriesData[(Int, Int, Int), java.lang.Double, (java.lang.Double, java.lang.Double)]
+        Seq(new SeriesData[(Int, Int, Int), Double, (Double, Double)]
           ((1, 2, 3), Seq(0.0, 1.0, 2.0, 3.0), 0, 0.0, None, new MercatorTimeProjection())))
       val result = serializeBinArray(series).collect()
       assertResult(0)(result.length)

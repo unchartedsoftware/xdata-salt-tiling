@@ -70,12 +70,12 @@ object OutputConfig {
 
 
 // Parse config for geoheatmap sparkpipe op
-case class GeoHeatmapConfig(lonCol: String, latCol: String, timeCol: String, timeRange: RangeDescription[Long], timeFormat: Option[String] = None)
-object GeoHeatmapConfig extends Logging {
-  def apply(config: Config): Option[GeoHeatmapConfig] = {
+case class MercatorTimeHeatmapConfig(lonCol: String, latCol: String, timeCol: String, timeRange: RangeDescription[Long], timeFormat: Option[String] = None)
+object MercatorTimeHeatmapConfig extends Logging {
+  def apply(config: Config): Option[MercatorTimeHeatmapConfig] = {
     try {
       val geoHeatmapConfig = config.getConfig("geoHeatmap")
-      Some(GeoHeatmapConfig(
+      Some(MercatorTimeHeatmapConfig(
         geoHeatmapConfig.getString("longitudeColumn"),
         geoHeatmapConfig.getString("latitudeColumn"),
         geoHeatmapConfig.getString("timeColumn"),
@@ -92,15 +92,15 @@ object GeoHeatmapConfig extends Logging {
 
 
 // Parse config for geoheatmap sparkpipe op
-case class GeoTopicConfig(lonCol: String, latCol: String, timeCol: String, textCol: String,
+case class MercatorTimeTopicsConfig(lonCol: String, latCol: String, timeCol: String, textCol: String,
                           timeRange: RangeDescription[Long], timeFormat: Option[String],
                           topicLimit: Int, termList: Map[String, String])
-object GeoTopicConfig extends Logging {
-  def apply(config: Config): Option[GeoTopicConfig] = {
+object MercatorTimeTopicsConfig extends Logging {
+  def apply(config: Config): Option[MercatorTimeTopicsConfig] = {
     try {
       val geoTopicConfig = config.getConfig("geoTopics")
 
-      Some(GeoTopicConfig(
+      Some(MercatorTimeTopicsConfig(
         geoTopicConfig.getString("longitudeColumn"),
         geoTopicConfig.getString("latitudeColumn"),
         geoTopicConfig.getString("timeColumn"),

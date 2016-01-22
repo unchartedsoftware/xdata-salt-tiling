@@ -21,7 +21,7 @@ import org.apache.commons.io.FileUtils
 import org.scalatest.{FunSpec, BeforeAndAfter}
 import software.uncharted.xdata.spark.SparkFunSpec
 
-class GeoHeatmapGeneratorTest extends FunSpec {
+class MercatorTimeHeatmapJobTest extends FunSpec {
 
   private val testOutputDir: String = "build/tmp/test_file_output/test_heatmap"
 
@@ -31,8 +31,8 @@ class GeoHeatmapGeneratorTest extends FunSpec {
         SparkFunSpec.sparkLock.acquire()
         try {
           // run the job
-          val path = classOf[GeoHeatmapGeneratorTest].getResource("/tiling-file-io.conf").toURI.getPath
-          GeoHeatmapGenerator.execute(Array(path))
+          val path = classOf[MercatorTimeHeatmapJobTest].getResource("/tiling-file-io.conf").toURI.getPath
+          MercatorTimeHeatmapJob.execute(Array(path))
 
           val files = collectFiles
           val expected = Set(
@@ -50,8 +50,8 @@ class GeoHeatmapGeneratorTest extends FunSpec {
       it("should convert string date to timestamp") {
         SparkFunSpec.sparkLock.acquire()
         try {
-          val path = classOf[GeoHeatmapGeneratorTest].getResource("/tiling-date-file-io.conf").toURI.getPath
-          GeoHeatmapGenerator.execute(Array(path))
+          val path = classOf[MercatorTimeHeatmapJobTest].getResource("/tiling-date-file-io.conf").toURI.getPath
+          MercatorTimeHeatmapJob.execute(Array(path))
 
           val files = collectFiles
           val expected = Set(

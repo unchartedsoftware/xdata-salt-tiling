@@ -79,7 +79,7 @@ package object io extends Logging {
     input
   }
 
-  def serializeBinArray(tiles: RDD[SeriesData[(Int, Int, Int), java.lang.Double, (java.lang.Double, java.lang.Double)]]): RDD[((Int, Int, Int), Seq[Byte])] = {
+  def serializeBinArray(tiles: RDD[SeriesData[(Int, Int, Int), Double, (Double, Double)]]): RDD[((Int, Int, Int), Seq[Byte])] = {
     tiles.filter(t => t.binsTouched > 0)
       .map { tile =>
         val data = for (bin <- tile.bins; i <- 0 until doubleBytes) yield {

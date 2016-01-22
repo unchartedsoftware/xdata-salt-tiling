@@ -20,7 +20,7 @@ import software.uncharted.xdata.spark.SparkFunSpec
 
 import scala.collection.JavaConversions._
 
-class GeoTopicGeneratorTest extends FunSpec {
+class MercatorTimeTopicsJobTest extends FunSpec {
 
   private val testOutputDir: String = "build/tmp/test_file_output/test_topics"
 
@@ -30,8 +30,8 @@ class GeoTopicGeneratorTest extends FunSpec {
         SparkFunSpec.sparkLock.acquire()
         try {
           // run the job
-          val path = classOf[GeoTopicGeneratorTest].getResource("/tiling-topic-file-io.conf").toURI.getPath
-          GeoTopicGenerator.execute(Array(path))
+          val path = classOf[MercatorTimeTopicsJobTest].getResource("/tiling-topic-file-io.conf").toURI.getPath
+          MercatorTimeTopicsJob.execute(Array(path))
 
           val files = collectFiles()
           val expected = Set(
@@ -49,8 +49,8 @@ class GeoTopicGeneratorTest extends FunSpec {
       it("should convert string date to timestamp") {
         SparkFunSpec.sparkLock.acquire()
         try {
-          val path = classOf[GeoTopicGeneratorTest].getResource("/tiling-topic-file-io.conf").toURI.getPath
-          GeoTopicGenerator.execute(Array(path))
+          val path = classOf[MercatorTimeTopicsJobTest].getResource("/tiling-topic-file-io.conf").toURI.getPath
+          MercatorTimeTopicsJob.execute(Array(path))
 
           val files = collectFiles
           val expected = Set(

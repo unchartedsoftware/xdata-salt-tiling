@@ -16,13 +16,14 @@ import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SQLContext}
-import software.uncharted.xdata.ops.io.serializeBinArray
-import scala.collection.JavaConverters._ // scalastyle:ignore
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.temporal.parseDate
-import software.uncharted.xdata.ops.salt.{GeoHeatmapOp, GeoHeatmapOpConf}
+import software.uncharted.xdata.ops.io.serializeBinArray
+import software.uncharted.xdata.ops.salt.MercatorTimeHeatmap
 
-object GeoHeatmapGenerator extends Logging {
+import scala.collection.JavaConverters._ // scalastyle:ignore
+
+object MercatorTimeHeatmapJob extends Logging {
 
   def execute(config: Config): Unit = {
     // parse the schema, and exit on any errors
@@ -38,7 +39,7 @@ object GeoHeatmapGenerator extends Logging {
     }
 
     // Parse geo heatmap parameters out of supplied config
-    val geoHeatmapConfig = GeoHeatmapConfig(config).getOrElse {
+    val heatmapConfig = MercatorTimeHeatmapConfig(config).getOrElse {
       logger.error("Invalid heatmap op config")
       sys.exit(-1)
     }
@@ -54,12 +55,14 @@ object GeoHeatmapGenerator extends Logging {
       // Pipe the dataframe
       Pipe(df)
         .to {
-          geoHeatmapConfig.timeFormat
-            .map(p => parseDate(geoHeatmapConfig.timeCol, "convertedTime", geoHeatmapConfig.timeFormat.get)(_))
+          heatmapConfig.timeFormat
+            .map(p => parseDate(heatmapConfig.timeCol, "convertedTime", heatmapConfig.timeFormat.get)(_))
             .getOrElse(nullOp)
-        }.to {
-          val timeCol = geoHeatmapConfig.timeFormat.map(s => "convertedTime").getOrElse("time")
-          GeoHeatmapOp(GeoHeatmapOpConf("lon", "lat", timeCol, None, None, geoHeatmapConfig.timeRange, tilingConfig.levels))
+        }
+        .to (x => { x.show(); x })
+        .to {
+          val timeCol = heatmapConfig.timeFormat.map(s => "convertedTime").getOrElse("time")
+          MercatorTimeHeatmap(heatmapConfig.latCol, heatmapConfig.lonCol, timeCol, None, None, heatmapConfig.timeRange, 0 until tilingConfig.levels)
         }
         .to(serializeBinArray)
         .to(OutputConfig(config))
@@ -96,6 +99,6 @@ object GeoHeatmapGenerator extends Logging {
   }
 
   def main (args: Array[String]): Unit = {
-    GeoHeatmapGenerator.execute(args)
+    MercatorTimeHeatmapJob.execute(args)
   }
 }

@@ -16,14 +16,15 @@ import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SQLContext}
-import software.uncharted.xdata.ops.io.serializeElementScore
-import scala.collection.JavaConverters._ // scalastyle:ignore
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.temporal.parseDate
 import software.uncharted.sparkpipe.ops.core.dataframe.text._
-import software.uncharted.xdata.ops.salt.{GeoTopicOpConf, GeoTopicOp}
+import software.uncharted.xdata.ops.io.serializeElementScore
+import software.uncharted.xdata.ops.salt.MercatorTimeTopics
 
-object GeoTopicGenerator extends Logging {
+import scala.collection.JavaConverters._
+
+object MercatorTimeTopicsJob extends Logging {
 
   def execute(config: Config): Unit = {
     // parse the schema, and exit on any errors
@@ -39,7 +40,7 @@ object GeoTopicGenerator extends Logging {
     }
 
     // Parse geo heatmap parameters out of supplied config
-    val geoTopicConfig = GeoTopicConfig(config).getOrElse {
+    val topicsConfig = MercatorTimeTopicsConfig(config).getOrElse {
       logger.error("Invalid heatmap op config")
       sys.exit(-1)
     }
@@ -55,23 +56,23 @@ object GeoTopicGenerator extends Logging {
       // Pipe the dataframe
       Pipe(df)
         .to {
-          geoTopicConfig.timeFormat
-            .map(p => parseDate(geoTopicConfig.timeCol, "convertedTime", geoTopicConfig.timeFormat.get)(_))
+          topicsConfig.timeFormat
+            .map(p => parseDate(topicsConfig.timeCol, "convertedTime", topicsConfig.timeFormat.get)(_))
             .getOrElse(nullOp)
         }
-        .to(split(geoTopicConfig.textCol, "\\b+"))
-        .to(includeTermFilter(geoTopicConfig.textCol, geoTopicConfig.termList.keySet))
+        .to(split(topicsConfig.textCol, "\\b+"))
+        .to(includeTermFilter(topicsConfig.textCol, topicsConfig.termList.keySet))
         .to(x => {x.show(); x})
         .to {
-          GeoTopicOp(GeoTopicOpConf(
-            geoTopicConfig.lonCol,
-            geoTopicConfig.latCol,
-            geoTopicConfig.timeFormat.map(s => "convertedTime").getOrElse("time"),
-            geoTopicConfig.textCol,
-            geoTopicConfig.timeRange,
-            geoTopicConfig.topicLimit,
-            tilingConfig.levels,
-            None))
+          MercatorTimeTopics(
+            topicsConfig.latCol,
+            topicsConfig.lonCol,
+            topicsConfig.timeFormat.map(s => "convertedTime").getOrElse("time"),
+            topicsConfig.textCol,
+            None,
+            topicsConfig.timeRange,
+            topicsConfig.topicLimit,
+            0 until tilingConfig.levels)
         }
         .to(serializeElementScore)
         .to(OutputConfig(config))
@@ -108,6 +109,6 @@ object GeoTopicGenerator extends Logging {
   }
 
   def main (args: Array[String]): Unit = {
-    GeoHeatmapGenerator.execute(args)
+    MercatorTimeTopicsJob.execute(args)
   }
 }
