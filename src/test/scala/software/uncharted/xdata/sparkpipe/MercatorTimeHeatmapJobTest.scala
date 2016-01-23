@@ -23,10 +23,9 @@ class MercatorTimeHeatmapJobTest extends FunSpec {
 
   private val testOutputDir: String = "build/tmp/test_file_output/test_heatmap"
 
-  describe("GeoHeatmapGeneratorTest") {
+  describe("MercatorTimeHeatmapJobTest") {
     describe("#execute") {
       it("should create tiles from source csv data with time filter applied") {
-        SparkFunSpec.sparkLock.acquire()
         try {
           // run the job
           val path = classOf[MercatorTimeHeatmapJobTest].getResource("/tiling-file-io.conf").toURI.getPath
@@ -40,13 +39,11 @@ class MercatorTimeHeatmapJobTest extends FunSpec {
 
           assertResult((Set(), Set()))((expected diff files, files diff expected))
         } finally {
-          SparkFunSpec.sparkLock.release()
           FileUtils.deleteDirectory(new File(testOutputDir))
         }
       }
 
       it("should convert string date to timestamp") {
-        SparkFunSpec.sparkLock.acquire()
         try {
           val path = classOf[MercatorTimeHeatmapJobTest].getResource("/tiling-date-file-io.conf").toURI.getPath
           MercatorTimeHeatmapJob.execute(Array(path))
@@ -59,7 +56,6 @@ class MercatorTimeHeatmapJobTest extends FunSpec {
 
           assertResult((Set(), Set()))((expected diff files, files diff expected))
         } finally {
-          SparkFunSpec.sparkLock.release()
           FileUtils.deleteDirectory(new File(testOutputDir))
         }
       }
@@ -68,8 +64,7 @@ class MercatorTimeHeatmapJobTest extends FunSpec {
 
   def collectFiles: Set[(Int, Int, Int)] = {
     // convert produced filenames into indices
-    val filename =
-      """.*\\(\d+)\\(\d+)\\(\d+).bin""".r
+    val filename = """.*\\(\d+)\\(\d+)\\(\d+).bin""".r
     val files = FileUtils.listFiles(new File(testOutputDir), Array("bin"), true)
       .map(_.toString match { case filename(level, x, y) => (level.toInt, x.toInt, y.toInt) })
       .toSet

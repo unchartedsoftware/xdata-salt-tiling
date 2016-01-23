@@ -18,12 +18,6 @@ import org.apache.spark.sql.SQLContext
 import org.apache.spark.{SparkConf, SparkContext}
 import org.scalatest.{FunSpec, Outcome}
 
-object SparkFunSpec {
-  // Semaphore to force all Spark test cases to run serially, regardless
-  // of test framework parallelism settings.
-  val sparkLock = new Semaphore(1, true)
-}
-
 /**
  * Makes a spark context available to test subclasses.  The context is created before
  * a test case is run, and destroyed after it completes.
@@ -54,15 +48,10 @@ abstract class SparkFunSpec extends FunSpec {
   // on exceptions.
   override protected def withFixture(test: NoArgTest): Outcome = {
     // make sure spark lock is alway released after test is run
-    try {
-      // Force Spark test cases to be run single threaded.
-      SparkFunSpec.sparkLock.acquire()
-      before()
-      val res = super.withFixture(test)
-      after()
-      res
-    } finally {
-      SparkFunSpec.sparkLock.release()
-    }
+    // Force Spark test cases to be run single threaded.
+    before()
+    val res = super.withFixture(test)
+    after()
+    res
   }
 }

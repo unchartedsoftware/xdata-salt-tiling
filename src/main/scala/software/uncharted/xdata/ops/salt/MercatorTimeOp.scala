@@ -13,15 +13,15 @@
 package software.uncharted.xdata.ops.salt
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.types.{TimestampType, DoubleType, LongType}
-import org.apache.spark.sql.{Column, DataFrame, Row}
+import org.apache.spark.sql.types.{DoubleType, TimestampType}
+import org.apache.spark.sql.{DataFrame, Row}
 import software.uncharted.salt.core.analytic.Aggregator
 import software.uncharted.salt.core.generation.Series
 import software.uncharted.salt.core.generation.mapreduce.MapReduceTileGenerator
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.generation.request.TileRequest
 import software.uncharted.sparkpipe.Pipe
-import software.uncharted.sparkpipe.ops.core.dataframe._
+import software.uncharted.sparkpipe.ops.core.dataframe.castColumns
 
 trait MercatorTimeOp {
 

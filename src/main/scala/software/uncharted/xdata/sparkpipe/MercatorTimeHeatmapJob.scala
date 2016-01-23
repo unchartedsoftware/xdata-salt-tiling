@@ -79,7 +79,7 @@ object MercatorTimeHeatmapJob extends Logging {
 
     // Parse output parameters and return the correspoding write function
     val outputOperation = createOutputOperation(config).getOrElse {
-      logger.error("Output opeation config")
+      logger.error("Output operation config")
       sys.exit(-1)
     }
 
@@ -89,24 +89,28 @@ object MercatorTimeHeatmapJob extends Logging {
       // Create the dataframe from the input config
       val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc)
 
+      // when time format is used, need to pick up the converted time column
+      val finalTimeCol = heatmapConfig.timeFormat.map(p => convertedTime).getOrElse(heatmapConfig.timeCol)
+
       // Pipe the dataframe
       Pipe(df)
         .to {
           heatmapConfig.timeFormat
-            .map(p => parseDate(heatmapConfig.timeCol, convertedTime, heatmapConfig.timeFormat.get)(_))
+            .map(tf => parseDate(heatmapConfig.timeCol, convertedTime, tf)(_))
             .getOrElse((df: DataFrame) => df)
         }
-        .to(_.select(heatmapConfig.lonCol, heatmapConfig.latCol, heatmapConfig.timeCol))
+        .to(_.select(heatmapConfig.lonCol, heatmapConfig.latCol, finalTimeCol))
         .to(_.cache())
         .to {
           MercatorTimeHeatmap(
             heatmapConfig.latCol,
             heatmapConfig.lonCol,
-            heatmapConfig.timeFormat.map(s => convertedTime).getOrElse(heatmapConfig.timeCol),
+            finalTimeCol,
             None,
             None,
             heatmapConfig.timeRange,
-            tilingConfig.levels)
+            tilingConfig.levels,
+            tilingConfig.bins.getOrElse(MercatorTimeHeatmap.defaultTileSize))
         }
         .to(serializeBinArray)
         .to(outputOperation)

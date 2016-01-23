@@ -24,10 +24,9 @@ class MercatorTimeTopicsJobTest extends FunSpec {
 
   private val testOutputDir: String = "build/tmp/test_file_output/test_topics"
 
-  describe("GeoTopicGeneratorTest") {
+  describe("MercatorTimeTopicsJobTest") {
     describe("#execute") {
       it("should create tiles from source csv data with time filter applied") {
-        SparkFunSpec.sparkLock.acquire()
         try {
           // run the job
           val path = classOf[MercatorTimeTopicsJobTest].getResource("/tiling-topic-file-io.conf").toURI.getPath
@@ -41,13 +40,11 @@ class MercatorTimeTopicsJobTest extends FunSpec {
 
           assertResult((Set(), Set()))((expected diff files, files diff expected))
         } finally {
-          SparkFunSpec.sparkLock.release()
           FileUtils.deleteDirectory(new File(testOutputDir))
         }
       }
 
       it("should convert string date to timestamp") {
-        SparkFunSpec.sparkLock.acquire()
         try {
           val path = classOf[MercatorTimeTopicsJobTest].getResource("/tiling-topic-file-io.conf").toURI.getPath
           MercatorTimeTopicsJob.execute(Array(path))
@@ -60,7 +57,6 @@ class MercatorTimeTopicsJobTest extends FunSpec {
 
           assertResult((Set(), Set()))((expected diff files, files diff expected))
         } finally {
-          SparkFunSpec.sparkLock.release()
           FileUtils.deleteDirectory(new File(testOutputDir))
         }
       }

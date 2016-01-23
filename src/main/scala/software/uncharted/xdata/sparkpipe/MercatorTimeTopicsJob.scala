@@ -14,18 +14,16 @@ package software.uncharted.xdata.sparkpipe
 
 import java.io.FileReader
 
-import com.typesafe.config.{ConfigException, Config, ConfigFactory}
+import com.typesafe.config.{Config, ConfigException, ConfigFactory}
 import grizzled.slf4j.Logging
 import org.apache.commons.csv.CSVFormat
-import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, SQLContext}
+import org.apache.spark.sql.DataFrame
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.temporal.parseDate
 import software.uncharted.sparkpipe.ops.core.dataframe.text.{includeTermFilter, split}
 import software.uncharted.xdata.ops.io.serializeElementScore
-import software.uncharted.xdata.ops.salt.{RangeDescription, MercatorTimeTopics}
-import software.uncharted.xdata.sparkpipe.JobUtil.{dataframeFromSparkCsv, createOutputOperation}
-import software.uncharted.xdata.sparkpipe.MercatorTimeTopicsConfig
+import software.uncharted.xdata.ops.salt.{MercatorTimeTopics, RangeDescription}
+import software.uncharted.xdata.sparkpipe.JobUtil.{createOutputOperation, dataframeFromSparkCsv}
 
 import scala.collection.JavaConverters._ // scalastyle:ignore
 
@@ -92,6 +90,8 @@ object MercatorTimeTopicsConfig extends Logging {
 // scalastyle:off method.length
 object MercatorTimeTopicsJob extends Logging {
 
+  private val convertedTime = "converedTime"
+
   def execute(config: Config): Unit = {
     // parse the schema, and exit on any errors
     val schema = Schema(config).getOrElse {
@@ -111,6 +111,9 @@ object MercatorTimeTopicsJob extends Logging {
       sys.exit(-1)
     }
 
+    // when time format is used, need to pick up the converted time column
+    val finalTimeCol = topicsConfig.timeFormat.map(p => convertedTime).getOrElse(topicsConfig.timeCol)
+
     val outputOperation = createOutputOperation(config).getOrElse {
       logger.error("Output opeation config")
       sys.exit(-1)
@@ -128,18 +131,18 @@ object MercatorTimeTopicsJob extends Logging {
       Pipe(df)
         .to {
           topicsConfig.timeFormat
-            .map(p => parseDate(topicsConfig.timeCol, "convertedTime", topicsConfig.timeFormat.get)(_))
+            .map(tf => parseDate(topicsConfig.timeCol, convertedTime, tf)(_))
             .getOrElse(nullOp)
         }
         .to(split(topicsConfig.textCol, "\\b+"))
         .to(includeTermFilter(topicsConfig.textCol, topicsConfig.termList.keySet))
-        .to(_.select(topicsConfig.lonCol, topicsConfig.latCol, topicsConfig.timeCol, topicsConfig.textCol))
+        .to(_.select(topicsConfig.lonCol, topicsConfig.latCol, finalTimeCol, topicsConfig.textCol))
         .to(_.cache())
         .to {
           MercatorTimeTopics(
             topicsConfig.latCol,
             topicsConfig.lonCol,
-            topicsConfig.timeFormat.map(s => "convertedTime").getOrElse("time"),
+            finalTimeCol,
             topicsConfig.textCol,
             None,
             topicsConfig.timeRange,

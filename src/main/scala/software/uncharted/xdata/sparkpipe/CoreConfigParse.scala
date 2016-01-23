@@ -12,14 +12,10 @@
  */
 package software.uncharted.xdata.sparkpipe
 
-import java.io.FileReader
-
 import com.typesafe.config.{Config, ConfigException}
 import grizzled.slf4j.Logging
-import org.apache.commons.csv.CSVFormat
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.{SparkConf, SparkContext}
-import software.uncharted.xdata.ops.salt.RangeDescription
 
 import scala.collection.JavaConverters._ //scalastyle:ignore
 
@@ -40,12 +36,11 @@ object SparkConfig {
 
 
 // Parse tiling parameter and store results
-case class TilingConfig(levels: List[Int], xBins: Int, yBins: Int, source: String)
+case class TilingConfig(levels: List[Int], source: String, bins: Option[Int] = None)
 object TilingConfig extends Logging {
   val tilingKey= "tiling"
   val levelsKey = "levels"
-  val xBinKey = "xBins"
-  val yBinKey = "yBins"
+  val binsKey = "bins"
   val sourceKey = "source"
 
   def apply(config: Config): Option[TilingConfig] = {
@@ -53,9 +48,8 @@ object TilingConfig extends Logging {
       val tilingConfig = config.getConfig(tilingKey)
       Some(TilingConfig(
         tilingConfig.getIntList(levelsKey).asScala.map(_.asInstanceOf[Int]).toList,
-        tilingConfig.getInt(xBinKey),
-        tilingConfig.getInt(yBinKey),
-        tilingConfig.getString(sourceKey)))
+        tilingConfig.getString(sourceKey),
+        if (tilingConfig.hasPath(binsKey)) Some(tilingConfig.getInt(binsKey)) else None))
     } catch {
       case e: ConfigException =>
         error(s"Failure parsing arguments from [$tilingKey]", e)

@@ -12,12 +12,12 @@
  */
 package software.uncharted.xdata.sparkpipe
 
-import com.typesafe.config.{ConfigException, Config}
+import com.typesafe.config.Config
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, SQLContext}
 import org.apache.spark.sql.types.StructType
-import software.uncharted.xdata.ops.io.{writeToS3, writeToFile}
-import software.uncharted.xdata.sparkpipe.MercatorTimeTopicsConfig._
+import org.apache.spark.sql.{DataFrame, SQLContext}
+import software.uncharted.xdata.ops.io.{writeToFile, writeToS3}
+
 import scala.collection.JavaConverters._ // scalastyle:ignore
 
 object JobUtil {
