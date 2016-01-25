@@ -10,48 +10,17 @@
  * accordance with the terms of the license agreement you entered into
  * with Uncharted Software Inc.
  */
-package software.uncharted.xdata.sparkpipe
+package software.uncharted.xdata.sparkpipe.jobs
 
-import com.typesafe.config.{ConfigException, Config, ConfigFactory}
+import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
 import org.apache.spark.sql.DataFrame
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.temporal.parseDate
 import software.uncharted.xdata.ops.io.serializeBinArray
-import software.uncharted.xdata.ops.salt.{RangeDescription, MercatorTimeHeatmap}
-import software.uncharted.xdata.sparkpipe.JobUtil.{dataframeFromSparkCsv, createOutputOperation}
-
-// Parse config for geoheatmap sparkpipe op
-case class MercatorTimeHeatmapConfig(lonCol: String, latCol: String, timeCol: String, timeRange: RangeDescription[Long], timeFormat: Option[String] = None)
-object MercatorTimeHeatmapConfig extends Logging {
-
-  val mercatorTimeHeatmapKey = "mercatorTimeHeatmap"
-  val timeFormatKey = "timeFormat"
-  val longitudeColumnKey = "longitudeColumn"
-  val latitudeColumnKey = "latitudeColumn"
-  val timeColumnKey = "timeColumn"
-  val timeMinKey = "min"
-  val timeStepKey = "step"
-  val timeCountKey =  "count"
-
-  def apply(config: Config): Option[MercatorTimeHeatmapConfig] = {
-    try {
-      val heatmapConfig = config.getConfig(mercatorTimeHeatmapKey)
-      Some(MercatorTimeHeatmapConfig(
-        heatmapConfig.getString(longitudeColumnKey),
-        heatmapConfig.getString(latitudeColumnKey),
-        heatmapConfig.getString(timeColumnKey),
-        RangeDescription.fromMin(heatmapConfig.getLong(timeMinKey), heatmapConfig.getLong(timeStepKey), heatmapConfig.getInt(timeCountKey)),
-        if (heatmapConfig.hasPath(timeFormatKey)) Some(heatmapConfig.getString(timeFormatKey)) else None)
-      )
-    } catch {
-      case e: ConfigException =>
-        error("Failure parsing arguments from [" + mercatorTimeHeatmapKey + "]", e)
-        None
-    }
-  }
-}
-
+import software.uncharted.xdata.ops.salt.MercatorTimeHeatmap
+import software.uncharted.xdata.sparkpipe.config.{MercatorTimeHeatmapConfig, Schema, SparkConfig, TilingConfig}
+import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOperation, createTileOutputOperation, dataframeFromSparkCsv}
 
 // scalastyle:off method.length
 object MercatorTimeHeatmapJob extends Logging {
@@ -78,7 +47,7 @@ object MercatorTimeHeatmapJob extends Logging {
     }
 
     // Parse output parameters and return the correspoding write function
-    val outputOperation = createOutputOperation(config).getOrElse {
+    val outputOperation = createTileOutputOperation(config).getOrElse {
       logger.error("Output operation config")
       sys.exit(-1)
     }
@@ -115,9 +84,28 @@ object MercatorTimeHeatmapJob extends Logging {
         .to(serializeBinArray)
         .to(outputOperation)
         .run()
+
+      // create and save extra level metadata - the tile x,y,z dimensions in this case
+      writeMetadata(config, tilingConfig, heatmapConfig)
+
     } finally {
       sqlc.sparkContext.stop()
     }
+  }
+
+  private def writeMetadata(baseConfig: Config, tilingConfig: TilingConfig, heatmapConfig: MercatorTimeHeatmapConfig): Unit = {
+    import net.liftweb.json.JsonDSL._ // scalastyle:ignore
+    import net.liftweb.json.JsonAST._ // scalastyle:ignore
+
+    val binCount = tilingConfig.bins.getOrElse(MercatorTimeHeatmap.defaultTileSize)
+    val levelMetadata =
+      ("bins" -> binCount) ~
+      ("range" ->
+        (("start" -> heatmapConfig.timeRange.min) ~
+          ("count" -> heatmapConfig.timeRange.count) ~
+          ("step" -> heatmapConfig.timeRange.step)))
+    val jsonBytes = compactRender(levelMetadata).getBytes.toSeq
+    createMetadataOutputOperation(baseConfig).foreach(_("metadata.json", jsonBytes))
   }
 
   def execute(args: Array[String]): Unit = {

@@ -10,14 +10,14 @@
  * accordance with the terms of the license agreement you entered into
  * with Uncharted Software Inc.
  */
-package software.uncharted.xdata.sparkpipe
+package software.uncharted.xdata.sparkpipe.config
 
 import com.typesafe.config.{Config, ConfigException}
 import grizzled.slf4j.Logging
+import org.apache.spark.sql.types.{BooleanType, ByteType, DateType, DoubleType, FloatType, IntegerType, LongType, ShortType, StringType, StructField, StructType, TimestampType}
+
 import scala.collection.JavaConverters.asScalaSetConverter
-import scala.collection.{immutable, SortedMap}
-import org.apache.spark.sql.types.{BooleanType, ByteType, DateType, DoubleType, FloatType, IntegerType,
-  LongType, ShortType, StringType, StructField, TimestampType, StructType}
+import scala.collection.{SortedMap, immutable}
 
 object Schema extends Logging {
 

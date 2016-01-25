@@ -16,6 +16,7 @@ import com.typesafe.config.ConfigFactory
 import org.apache.spark.sql.types.{BooleanType, ByteType, DateType, DoubleType, FloatType, IntegerType,
   LongType, ShortType, StringType, StructField, TimestampType}
 import org.scalatest.FunSpec
+import software.uncharted.xdata.sparkpipe.config.Schema
 
 // scalastyle:off multiple.string.literals
 class SchemaTest extends FunSpec {

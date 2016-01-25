@@ -10,82 +10,18 @@
  * accordance with the terms of the license agreement you entered into
  * with Uncharted Software Inc.
  */
-package software.uncharted.xdata.sparkpipe
+package software.uncharted.xdata.sparkpipe.jobs
 
-import java.io.FileReader
-
-import com.typesafe.config.{Config, ConfigException, ConfigFactory}
+import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
-import org.apache.commons.csv.CSVFormat
 import org.apache.spark.sql.DataFrame
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.temporal.parseDate
 import software.uncharted.sparkpipe.ops.core.dataframe.text.{includeTermFilter, split}
 import software.uncharted.xdata.ops.io.serializeElementScore
-import software.uncharted.xdata.ops.salt.{MercatorTimeTopics, RangeDescription}
-import software.uncharted.xdata.sparkpipe.JobUtil.{createOutputOperation, dataframeFromSparkCsv}
-
-import scala.collection.JavaConverters._ // scalastyle:ignore
-
-
-// Parse config for mercator time heatmap sparkpipe op
-case class MercatorTimeTopicsConfig(lonCol: String,
-                                    latCol: String,
-                                    timeCol: String,
-                                    textCol: String,
-                                    timeRange: RangeDescription[Long],
-                                    timeFormat: Option[String],
-                                    topicLimit: Int,
-                                    termList: Map[String, String])
-object MercatorTimeTopicsConfig extends Logging {
-
-  val mercatorTimeTopicKey = "mercatorTimeTopics"
-  val timeFormatKey = "timeFormat"
-  val longitudeColumnKey = "longitudeColumn"
-  val latitudeColumnKey = "latitudeColumn"
-  val timeColumnKey = "timeColumn"
-  val timeMinKey = "min"
-  val timeStepKey = "step"
-  val timeCountKey =  "count"
-  val textColumnKey = "textColumn"
-  val topicLimitKey = "topicLimit"
-  val termPathKey = "terms"
-
-  def apply(config: Config): Option[MercatorTimeTopicsConfig] = {
-    try {
-      val topicConfig = config.getConfig(mercatorTimeTopicKey)
-
-      Some(MercatorTimeTopicsConfig(
-        topicConfig.getString(longitudeColumnKey),
-        topicConfig.getString(latitudeColumnKey),
-        topicConfig.getString(timeColumnKey),
-        topicConfig.getString(textColumnKey),
-        RangeDescription.fromMin(topicConfig.getLong(timeMinKey), topicConfig.getLong(timeStepKey), topicConfig.getInt(timeCountKey)),
-        if (topicConfig.hasPath(timeFormatKey)) Some(topicConfig.getString(timeFormatKey)) else None,
-        topicConfig.getInt(topicLimitKey),
-        readTerms(topicConfig.getString(termPathKey)))
-      )
-    } catch {
-      case e: ConfigException =>
-        error(s"Failure parsing arguments from [$mercatorTimeTopicKey]", e)
-        None
-    }
-  }
-
-
-
-  private def readTerms(path: String) = {
-    val in = new FileReader(path)
-    val records = CSVFormat.DEFAULT
-      .withAllowMissingColumnNames()
-      .withCommentMarker('#')
-      .withIgnoreSurroundingSpaces()
-      .parse(in)
-    records.iterator().asScala.map(x => (x.get(0), x.get(1))).toMap
-  }
-}
-
-
+import software.uncharted.xdata.ops.salt.{MercatorTimeHeatmap, MercatorTimeTopics}
+import software.uncharted.xdata.sparkpipe.config.{MercatorTimeTopicsConfig, Schema, SparkConfig, TilingConfig}
+import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOperation, createTileOutputOperation, dataframeFromSparkCsv}
 
 // scalastyle:off method.length
 object MercatorTimeTopicsJob extends Logging {
@@ -114,8 +50,8 @@ object MercatorTimeTopicsJob extends Logging {
     // when time format is used, need to pick up the converted time column
     val finalTimeCol = topicsConfig.timeFormat.map(p => convertedTime).getOrElse(topicsConfig.timeCol)
 
-    val outputOperation = createOutputOperation(config).getOrElse {
-      logger.error("Output opeation config")
+    val outputOperation = createTileOutputOperation(config).getOrElse {
+      logger.error("Output operation config")
       sys.exit(-1)
     }
 
@@ -152,11 +88,33 @@ object MercatorTimeTopicsJob extends Logging {
         .to(serializeElementScore)
         .to(outputOperation)
         .run()
+
+      writeMetadata(config, tilingConfig, topicsConfig)
+
     } finally {
       sqlc.sparkContext.stop()
     }
   }
 
+  private def writeMetadata(baseConfig: Config, tilingConfig: TilingConfig, topicsConfig: MercatorTimeTopicsConfig): Unit = {
+    import net.liftweb.json.JsonDSL._ // scalastyle:ignore
+    import net.liftweb.json.JsonAST._ // scalastyle:ignore
+
+    val outputOp = createMetadataOutputOperation(baseConfig)
+
+    val binCount = tilingConfig.bins.getOrElse(MercatorTimeHeatmap.defaultTileSize)
+    val levelMetadata =
+      ("bins" -> binCount) ~
+        ("range" ->
+          (("start" -> topicsConfig.timeRange.min) ~
+            ("count" -> topicsConfig.timeRange.count) ~
+            ("step" -> topicsConfig.timeRange.step)))
+    val jsonBytes = compactRender(levelMetadata).getBytes.toSeq
+    outputOp.foreach(_("metadata.json", jsonBytes))
+
+    val termJsonBytes = compactRender(topicsConfig.termList).toString().getBytes.toSeq
+    outputOp.foreach(_("terms.json", termJsonBytes))
+  }
 
   def execute(args: Array[String]): Unit = {
     // get the properties file path
@@ -169,7 +127,6 @@ object MercatorTimeTopicsJob extends Logging {
     val config = ConfigFactory.parseReader(scala.io.Source.fromFile(args(0)).bufferedReader())
     execute(config)
   }
-
 
   def main (args: Array[String]): Unit = {
     MercatorTimeTopicsJob.execute(args)

@@ -16,14 +16,17 @@ import java.io.File
 
 import org.apache.commons.io.FileUtils
 import org.scalatest.FunSpec
-import software.uncharted.xdata.spark.SparkFunSpec
+import software.uncharted.xdata.sparkpipe.jobs.MercatorTimeHeatmapJob
 import scala.collection.JavaConversions._ // scalastyle:ignore
+import net.liftweb.json._ // scalastyle:ignore
 
 class MercatorTimeHeatmapJobTest extends FunSpec {
 
   private val testOutputDir: String = "build/tmp/test_file_output/test_heatmap"
 
   describe("MercatorTimeHeatmapJobTest") {
+    import net.liftweb.json.JsonDSL._ // scalastyle:ignore
+    import net.liftweb.json.JsonAST._ // scalastyle:ignore
     describe("#execute") {
       it("should create tiles from source csv data with time filter applied") {
         try {
@@ -38,6 +41,18 @@ class MercatorTimeHeatmapJobTest extends FunSpec {
             (2, 0, 0), (2, 2, 0), (2, 1, 1), (2, 3, 1), (2, 0, 2), (2, 2, 2), (2, 1, 3), (2, 3, 3)) // l2
 
           assertResult((Set(), Set()))((expected diff files, files diff expected))
+
+          // check metadata
+          val fileStr = FileUtils.readFileToString(new File(s"$testOutputDir/metadata.json"))
+          val jsonObject = parse(fileStr)
+          val expectedJson =
+            ("bins" -> 4) ~
+              ("range" ->
+                (("start" -> 1357016400000L) ~
+                  ("step" -> 86400000) ~
+                  ("count" -> 8)))
+          assertResult(expectedJson)(jsonObject)
+
         } finally {
           FileUtils.deleteDirectory(new File(testOutputDir))
         }

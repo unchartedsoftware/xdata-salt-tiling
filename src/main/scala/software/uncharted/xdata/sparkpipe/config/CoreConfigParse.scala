@@ -10,7 +10,7 @@
  * accordance with the terms of the license agreement you entered into
  * with Uncharted Software Inc.
  */
-package software.uncharted.xdata.sparkpipe
+package software.uncharted.xdata.sparkpipe.config
 
 import com.typesafe.config.{Config, ConfigException}
 import grizzled.slf4j.Logging
@@ -112,3 +112,6 @@ object S3OutputConfig extends Logging {
     }
   }
 }
+
+
+

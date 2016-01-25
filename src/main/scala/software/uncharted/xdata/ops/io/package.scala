@@ -54,6 +54,21 @@ package object io extends Logging {
     input
   }
 
+  def writeBytesToFile(baseFilePath: String, layerName: String)(fileName: String, bytes: Seq[Byte]): Unit = {
+    val dirPath = s"$baseFilePath/$layerName"
+    val path = s"$dirPath/$fileName"
+    try {
+      // create path if necessary
+      val file = new File(dirPath)
+      file.mkdirs()
+      val fos = new FileOutputStream(new File(path))
+      val bos = new BufferedOutputStream(fos)
+      bos.write(bytes.toArray)
+      bos.close()
+    } catch {
+      case e: Exception => error(s"Failed to write file $path", e)
+    }
+  }
 
   /**
    * Write binary array data to Amazon S3 bucket.  Key format is layerName/level-xIdx-yIdx.bin.
@@ -78,6 +93,11 @@ package object io extends Logging {
       }
     }
     input
+  }
+
+  def writeBytesToS3(accessKey: String, secretKey: String, bucketName: String, layerName: String)(key: String, bytes: Seq[Byte]): Unit = {
+    val s3Client = S3Client(accessKey, secretKey)
+    s3Client.upload(bytes, bucketName, key)
   }
 
   def serializeBinArray(tiles: RDD[SeriesData[(Int, Int, Int), Double, (Double, Double)]]): RDD[((Int, Int, Int), Seq[Byte])] = {
