@@ -90,16 +90,24 @@ checkScoverage {
   minimumRate = 0.75
 }
 
-// test and scoverage tests should be forced to single threaded execution
-// since Spark can't run multiple contexts within in a single JVM
+// Test and scoverage tests should be forced to single threaded execution
+// since Spark can't run multiple contexts within in a single JVM.  Exclude
+// s3 tests by default since it depends on the definition of AWS_ACCESS_KEY
+// and AWS_SECRET env variables and corresponding S3 resources.
 test {
   maxParallelForks = 1
   jvmArgs += ["-XX:MaxPermSize=512m", "-Xmx1000m"]
+  tags {
+    exclude 's3.test'
+  }
 }
 
 testScoverage {
   maxParallelForks = 1
   jvmArgs += ["-XX:MaxPermSize=512m", "-Xmx1000m"]
+  tags {
+    exclude 's3.test'
+  }
 }
 
 // Creation of a distribution archive containing the pipeline assembly jar and the baseline

@@ -75,7 +75,7 @@ class PackageTest extends SparkFunSpec {
     val testKey0 = s"$testLayer/2/2/2.bin"
     val testKey1 = s"$testLayer/2/2/3.bin"
 
-    it("should add tiles to the s3 bucket using key names based on TMS coords") {
+    it("should add tiles to the s3 bucket using key names based on TMS coords", S3Test) {
       val data = sc.parallelize(Seq(
         ((2, 2, 2), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7)),
         ((2, 2, 3), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))
@@ -90,7 +90,7 @@ class PackageTest extends SparkFunSpec {
       s3c.delete(testBucket, testKey1)
     }
 
-    it("should serialize the byte data to the s3 bucket without changing it") {
+    it("should serialize the byte data to the s3 bucket without changing it", S3Test) {
       val data = sc.parallelize(Seq(
         ((2, 2, 2), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))
       ))

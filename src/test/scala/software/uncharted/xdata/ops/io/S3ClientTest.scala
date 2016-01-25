@@ -12,7 +12,9 @@
  */
 package software.uncharted.xdata.ops.io
 
-import org.scalatest.{BeforeAndAfterAll, FunSpec}
+import org.scalatest.{BeforeAndAfterAll, FunSpec, Tag}
+
+object S3Test extends Tag("s3.test")
 
 class S3ClientTest extends FunSpec with BeforeAndAfterAll {
 
@@ -43,20 +45,19 @@ class S3ClientTest extends FunSpec with BeforeAndAfterAll {
     s3.deleteBucket(tempTestBucket)
   }
 
-
   describe("S3ClientTest") {
     describe("#upload") {
-      it("should return true if upload was successful") {
+      it("should return true if upload was successful", S3Test) {
         val result = s3.upload(data, testBucket, test0)
         assertResult(true)(result)
       }
 
-      it("should return false if upload was unsuccessful") {
+      it("should return false if upload was unsuccessful", S3Test) {
         val result = s3.upload(data, nonexistentBucket, test0)
         assertResult(false)(result)
       }
 
-      it("should create a S3 object with the supplied bucket, key and data") {
+      it("should create a S3 object with the supplied bucket, key and data", S3Test) {
         s3.upload(data, testBucket, test1)
         val result = s3.download(testBucket, test1).getOrElse(fail("Failed to fetch uploaded data"))
         assertResult(data)(result)
@@ -64,24 +65,24 @@ class S3ClientTest extends FunSpec with BeforeAndAfterAll {
     }
 
     describe("#download") {
-      it("should return data corresponding to bucket, key") {
+      it("should return data corresponding to bucket, key", S3Test) {
         s3.upload(data_dl, testBucket, test2)
         val result = s3.download(testBucket, test2).getOrElse(fail("Failed to download data"))
         assertResult(data_dl)(result)
       }
 
-      it("should return None if no data exists for bucket, key") {
+      it("should return None if no data exists for bucket, key", S3Test) {
         val result = s3.download(nonexistentBucket, test1)
         assertResult(None)(result)
       }
     }
 
     describe("#delete") {
-      it("should return false if no data exists for bucket, key") {
+      it("should return false if no data exists for bucket, key", S3Test) {
         assertResult(false)(s3.delete(nonexistentBucket, test1))
       }
 
-      it("should return true if deleted data exists") {
+      it("should return true if deleted data exists", S3Test) {
         s3.upload(data_dl, testBucket, test3)
         assertResult(s3.delete(testBucket, test3))(true)
       }
@@ -89,30 +90,30 @@ class S3ClientTest extends FunSpec with BeforeAndAfterAll {
 
 
     describe("#deleteBucket") {
-      it("should return false if bucket does not exist") {
+      it("should return false if bucket does not exist", S3Test) {
         assertResult(false)(s3.deleteBucket(nonexistentBucket))
       }
 
-      it("should return false if an exception is thrown") {
+      it("should return false if an exception is thrown", S3Test) {
         assertResult(false)(s3.deleteBucket("^^%%"))
       }
 
-      it("should return true if bucket was deleted") {
+      it("should return true if bucket was deleted", S3Test) {
         s3.createBucket(tempTestBucket)
         assertResult(true)(s3.deleteBucket(tempTestBucket))
       }
     }
 
     describe("#createBucket") {
-      it("should return false if bucket already exists") {
+      it("should return false if bucket already exists", S3Test) {
         assertResult(false)(s3.createBucket(testBucket))
       }
 
-      it("should return false if an exception is thrown") {
+      it("should return false if an exception is thrown", S3Test) {
         assertResult(false)(s3.createBucket("&&@@"))
       }
 
-      it("should return true if bucket was created") {
+      it("should return true if bucket was created", S3Test) {
         assertResult(true)(s3.createBucket(tempTestBucket))
       }
     }
