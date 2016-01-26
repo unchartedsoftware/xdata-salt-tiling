@@ -10,32 +10,30 @@
  * accordance with the terms of the license agreement you entered into
  * with Uncharted Software Inc.
  */
-package software.uncharted.xdata.sparkpipe
+package software.uncharted.xdata.sparkpipe.jobs
 
 import java.io.File
 
+import net.liftweb.json._
 import org.apache.commons.io.FileUtils
 import org.scalatest.FunSpec
-import software.uncharted.xdata.sparkpipe.jobs.MercatorTimeTopicsJob
+
 import scala.collection.JavaConversions._ // scalastyle:ignore
 
-class MercatorTimeTopicsJobTest extends FunSpec {
+class MercatorTimeHeatmapJobTest extends FunSpec {
 
-  private val testOutputDir: String = "build/tmp/test_file_output/test_topics"
+  private val testOutputDir: String = "build/tmp/test_file_output/test_heatmap"
 
-  describe("MercatorTimeTopicsJobTest") {
+  describe("MercatorTimeHeatmapJobTest") {
     import net.liftweb.json.JsonDSL._ // scalastyle:ignore
-    import net.liftweb.json._
-
     describe("#execute") {
       it("should create tiles from source csv data with time filter applied") {
         try {
           // run the job
-          val path = classOf[MercatorTimeTopicsJobTest].getResource("/tiling-topic-file-io.conf").toURI.getPath
-          MercatorTimeTopicsJob.execute(Array(path))
+          val path = classOf[MercatorTimeHeatmapJobTest].getResource("/tiling-s3-io.conf").toURI.getPath
+          MercatorTimeHeatmapJob.execute(Array(path))
 
-          // validate created tiles
-          val files = collectFiles()
+          val files = collectFiles
           val expected = Set(
             (0,0,0), // l0
             (1,0,0), (1,1,0), (1,1,1), (1,0,1), // l1
@@ -48,17 +46,11 @@ class MercatorTimeTopicsJobTest extends FunSpec {
           val jsonObject = parse(fileStr)
           val expectedJson =
             ("bins" -> 4) ~
-            ("range" ->
-              (("start" -> 1357016400000L) ~
-              ("step" -> 86400000) ~
-              ("count" -> 8)))
+              ("range" ->
+                (("start" -> 1357016400000L) ~
+                  ("step" -> 86400000) ~
+                  ("count" -> 8)))
           assertResult(expectedJson)(jsonObject)
-
-          // check terms list
-          val termsFileStr = FileUtils.readFileToString(new File(s"$testOutputDir/terms.json"))
-          val termsJsonObject = parse(termsFileStr)
-          val expectedTermsJson = ("a" -> "alpha") ~ ("b" -> "bravo") ~ ("e" -> "echo")
-          assertResult(expectedTermsJson)(termsJsonObject)
 
         } finally {
           FileUtils.deleteDirectory(new File(testOutputDir))
@@ -67,8 +59,8 @@ class MercatorTimeTopicsJobTest extends FunSpec {
 
       it("should convert string date to timestamp") {
         try {
-          val path = classOf[MercatorTimeTopicsJobTest].getResource("/tiling-topic-file-io.conf").toURI.getPath
-          MercatorTimeTopicsJob.execute(Array(path))
+          val path = classOf[MercatorTimeHeatmapJobTest].getResource("/tiling-date-file-io.conf").toURI.getPath
+          MercatorTimeHeatmapJob.execute(Array(path))
 
           val files = collectFiles
           val expected = Set(
@@ -82,13 +74,11 @@ class MercatorTimeTopicsJobTest extends FunSpec {
         }
       }
     }
-
   }
 
-  def collectFiles(): Set[(Int, Int, Int)] = {
+  def collectFiles: Set[(Int, Int, Int)] = {
     // convert produced filenames into indices
-    val filename =
-      """.*\\(\d+)\\(\d+)\\(\d+).bin""".r
+    val filename = """.*\\(\d+)\\(\d+)\\(\d+).bin""".r
     val files = FileUtils.listFiles(new File(testOutputDir), Array("bin"), true)
       .map(_.toString match { case filename(level, x, y) => (level.toInt, x.toInt, y.toInt) })
       .toSet

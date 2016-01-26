@@ -26,9 +26,12 @@ import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOper
 // scalastyle:off method.length
 object MercatorTimeTopicsJob extends Logging {
 
-  private val convertedTime = "converedTime"
+  private val convertedTime = "convertedTime"
 
   def execute(config: Config): Unit = {
+
+    config.resolve()
+
     // parse the schema, and exit on any errors
     val schema = Schema(config).getOrElse {
       error("Couldn't create schema - exiting")
@@ -124,7 +127,7 @@ object MercatorTimeTopicsJob extends Logging {
     }
 
     // load properties file from supplied URI
-    val config = ConfigFactory.parseReader(scala.io.Source.fromFile(args(0)).bufferedReader())
+    val config = ConfigFactory.parseReader(scala.io.Source.fromFile(args(0)).bufferedReader()).resolve()
     execute(config)
   }
 

@@ -104,7 +104,7 @@ object S3OutputConfig extends Logging {
       val bucket = s3Config.getString(bucketKey)
       val layer = s3Config.getString(layerKey)
       val extension = if (s3Config.hasPath(extensionKey)) s3Config.getString(extensionKey) else defaultExtension
-      Some(S3OutputConfig(awsAccessKey, awsSecretKey, bucket, layer, extension))
+      Some(S3OutputConfig(awsAccess, awsSecret, bucket, layer, extension))
     } catch {
       case e: ConfigException =>
         error(s"Failure parsing arguments from [$s3OutputKey]", e)

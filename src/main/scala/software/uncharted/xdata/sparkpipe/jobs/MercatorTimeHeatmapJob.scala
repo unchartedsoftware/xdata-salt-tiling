@@ -28,6 +28,7 @@ object MercatorTimeHeatmapJob extends Logging {
   private val convertedTime: String = "convertedTime"
 
   def execute(config: Config): Unit = {
+
     // parse the schema, and exit on any errors
     val schema = Schema(config).getOrElse {
       error("Couldn't create schema - exiting")
@@ -116,7 +117,7 @@ object MercatorTimeHeatmapJob extends Logging {
     }
 
     // load properties file from supplied URI
-    val config = ConfigFactory.parseReader(scala.io.Source.fromFile(args(0)).bufferedReader())
+    val config = ConfigFactory.parseReader(scala.io.Source.fromFile(args(0)).bufferedReader()).resolve()
     execute(config)
   }
 

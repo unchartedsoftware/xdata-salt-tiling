@@ -10,13 +10,11 @@
  * accordance with the terms of the license agreement you entered into
  * with Uncharted Software Inc.
  */
-package software.uncharted.xdata.sparkpipe
+package software.uncharted.xdata.sparkpipe.config
 
 import com.typesafe.config.ConfigFactory
-import org.apache.spark.sql.types.{BooleanType, ByteType, DateType, DoubleType, FloatType, IntegerType,
-  LongType, ShortType, StringType, StructField, TimestampType}
+import org.apache.spark.sql.types.{BooleanType, ByteType, DateType, DoubleType, FloatType, IntegerType, LongType, ShortType, StringType, StructField, TimestampType}
 import org.scalatest.FunSpec
-import software.uncharted.xdata.sparkpipe.config.Schema
 
 // scalastyle:off multiple.string.literals
 class SchemaTest extends FunSpec {
