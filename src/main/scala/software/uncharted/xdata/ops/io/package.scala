@@ -54,6 +54,15 @@ package object io extends Logging {
     input
   }
 
+  /**
+   * Write binary array data to the file system.  Folder structure is
+   * baseFilePath/filename.ext.
+   *
+   * @param baseFilePath Baseline output directory - can store multiple layer subdirectories.
+   * @param layerName Unique name for the layer.
+   * @param fileName Filename to write byte data into.
+   * @param bytes byte array of data
+   */
   def writeBytesToFile(baseFilePath: String, layerName: String)(fileName: String, bytes: Seq[Byte]): Unit = {
     val dirPath = s"$baseFilePath/$layerName"
     val path = s"$dirPath/$fileName"
@@ -71,10 +80,13 @@ package object io extends Logging {
   }
 
   /**
-   * Write binary array data to Amazon S3 bucket.  Key format is layerName/level-xIdx-yIdx.bin.
+   * Write binary array data to Amazon S3 bucket.  Key format is layerName/level/xIdx/yIdx.bin.
    * Indexing is TMS style with (0,0) in lower left, y increasing as it moves north
    *
-   * @param layerName Unique name for the layer .
+   * @param accessKey AWS Access key
+   * @param secretKey AWS Secret key
+   * @param bucketName Name of S3 bucket to write to - will create a bucket if missing
+   * @param layerName Unique name for the layer
    * @param input tile coordinate / byte array tuples of tile data
    * @return input data unchanged
    */
@@ -95,11 +107,25 @@ package object io extends Logging {
     input
   }
 
-  def writeBytesToS3(accessKey: String, secretKey: String, bucketName: String, layerName: String)(key: String, bytes: Seq[Byte]): Unit = {
+  /**
+   * Write binary array data to Amazon S3 bucket.  Key format is layerName/filename.ext.
+   *
+   * @param accessKey AWS Access key
+   * @param secretKey AWS Secret key
+   * @param bucketName Name of S3 bucket to write to - will create a bucket if missing
+   * @param layerName Unique name for the layer
+   * @param bytes byte array of data to write
+   */
+  def writeBytesToS3(accessKey: String, secretKey: String, bucketName: String, layerName: String)(fileName: String, bytes: Seq[Byte]): Unit = {
     val s3Client = S3Client(accessKey, secretKey)
-    s3Client.upload(bytes, bucketName, key)
+    s3Client.upload(bytes, bucketName, layerName + "/" + fileName)
   }
 
+  /**
+   * Serializes tile bins stored as a double array to tile index / byte sequence tuples.
+   * @param tiles The input tile set.
+   * @return Index/byte tuples.
+   */
   def serializeBinArray(tiles: RDD[SeriesData[(Int, Int, Int), Double, (Double, Double)]]): RDD[((Int, Int, Int), Seq[Byte])] = {
     tiles.filter(t => t.binsTouched > 0)
       .map { tile =>
@@ -111,6 +137,11 @@ package object io extends Logging {
       }
   }
 
+  /**
+   * Serializes tile bins stored as a double array to tile index / byte sequence tuples.
+   * @param tiles The input tile set.
+   * @return Index/byte tuples.
+   */
   def serializeElementScore(tiles: RDD[SeriesData[(Int, Int, Int), List[(String, Int)], Nothing]]): RDD[((Int, Int, Int), Seq[Byte])] = {
     tiles.filter(t => t.binsTouched > 0)
       .map { t =>

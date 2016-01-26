@@ -31,6 +31,9 @@ class PackageTest extends SparkFunSpec {
   private val testBucket = "uncharted-s3-client-test"
   private val extension = "tst"
 
+  val awsAccessKey = sys.env("AWS_ACCESS_KEY")
+  val awsSecretKey = sys.env("AWS_SECRET_KEY")
+
   describe("#writeToFile") {
     it("should create the folder directory structure if it's missing") {
       try {
@@ -70,8 +73,6 @@ class PackageTest extends SparkFunSpec {
   }
 
   describe("#writeToS3") {
-    val awsAccessKey = sys.env("AWS_ACCESS_KEY")
-    val awsSecretKey = sys.env("AWS_SECRET_KEY")
     val testKey0 = s"$testLayer/2/2/2.bin"
     val testKey1 = s"$testLayer/2/2/3.bin"
 
@@ -99,6 +100,16 @@ class PackageTest extends SparkFunSpec {
       val s3c = new S3Client(awsAccessKey, awsSecretKey)
       assertResult(Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))(s3c.download(testBucket, testKey0).getOrElse(fail()))
       s3c.delete(testBucket, testKey0)
+    }
+  }
+
+  describe("#writeBytesToS3") {
+    val testFile = "metadata.json"
+    it("should write the byte data to the s3 bucket without changing it", S3Test) {
+      writeBytesToS3(awsAccessKey, awsSecretKey, testBucket, testLayer)(testFile, Seq(0, 1, 2, 3, 4, 5))
+      val s3c = new S3Client(awsAccessKey, awsSecretKey)
+      assertResult(Seq[Byte](0, 1, 2, 3, 4, 5))(s3c.download(testBucket, s"$testLayer/$testFile").getOrElse(fail()))
+      s3c.delete(testBucket, s"$testLayer/$testFile")
     }
   }
 
