@@ -14,12 +14,12 @@ package software.uncharted.xdata.sparkpipe.config
 
 import com.typesafe.config.{ConfigFactory, Config}
 import org.scalatest.FunSpec
-import scala.collection.JavaConverters._ // scalastyle:ignore
+import software.uncharted.xdata.ops.io.S3Test
 
 class CoreConfigParseTest() extends FunSpec {
   describe("S3OutputConfig") {
     describe("#apply") {
-      it("should create an S3 config object from an input config") {
+      it("should create an S3 config object from an input config", S3Test) {
         val config = ConfigFactory.parseString(
           """s3Output.awsAccessKey = ${AWS_ACCESS_KEY}
             |s3Output.awsSecretKey = ${AWS_SECRET_KEY}

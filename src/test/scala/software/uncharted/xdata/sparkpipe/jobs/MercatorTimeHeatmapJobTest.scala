@@ -30,7 +30,7 @@ class MercatorTimeHeatmapJobTest extends FunSpec {
       it("should create tiles from source csv data with time filter applied") {
         try {
           // run the job
-          val path = classOf[MercatorTimeHeatmapJobTest].getResource("/tiling-s3-io.conf").toURI.getPath
+          val path = classOf[MercatorTimeHeatmapJobTest].getResource("/tiling-file-io.conf").toURI.getPath
           MercatorTimeHeatmapJob.execute(Array(path))
 
           val files = collectFiles

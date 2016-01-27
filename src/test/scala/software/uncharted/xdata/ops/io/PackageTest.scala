@@ -31,8 +31,8 @@ class PackageTest extends SparkFunSpec {
   private val testBucket = "uncharted-s3-client-test"
   private val extension = "tst"
 
-  val awsAccessKey = sys.env("AWS_ACCESS_KEY")
-  val awsSecretKey = sys.env("AWS_SECRET_KEY")
+  lazy val awsAccessKey = sys.env("AWS_ACCESS_KEY")
+  lazy val awsSecretKey = sys.env("AWS_SECRET_KEY")
 
   describe("#writeToFile") {
     it("should create the folder directory structure if it's missing") {

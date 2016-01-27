@@ -30,7 +30,7 @@ class S3ClientTest extends FunSpec with BeforeAndAfterAll {
   private val data = Array[Byte](0, 1, 2, 3, 4, 5)
   private val data_dl = Array[Byte](0, 11, 22, 33, 44, 55) // scalastyle:ignore
 
-  private val s3 = S3Client(sys.env("AWS_ACCESS_KEY"), sys.env("AWS_SECRET_KEY"))
+  private lazy val s3 = S3Client(sys.env("AWS_ACCESS_KEY"), sys.env("AWS_SECRET_KEY"))
 
 
   protected override def beforeAll() = {
