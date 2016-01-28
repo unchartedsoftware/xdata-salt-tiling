@@ -27,7 +27,7 @@ class MercatorTimeHeatmapJobTest extends FunSpec {
   describe("MercatorTimeHeatmapJobTest") {
     import net.liftweb.json.JsonDSL._ // scalastyle:ignore
     describe("#execute") {
-      it("should create tiles from source csv data with time filter applied") {
+      ignore("should create tiles from source csv data with time filter applied") {
         try {
           // run the job
           val path = classOf[MercatorTimeHeatmapJobTest].getResource("/tiling-file-io.conf").toURI.getPath
@@ -57,7 +57,7 @@ class MercatorTimeHeatmapJobTest extends FunSpec {
         }
       }
 
-      it("should convert string date to timestamp") {
+      ignore("should convert string date to timestamp") {
         try {
           val path = classOf[MercatorTimeHeatmapJobTest].getResource("/tiling-date-file-io.conf").toURI.getPath
           MercatorTimeHeatmapJob.execute(Array(path))

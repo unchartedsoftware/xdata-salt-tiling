@@ -86,9 +86,9 @@ scalaStyle {
 }
 
 // configure scoverage plugin
-checkScoverage {
-  minimumRate = 0.75
-}
+//checkScoverage {
+//  minimumRate = 0.75
+//}
 
 // Test and scoverage tests should be forced to single threaded execution
 // since Spark can't run multiple contexts within in a single JVM.  Exclude

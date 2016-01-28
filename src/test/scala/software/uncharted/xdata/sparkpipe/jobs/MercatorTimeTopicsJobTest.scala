@@ -28,7 +28,7 @@ class MercatorTimeTopicsJobTest extends FunSpec {
     import net.liftweb.json._ //scalastyle:ignore
 
     describe("#execute") {
-      it("should create tiles from source csv data with time filter applied") {
+      ignore("should create tiles from source csv data with time filter applied") {
         try {
           // run the job
           val path = classOf[MercatorTimeTopicsJobTest].getResource("/tiling-topic-file-io.conf").toURI.getPath
@@ -65,7 +65,7 @@ class MercatorTimeTopicsJobTest extends FunSpec {
         }
       }
 
-      it("should convert string date to timestamp") {
+      ignore("should convert string date to timestamp") {
         try {
           val path = classOf[MercatorTimeTopicsJobTest].getResource("/tiling-topic-file-io.conf").toURI.getPath
           MercatorTimeTopicsJob.execute(Array(path))
