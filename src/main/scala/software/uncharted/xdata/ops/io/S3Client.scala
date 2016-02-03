@@ -81,29 +81,28 @@ class S3Client(accessKey: String, secretKey: String) extends Logging {
   }
 
   def zipData (dataToBeCompressed: Array[Byte]): Option[Array[Byte]] = {
+    //create outputstream to write data in and the filter that would compress the data going in
+    val bos = new ByteArrayOutputStream(dataToBeCompressed.length)
+    val GzipFilter = new GZIPOutputStream(bos)
     try {
-      //create outputstream to write data in and the filter that would compress the data going in
-      val bos = new ByteArrayOutputStream(dataToBeCompressed.length)
-      val GzipFilter = new GZIPOutputStream(bos)
-
       //write to outputstream using the filter
       GzipFilter.write(dataToBeCompressed, 0, dataToBeCompressed.length)
       GzipFilter.flush()
-      GzipFilter.close()
-      Some(bos.toByteArray())
     } catch {
       case e: Exception => error("Failed to compress file", e); None
+    } finally {
+      GzipFilter.close()
+      bos.close()
     }
+    Some(bos.toByteArray())
   }
 
   def unzipData (compressedInputStream: InputStream): Option[Array[Byte]] = {
+    //add the input stream into the filter GZIP input stream
+    val GUnzipFilter = new GZIPInputStream(compressedInputStream)
+    //create a ByteArrayOutputStream object to write the decompressed data into; convert this to an array of bytes after.
+    val bos = new ByteArrayOutputStream()
       try {
-        //add the input stream into the filter GZIP input stream
-        val GUnzipFilter = new GZIPInputStream(compressedInputStream)
-
-        //create a ByteArrayOutputStream object to write the decompressed data into; convert this to an array of bytes after.
-        val bos = new ByteArrayOutputStream()
-
         val bufferSize = 8192
         val buffer = Array.ofDim[Byte](bufferSize)
 
@@ -112,15 +111,13 @@ class S3Client(accessKey: String, secretKey: String) extends Logging {
           bos.write(buffer, 0, bytesRead)
           bytesRead = GUnzipFilter.read(buffer)
         }
-
-        GUnzipFilter.close()
-        bos.close()
-
-        //return the decompressed byte array
-        Some(bos.toByteArray())
       } catch {
         case e: Exception => error("Failed to decompress file", e); None
+      } finally {
+        GUnzipFilter.close()
+        bos.close()
       }
+      Some(bos.toByteArray())
   }
 
 }

@@ -47,7 +47,7 @@ assemble.dependsOn "assemblyJar"
 
 // run scala style and code coverage checks as part of the check phase
 check.dependsOn "scalaStyle"
-check.dependsOn "checkScoverage"
+//check.dependsOn "checkScoverage"
 
 
 // task to update the gradle wrapper
@@ -118,7 +118,7 @@ distributions {
     contents {
       // Copy the run scripts over
       into ("scripts"){
-        from("src/scripts")
+        from("src/main/scripts")
         fileMode 0755
       }
 
