@@ -119,7 +119,7 @@ distributions {
     contents {
       // Copy the run scripts over
       into ("scripts"){
-        from("src/scripts")
+        from("src/main/scripts")
         fileMode 0755
       }
 
