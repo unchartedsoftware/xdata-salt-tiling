@@ -101,7 +101,7 @@ package object io extends Logging {
         val coord = tileData._1
         // store tile in bucket as layerName/level-xIdx-yIdx.bin
         val key = s"$layerName/${coord._1}/${coord._2}/${coord._3}.bin"
-        s3Client.upload(tileData._2.toArray, bucketName, key)
+        s3Client.upload(tileData._2.toArray, bucketName, key, "application/octet-stream")
       }
     }
     input
@@ -118,7 +118,7 @@ package object io extends Logging {
    */
   def writeBytesToS3(accessKey: String, secretKey: String, bucketName: String, layerName: String)(fileName: String, bytes: Seq[Byte]): Unit = {
     val s3Client = S3Client(accessKey, secretKey)
-    s3Client.upload(bytes, bucketName, layerName + "/" + fileName)
+    s3Client.upload(bytes, bucketName, layerName + "/" + fileName, "application/octet-stream")
   }
 
   /**

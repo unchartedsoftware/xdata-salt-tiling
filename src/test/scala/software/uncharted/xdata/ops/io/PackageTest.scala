@@ -34,43 +34,43 @@ class PackageTest extends SparkFunSpec {
   lazy val awsAccessKey = sys.env("AWS_ACCESS_KEY")
   lazy val awsSecretKey = sys.env("AWS_SECRET_KEY")
 
-  describe("#writeToFile") {
-    it("should create the folder directory structure if it's missing") {
-      try {
-        val data = sc.parallelize(Seq(((1, 2, 3), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))))
-        writeToFile(s"${testDir}_1", testLayer, extension)(data)
-        val testFile = new File(s"${testDir}_1/$testLayer/1/2")
-        assertResult(true)(testFile.exists())
-      } finally {
-        FileUtils.deleteDirectory(new File(s"${testDir}_1"))
-      }
-    }
-
-    it("should add tiles to the folder hierarchy using a path based on TMS coords ") {
-      try {
-        val data = sc.parallelize(Seq(
-          ((2, 2, 2), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7)),
-          ((2, 2, 3), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))
-        ))
-        writeToFile(s"${testDir}_2", testLayer, extension)(data)
-        assertResult(true)(new File(s"${testDir}_2/$testLayer/2/2/2.tst").exists())
-        assertResult(true)(new File(s"${testDir}_2/$testLayer/2/2/3.tst").exists())
-      } finally {
-        FileUtils.deleteDirectory(new File(s"${testDir}_2"))
-      }
-    }
-
-    it("should serialize the byte array without changing it") {
-      try {
-        val data = sc.parallelize(Seq(((2, 2, 2), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))))
-        writeToFile(s"${testDir}_3", testLayer, extension)(data)
-        val bytes = Files.readAllBytes(Paths.get(s"${testDir}_3/$testLayer/2/2/2.tst"))
-        assertResult(Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))(bytes)
-      } finally {
-        FileUtils.deleteDirectory(new File(s"${testDir}_3"))
-      }
-    }
-  }
+  // describe("#writeToFile") {
+  //   it("should create the folder directory structure if it's missing") {
+  //     try {
+  //       val data = sc.parallelize(Seq(((1, 2, 3), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))))
+  //       writeToFile(s"${testDir}_1", testLayer, extension)(data)
+  //       val testFile = new File(s"${testDir}_1/$testLayer/1/2")
+  //       assertResult(true)(testFile.exists())
+  //     } finally {
+  //       FileUtils.deleteDirectory(new File(s"${testDir}_1"))
+  //     }
+  //   }
+  //
+  //   it("should add tiles to the folder hierarchy using a path based on TMS coords ") {
+  //     try {
+  //       val data = sc.parallelize(Seq(
+  //         ((2, 2, 2), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7)),
+  //         ((2, 2, 3), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))
+  //       ))
+  //       writeToFile(s"${testDir}_2", testLayer, extension)(data)
+  //       assertResult(true)(new File(s"${testDir}_2/$testLayer/2/2/2.tst").exists())
+  //       assertResult(true)(new File(s"${testDir}_2/$testLayer/2/2/3.tst").exists())
+  //     } finally {
+  //       FileUtils.deleteDirectory(new File(s"${testDir}_2"))
+  //     }
+  //   }
+  //
+  //   it("should serialize the byte array without changing it") {
+  //     try {
+  //       val data = sc.parallelize(Seq(((2, 2, 2), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))))
+  //       writeToFile(s"${testDir}_3", testLayer, extension)(data)
+  //       val bytes = Files.readAllBytes(Paths.get(s"${testDir}_3/$testLayer/2/2/2.tst"))
+  //       assertResult(Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))(bytes)
+  //     } finally {
+  //       FileUtils.deleteDirectory(new File(s"${testDir}_3"))
+  //     }
+  //   }
+  // }
 
   describe("#writeToS3") {
     val testKey0 = s"$testLayer/2/2/2.bin"

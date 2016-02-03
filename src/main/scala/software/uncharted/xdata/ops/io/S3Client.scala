@@ -12,11 +12,12 @@
  */
 package software.uncharted.xdata.ops.io
 
-import java.io.{ByteArrayOutputStream, ByteArrayInputStream}
+import java.io.{ByteArrayOutputStream, ByteArrayInputStream, InputStream}
+import java.util.zip.{GZIPOutputStream, GZIPInputStream}
 
 import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.services.s3.AmazonS3Client
-import com.amazonaws.services.s3.model.{PutObjectRequest, CannedAccessControlList}
+import com.amazonaws.services.s3.model.{PutObjectRequest, CannedAccessControlList, ObjectMetadata, Permission, AccessControlList, GroupGrantee}
 import grizzled.slf4j.Logging
 
 object S3Client {
@@ -52,10 +53,16 @@ class S3Client(accessKey: String, secretKey: String) extends Logging {
     }
   }
 
-  def upload(data: Seq[Byte], bucketName: String, key: String): Boolean = {
-    val bos = new ByteArrayInputStream(data.toArray)
+  def upload(data: Seq[Byte], bucketName: String, key: String, contentType: String): Boolean = {
     try {
-      s3Client.putObject(new PutObjectRequest(bucketName, key, bos, null) // scalastyle:ignore
+      val compressedData = zipData(data.toArray)
+      val is = new ByteArrayInputStream(compressedData.get)
+      val meta = new ObjectMetadata()
+
+      meta.setContentType(contentType)
+      meta.setContentEncoding("gzip")
+
+      s3Client.putObject(new PutObjectRequest(bucketName, key, is, meta) // scalastyle:ignore
         .withCannedAcl(CannedAccessControlList.PublicRead))
       true
     } catch {
@@ -64,21 +71,56 @@ class S3Client(accessKey: String, secretKey: String) extends Logging {
   }
 
   def download(bucketName: String, key: String): Option[Seq[Byte]]= {
-    // Iteratively read chunks of the input stream into a fixed size buffer and write the
-    // results out to a byte array output stream.
-    val bufferSize = 8192
-    val buffer = Array.ofDim[Byte](bufferSize)
-    val bos = new ByteArrayOutputStream()
     try {
       val dis = s3Client.getObject(bucketName, key).getObjectContent
-      var bytesRead =  dis.read(buffer)
-      while (bytesRead != -1) {
-        bos.write(buffer, 0, bytesRead)
-        bytesRead = dis.read(buffer)
-      }
-      Some(bos.toByteArray.toSeq)
+      val decompressedData = unzipData(dis)
+      Some(decompressedData.get.toSeq)
     } catch {
       case e: Exception => error(s"Failed to download $key", e); None
     }
   }
+
+  def zipData (dataToBeCompressed: Array[Byte]): Option[Array[Byte]] = {
+    try {
+      //create outputstream to write data in and the filter that would compress the data going in
+      val bos = new ByteArrayOutputStream(dataToBeCompressed.length)
+      val GzipFilter = new GZIPOutputStream(bos)
+
+      //write to outputstream using the filter
+      GzipFilter.write(dataToBeCompressed, 0, dataToBeCompressed.length)
+      GzipFilter.flush()
+      GzipFilter.close()
+      Some(bos.toByteArray())
+    } catch {
+      case e: Exception => error("Failed to compress file", e); None
+    }
+  }
+
+  def unzipData (compressedInputStream: InputStream): Option[Array[Byte]] = {
+      try {
+        //add the input stream into the filter GZIP input stream
+        val GUnzipFilter = new GZIPInputStream(compressedInputStream)
+
+        //create a ByteArrayOutputStream object to write the decompressed data into; convert this to an array of bytes after.
+        val bos = new ByteArrayOutputStream()
+
+        val bufferSize = 8192
+        val buffer = Array.ofDim[Byte](bufferSize)
+
+        var bytesRead =  GUnzipFilter.read(buffer, 0, bufferSize)
+        while (bytesRead != -1) {
+          bos.write(buffer, 0, bytesRead)
+          bytesRead = GUnzipFilter.read(buffer)
+        }
+
+        GUnzipFilter.close()
+        bos.close()
+
+        //return the decompressed byte array
+        Some(bos.toByteArray())
+      } catch {
+        case e: Exception => error("Failed to decompress file", e); None
+      }
+  }
+
 }

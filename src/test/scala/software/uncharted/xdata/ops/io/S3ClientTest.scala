@@ -48,17 +48,17 @@ class S3ClientTest extends FunSpec with BeforeAndAfterAll {
   describe("S3ClientTest") {
     describe("#upload") {
       it("should return true if upload was successful", S3Test) {
-        val result = s3.upload(data, testBucket, test0)
+        val result = s3.upload(data, testBucket, test0, "application/octet-stream")
         assertResult(true)(result)
       }
 
       it("should return false if upload was unsuccessful", S3Test) {
-        val result = s3.upload(data, nonexistentBucket, test0)
+        val result = s3.upload(data, nonexistentBucket, test0, "application/octet-stream")
         assertResult(false)(result)
       }
 
       it("should create a S3 object with the supplied bucket, key and data", S3Test) {
-        s3.upload(data, testBucket, test1)
+        s3.upload(data, testBucket, test1, "application/octet-stream")
         val result = s3.download(testBucket, test1).getOrElse(fail("Failed to fetch uploaded data"))
         assertResult(data)(result)
       }
@@ -66,7 +66,7 @@ class S3ClientTest extends FunSpec with BeforeAndAfterAll {
 
     describe("#download") {
       it("should return data corresponding to bucket, key", S3Test) {
-        s3.upload(data_dl, testBucket, test2)
+        s3.upload(data_dl, testBucket, test2,"application/octet-stream")
         val result = s3.download(testBucket, test2).getOrElse(fail("Failed to download data"))
         assertResult(data_dl)(result)
       }
@@ -83,7 +83,7 @@ class S3ClientTest extends FunSpec with BeforeAndAfterAll {
       }
 
       it("should return true if deleted data exists", S3Test) {
-        s3.upload(data_dl, testBucket, test3)
+        s3.upload(data_dl, testBucket, test3, "application/octet-stream")
         assertResult(s3.delete(testBucket, test3))(true)
       }
     }
