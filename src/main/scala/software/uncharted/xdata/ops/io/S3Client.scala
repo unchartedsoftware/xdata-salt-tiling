@@ -53,14 +53,14 @@ class S3Client(accessKey: String, secretKey: String) extends Logging {
     }
   }
 
-  def upload(data: Seq[Byte], bucketName: String, key: String, contentType: String): Boolean = {
+  def upload(data: Seq[Byte], bucketName: String, key: String, contentType: String = "applilcation/octet-stream", compress: Boolean = true): Boolean = {
     try {
-      val compressedData = zipData(data.toArray)
-      val is = new ByteArrayInputStream(compressedData.get)
+      val streamData = if(compress) zipData(data.toArray).get else data.toArray
+      val is = new ByteArrayInputStream(streamData)
       val meta = new ObjectMetadata()
 
       meta.setContentType(contentType)
-      meta.setContentEncoding("gzip")
+      if (compress) { meta.setContentEncoding("gzip") }
 
       s3Client.putObject(new PutObjectRequest(bucketName, key, is, meta) // scalastyle:ignore
         .withCannedAcl(CannedAccessControlList.PublicRead))
@@ -70,11 +70,30 @@ class S3Client(accessKey: String, secretKey: String) extends Logging {
     }
   }
 
-  def download(bucketName: String, key: String): Option[Seq[Byte]]= {
+  def download(bucketName: String, key: String, compress: Boolean = true): Option[Seq[Byte]]= {
     try {
       val dis = s3Client.getObject(bucketName, key).getObjectContent
-      val decompressedData = unzipData(dis)
-      Some(decompressedData.get.toSeq)
+      if (compress) {
+        Some(unzipData(dis).get.toSeq)
+      } else
+      {
+        val bos = new ByteArrayOutputStream()
+          try {
+            val bufferSize = 8192
+            val buffer = Array.ofDim[Byte](bufferSize)
+
+            var bytesRead =  dis.read(buffer, 0, bufferSize)
+            while (bytesRead != -1) {
+              bos.write(buffer, 0, bytesRead)
+              bytesRead = dis.read(buffer)
+            }
+          } catch {
+            case e: Exception => error("Failed to decompress file", e); None
+          } finally {
+            bos.close()
+          }
+        Some(bos.toByteArray())
+      }
     } catch {
       case e: Exception => error(s"Failed to download $key", e); None
     }
@@ -83,26 +102,27 @@ class S3Client(accessKey: String, secretKey: String) extends Logging {
   def zipData (dataToBeCompressed: Array[Byte]): Option[Array[Byte]] = {
     //create outputstream to write data in and the filter that would compress the data going in
     val bos = new ByteArrayOutputStream(dataToBeCompressed.length)
-    val GzipFilter = new GZIPOutputStream(bos)
     try {
+      val GzipFilter = new GZIPOutputStream(bos)
       //write to outputstream using the filter
       GzipFilter.write(dataToBeCompressed, 0, dataToBeCompressed.length)
       GzipFilter.flush()
+      GzipFilter.close()
+      Some(bos.toByteArray())
     } catch {
       case e: Exception => error("Failed to compress file", e); None
     } finally {
-      GzipFilter.close()
       bos.close()
     }
-    Some(bos.toByteArray())
   }
 
   def unzipData (compressedInputStream: InputStream): Option[Array[Byte]] = {
-    //add the input stream into the filter GZIP input stream
-    val GUnzipFilter = new GZIPInputStream(compressedInputStream)
     //create a ByteArrayOutputStream object to write the decompressed data into; convert this to an array of bytes after.
     val bos = new ByteArrayOutputStream()
       try {
+        //add the input stream into the filter GZIP input stream
+        val GUnzipFilter = new GZIPInputStream(compressedInputStream)
+
         val bufferSize = 8192
         val buffer = Array.ofDim[Byte](bufferSize)
 
@@ -111,13 +131,14 @@ class S3Client(accessKey: String, secretKey: String) extends Logging {
           bos.write(buffer, 0, bytesRead)
           bytesRead = GUnzipFilter.read(buffer)
         }
-      } catch {
-        case e: Exception => error("Failed to decompress file", e); None
-      } finally {
         GUnzipFilter.close()
+        Some(bos.toByteArray())
+      } catch {
+        case e: Exception => error("Failed to decompress file"); None
+      } finally {
         bos.close()
       }
-      Some(bos.toByteArray())
+
   }
 
 }
