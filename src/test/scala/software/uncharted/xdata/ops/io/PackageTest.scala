@@ -26,7 +26,7 @@ import scala.util.parsing.json.JSONObject
 // scalastyle:off multiple.string.literals
 class PackageTest extends SparkFunSpec {
 
-  private val testDir = "/test_data"
+  private val testDir = "build/tmp/test_file_output/test_data"
   private val testLayer = "test_layer"
   private val testBucket = "uncharted-s3-client-test"
   private val extension = "tst"

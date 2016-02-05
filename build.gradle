@@ -47,7 +47,7 @@ assemble.dependsOn "assemblyJar"
 
 // run scala style and code coverage checks as part of the check phase
 check.dependsOn "scalaStyle"
-// temporarily disabled - needs s3 cases to be hit 
+// temporarily disabled - needs s3 cases to be hit
 // check.dependsOn "checkScoverage"
 
 
@@ -169,5 +169,3 @@ dependencies {
   testRuntime 'org.pegdown:pegdown:1.1.0'
   scoverage 'org.scoverage:scalac-scoverage-plugin_2.10:1.1.0', 'org.scoverage:scalac-scoverage-runtime_2.10:1.1.0'
 }
-
-
