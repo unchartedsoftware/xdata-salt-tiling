@@ -120,6 +120,100 @@ package object io extends Logging {
     val s3Client = S3Client(accessKey, secretKey)
     s3Client.upload(bytes, bucketName, layerName + "/" + fileName)
   }
+  /**
+   *Write binary array data to HBase Table
+   *
+   *RDD Layer Data is stored in their own table with tile info stored in a column and tile name as the rowID
+   * @param zookeeperQuorum HBase Connection Parameter
+   * @param zookeeperPort HBase Connection Parameter
+   * @param hBaseMaster HBase Connection Parameter
+   * @param colName name of column where data will be updated
+   * @param layerName unique name for the layer, will be used as table name
+   * @param input RDD of tile data to be processed and stored into HBase
+   */
+  def writeToHBase(zookeeperQuorum: String, zookeeperPort: String, hBaseMaster: String, colName: String, layerName: String)(input: RDD[((Int, Int, Int), Seq[Byte])]): RDD[((Int, Int, Int), Seq[Byte])] = {
+    //should table creation be done somewhere else?
+    val hBaseConnector1 = HBaseConnector(zookeeperQuorum, zooKeeperPort, hBaseMaster)
+    hBaseConnector1.createTable(layerName, colName)
+    hBaseConnector1.close()
+
+
+    // Upload tiles to HBase using the supplied and layer. Every Layer will be its own table
+    //Drivers take transformations on RDDs then duplicate it so that it is distributable to workers
+    //therefore code inside the transformation of RDDs have to be serializable.
+      //if they're not, and the object is instantiated in the closure
+      //spark converts these into machine code and tries to make it work????
+        //this is what happens with the S3 API client
+        //which is why you can't instantiate outside of the closure
+    input.foreachPartition { tileDataIter =>
+      //putting this in the closure sets the driver to send this code to the worker
+      //for each partition(how datasets are divided so taht each worker can work on it)
+        //create one instance of a connection
+      //a foreach instead of a for each partition would create a new client for each record
+        //waste of time and instances
+      val hBaseConnector = HBaseConnector(zookeeperQuorum, zooKeeperPort, hBaseMaster)
+      //then for each record in the individual partition
+      tileDataIter.foreach { tileData =>
+        val coord = tileData._1
+        // store tile in bucket as layerName/level-xIdx-yIdx.bin
+        val fileName = s"$layerName/${coord._1}/${coord._2}/${coord._3}.bin"
+        hBaseConnector.insertRow(tableName, colName, fileName, tileData._2.toArray)
+      }
+      hBaseConnector.close()
+    }
+    input
+  }
+
+  /**
+   *Write binary array data to HBase Table as a batch instead of row by row.
+   *This is done so that you don't have to check if the table exists before you write
+   *every record.
+   *Other alternative is the method above. Where you check for table first.
+   *With the other method you instantiate the connector one more time just to check a table
+   *Write binary array data to HBase Table
+   *
+   *RDD Layer Data is stored in their own table with tile info stored in a column and tile name as the rowID
+   * This Data is first mapped to a list of tuples containing required data to store into HBase table
+   * Then the list of tuples are sent to HBase connector to batch put the list into the table
+   * @param zookeeperQuorum HBase Connection Parameter
+   * @param zookeeperPort HBase Connection Parameter
+   * @param hBaseMaster HBase Connection Parameter
+   * @param colName name of column where data will be updated
+   * @param layerName unique name for the layer, will be used as table name
+   * @param input RDD of tile data to be processed and stored into HBase
+   */
+  def writeToHBase2(zookeeperQuorum: String, zookeeperPort: String, hBaseMaster: String, colName: String, layerName: String)(input: RDD[((Int, Int, Int), Seq[Byte])]): RDD[((Int, Int, Int), Seq[Byte])] = {
+
+    input.foreachPartition { tileDataIter =>
+      val hBaseConnector = HBaseConnector(zookeeperQuorum, zooKeeperPort, hBaseMaster)
+      val pullRowData = tileDataIter.map { tileData =>
+        val coord = tileData._1
+        // store tile in bucket as layerName/level-xIdx-yIdx.bin
+        val fileName = s"$layerName/${coord._1}/${coord._2}/${coord._3}.bin"
+        (tileData._2.toArray, fileName)
+      }
+      hBaseConnector.insertRows(tableName, colName, pullRowData)
+      hBaseConnector.close()
+    }
+    input
+  }
+
+  /**
+   *Write binary array data to HBase Table
+   *
+   *RDD Layer Data is stored in their own table with tile info stored in a column and tile name as the rowID
+   * @param zookeeperQuorum HBase Connection Parameter
+   * @param zookeeperPort HBase Connection Parameter
+   * @param hBaseMaster HBase Connection Parameter
+   * @param colName name of column where data will be inserted into
+   * @param layerName unique name for the layer, will be used as table name
+   * @param input RDD of tile data to be processed and stored into HBase
+   */
+  def writeBytesToHBase(zookeeperQuorum: String, zookeeperPort: String, hBaseMaster: String, colName: String, layerName: String)(fileName: String, bytes: Seq[Byte]): Unit = {
+    val hBaseConnector = HBaseConnector(zookeeperQuorum, zookeeperPort, hBaseMaster)
+    hBaseConnector.insertRow(layerName, colName, (layerName + "/" + fileName), bytes)
+    hBaseConnector.close()
+  }
 
   /**
    * Serializes tile bins stored as a double array to tile index / byte sequence tuples.
