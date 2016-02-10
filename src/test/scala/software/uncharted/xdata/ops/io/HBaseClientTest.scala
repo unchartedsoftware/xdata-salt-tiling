@@ -8,6 +8,9 @@ object HBaseTest extends Tag("hBase.test")
 class HBaseConnectorTest extends FunSpec with BeforeAndAfterAll {
   private lazy val s3 = HBaseConnector("uscc0-node08.uncharted.software", "2181", "hdfs://uscc0-master0.uncharted.software:60000")
 
+  //need to create the private variables and objects needed to verify whether the functions work.
+  //after this and the review, check if the client actually works by running the client tests on it.
+
   describe("HBaseConnector") {
 
     describe("#createTable") {
