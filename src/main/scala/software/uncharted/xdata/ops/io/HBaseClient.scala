@@ -20,6 +20,7 @@ import org.apache.hadoop.hbase.client.*;
 //So each tableName -> layerName
 //Each Layer table will have the file name as the key (Like S3)
   //in this case the key will be the rowID
+<<<<<<< Updated upstream
 //The table will have one family column: TileData (name not finalized)
   //no qualifiers, that adds complexity to rowID
 //So we need functions to create these tables for each layer.
@@ -37,6 +38,28 @@ class HBaseConnector(zookeeperQuorum, zookeeperPort, hBaseMaster) extends Loggin
   private val connection = createConnection(zookeeperQuorum, zookeeperPort, hBaseMaster)
   private val admin = connection.getAdmin()
 
+=======
+//The table will have one family column
+
+  //CURRENTLY CLASS IS SET UP SUCH THAT THE CLIENT CAN MAKE THEIR OWN COLUMN FAMILY NAME WHEN CREATING TABLES
+    //DO WE WANT IT LIKE THIS OR DO WE WANT THE FAMILY COLUMN NAME TO BE A CONSTANT FOR EACH LAYER TABLE
+
+
+object HBaseConnector {
+  def apply(zookeeperQuorum: String, zookeeperPort: String, hBaseMaster: String) : HBaseConnector = {
+    new HBaseConnector(zookeeperQuorum, zookeeperPort, hBaseMaster, None, None)
+  }
+
+  def apply(zookeeperQuorum: String, zookeeperPort: String, hBaseMaster: String, tableName: String, colName: String) : HBaseConnector = {
+    new HBaseConnector(zookeeperQuorum, zookeeperPort, hBaseMaster Some(tableName), Some(colName))
+  }
+}
+
+class HBaseConnector(zookeeperQuorum, zookeeperPort, hBaseMaster, initTableName, initColName) extends Logging {
+  private val connection = createConnection(zookeeperQuorum, zookeeperPort, hBaseMaster)
+  private val admin = connection.getAdmin()
+  initTableIfNeeded(initTableName, initColName)
+>>>>>>> Stashed changes
   //should this be a private method?
   //this method checks if a table exists and creates one if it doesn't
       //is this okay to do? or should I do
@@ -47,13 +70,20 @@ class HBaseConnector(zookeeperQuorum, zookeeperPort, hBaseMaster) extends Loggin
         val tableDescriptor = new HTableDescriptor(TableName.valueOf(tableName))
         tableDescriptor.addFamily(new HColumnDescriptor(colName))
         admin.createTable(tableDescriptor)
+<<<<<<< Updated upstream
       }
       true
+=======
+        true
+      }
+      else { error(s"$tableName already exists"); false }
+>>>>>>> Stashed changes
     } catch {
       case e: Exception => error(s"Failed to create table $tableName"); false
     }
   }
 
+<<<<<<< Updated upstream
 
 //ONE WAY TO CREATE THE TABLES AND STUFF CORRECTLY BEFORE WORKING WITH THE CLIENT:
   //HAVE AN OVERLOAD METHOD THAT OBTAINS THE TABLENAME AND COLUMN FAMILIES AND CREATES THE TABLES.
@@ -67,10 +97,14 @@ class HBaseConnector(zookeeperQuorum, zookeeperPort, hBaseMaster) extends Loggin
     //ASSUMING THAT THE TABLENAME PASSED IN IS ENTERED CORRECTLY AND NOT A MISTAKE
 
 //CURRENTLY THESE WRITES WRITE TO ONE COLUMN.
+=======
+//CURRENTLY THESE WRITES ONLY WRITE TO ONE COLUMN.
+>>>>>>> Stashed changes
 //IMPROVEMENTS:
   //CHECK COLNAME IS AN ACTUAL COLUMN FAMILY MEMBER BEFORE ADDING COLUMN FAMILY TO PUT INFO.
     //IF NOT CREATE THE COLUMN FAMILY FOR THAT TABLE AND ADD MORE INFO RELATED TO THAT TILE DATA.
 
+<<<<<<< Updated upstream
 
   //so right now writeRow Allows you to add a row with one column name.
   //should be another way of creating a row with a map for a value of each column name
@@ -82,12 +116,19 @@ class HBaseConnector(zookeeperQuorum, zookeeperPort, hBaseMaster) extends Loggin
       table.put(putInfo)
       table.close()
       true
+=======
+  def writeRow(tableName: String, colName: String, rowID: String, data: Seq[Byte]): Boolean = {
+    try {
+      val rowDataToList = List((rowID,data))
+      this.writeRows(tableName, colName, rowDataToList)
+>>>>>>> Stashed changes
     } catch {
       case e: Exception => error(s"Failed to write row into table $tableName"); false
     }
   }
 
   //batch row insert method obtains a list of row info
+<<<<<<< Updated upstream
   //row info is stored in the format: data, rowId
   //LIST VS SEQ, WHATS BETTER?
   def writeRows(tableName: String, colName: String, listOfRowInfo: List[(Seq[Byte], String)]): Boolean = {
@@ -101,12 +142,30 @@ class HBaseConnector(zookeeperQuorum, zookeeperPort, hBaseMaster) extends Loggin
       true
     } catch {
       case e: Exception => error(s"Failed to write rows into table $tableName"); false
+=======
+  //row info is stored in tuple format: (rowId, data)
+  def writeRows(tableName: String, colName: String, listOfRowInfo: List[(String, Seq[Byte])]) {
+    try {
+      val table = this.getTable(tableName)
+      val putList = listOfRowInfo.map {rowInfo =>
+        new Put(rowInfo._1.getBytes()).addColumn(colName.getBytes(), new byte[0], rowInfo._2.toArray())
+      }
+      table.flatMap(_.put(putList))
+      val checkEmpty = table.flatMap(_.close())
+      if (checkEmpty.isEmpty) false else true
+      true
+    } catch {
+      case e: Exception => error(s"Failed to write into table $tableName"); false
+>>>>>>> Stashed changes
     }
   }
 
   //attempts to gets Table. Returns nothing if table doesn't exist
+<<<<<<< Updated upstream
   //THIS METHOD IS JUST TO GET THE USER OF THE CONNECTION TO SPECIFICALLY
     //CREATE A TABLE THEMSELVES IF HBASE CANNOT GET A TABLE.
+=======
+>>>>>>> Stashed changes
   def getTable(tableName: String): Option[Table] {
     try {
       if(admin.tableExists(TableName.valueOf(tableName))) {
@@ -136,6 +195,7 @@ class HBaseConnector(zookeeperQuorum, zookeeperPort, hBaseMaster) extends Loggin
     ConnectionFactory.createConnection(config)
   }
 
+<<<<<<< Updated upstream
   //gets Table, and if table isn't there; creates table.
   private def getOrCreateTable(tableName: String, colName: String): Option[Table] {
     try {
@@ -151,4 +211,6 @@ class HBaseConnector(zookeeperQuorum, zookeeperPort, hBaseMaster) extends Loggin
     }
   }
 
+=======
+>>>>>>> Stashed changes
 }
