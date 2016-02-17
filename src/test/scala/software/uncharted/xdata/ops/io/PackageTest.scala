@@ -22,6 +22,15 @@ import software.uncharted.xdata.spark.SparkFunSpec
 
 import scala.util.parsing.json.JSONObject
 
+import org.apache.hadoop.hbase.client._;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.HColumnDescriptor;
+import org.apache.hadoop.hbase.HTableDescriptor;
+import org.apache.hadoop.hbase.TableName;
+
+
+
 // scalastyle:off magic.number
 // scalastyle:off multiple.string.literals
 class PackageTest extends SparkFunSpec {
@@ -33,6 +42,11 @@ class PackageTest extends SparkFunSpec {
 
   lazy val awsAccessKey = sys.env("AWS_ACCESS_KEY")
   lazy val awsSecretKey = sys.env("AWS_SECRET_KEY")
+
+  lazy val zookeeperQuorum = "uscc0-node08.uncharted.software"
+  lazy val zookeeperPort = "2181"
+  lazy val hBaseMaster = "hdfs://uscc0-master0.uncharted.software:60000"
+
 
   describe("#writeToFile") {
     it("should create the folder directory structure if it's missing") {
@@ -139,6 +153,89 @@ class PackageTest extends SparkFunSpec {
           0, 0, 0, 0, 0, 0, 20, 64,
           0, 0, 0, 0, 0, 0, 24, 64,
           0, 0, 0, 0, 0, 0, 28, 64))
+    }
+  }
+
+  describe("#writeToHBase") {
+    it("should add tiles to the HBase Table Created", HBaseConnectorTest) {
+      val data = sc.parallelize(Seq(
+        ((2, 2, 2), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7)),
+        ((2, 2, 3), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))
+      ))
+      val testCol = "testCol"
+      //make sure to delete this table at the end.
+      val testLater = "testLayer"
+
+      writeToHBase(zookeeperQuorum, zookeeperPort, hBaseMaster, testLayer, testCol)(data).collect()
+
+      val hbc = HBaseConnector(zookeeperQuorum, zookeeperPort, hBaseMaster)
+      assertResult(true)(hbc.getTable(testLayer).get.exists(new Get (s"${testLayer}/2/2/2.bin".getBytes())))
+      assertResult(true)(hbc.getTable(testLayer).get.exists(new Get (s"${testLayer}/2/2/3.bin".getBytes())))
+      hbc.close
+      //disable and delete test table
+      val config = HBaseConfiguration.create()
+      config.set("hbase.zookeeper.quorum", zookeeperQuorum)
+      config.set("hbase.zookeeper.property.clientPort", zookeeperPort)
+      config.set("hbase.master", hBaseMaster)
+      config.set("hbase.client.keyvalue.maxsize", "0")
+      val connection = ConnectionFactory.createConnection(config)
+      val admin = connection.getAdmin
+
+      admin.disableTable(TableName.valueOf(testLayer))
+      admin.deleteTable(TableName.valueOf(testLayer))
+      connection.close()
+    }
+
+    it("should serialize the byte data to the s3 bucket without changing it", S3Test) {
+      val data = sc.parallelize(Seq(
+        ((2, 2, 2), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7)),
+        ((2, 2, 3), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))
+      ))
+
+      val testCol = "testCol"
+      //make sure to delete this table at the end.
+      val testLater = "testLayer"
+
+      writeToHBase(zookeeperQuorum, zookeeperPort, hBaseMaster, testLayer, testCol)(data)
+
+      val hbc = HBaseConnector(zookeeperQuorum, zookeeperPort, hBaseMaster)
+      assertResult(Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))(hbc.getTable(testLayer).get.get(new Get("2".getBytes).addFamily(testCol.getBytes)).value().toSeq)
+      hbc.close
+
+      val config = HBaseConfiguration.create()
+      config.set("hbase.zookeeper.quorum", zookeeperQuorum)
+      config.set("hbase.zookeeper.property.clientPort", zookeeperPort)
+      config.set("hbase.master", hBaseMaster)
+      config.set("hbase.client.keyvalue.maxsize", "0")
+      val connection = ConnectionFactory.createConnection(config)
+      val admin = connection.getAdmin
+
+      admin.disableTable(TableName.valueOf(testLayer))
+      admin.deleteTable(TableName.valueOf(testLayer))
+      connection.close()
+    }
+  }
+  //
+  describe("#writeBytesToHBase") {
+    val testFile = "metadata.json"
+    it("should write the byte data to the HBaseTable without changing it", HBaseConnectorTest) {
+      writeBytesToHBase(zookeeperQuorum, zookeeperPort, hBaseMaster, testLayer, "testCol")(testFile, Seq(0, 1, 2, 3, 4, 5))
+      val hbc = HBaseConnector(zookeeperQuorum, zookeeperPort, hBaseMaster)
+      assertResult(true)(hbc.getTable(testLayer).get.exists(new Get (s"${testLayer}/${testFile}".getBytes())))
+      hbc.close
+      //disable and delete table
+      val config = HBaseConfiguration.create()
+      config.set("hbase.zookeeper.quorum", zookeeperQuorum)
+      config.set("hbase.zookeeper.property.clientPort", zookeeperPort)
+      config.set("hbase.master", hBaseMaster)
+      config.set("hbase.client.keyvalue.maxsize", "0")
+      val connection = ConnectionFactory.createConnection(config)
+      val admin = connection.getAdmin
+
+      admin.disableTable(TableName.valueOf(testLayer))
+      admin.deleteTable(TableName.valueOf(testLayer))
+      connection.close()
+
     }
   }
 

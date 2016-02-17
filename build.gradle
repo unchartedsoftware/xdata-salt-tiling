@@ -14,6 +14,9 @@ buildscript {
   repositories {
     mavenCentral()
     jcenter()
+    maven {
+    url = "https://repository.cloudera.com/artifactory/cloudera-repos"
+    }
   }
 
   dependencies {
@@ -158,6 +161,12 @@ dependencies {
   compile "com.amazonaws:aws-java-sdk:1.3.11"
   compile "com.databricks:spark-csv_$dependencyScalaVersion:1.3.0"
   compile "net.liftweb:lift-json_$dependencyScalaVersion:2.6.2"
+  compile "org.apache.hbase:hbase-client:1.0.0-cdh5.4.7"
+  compile "org.apache.hbase:hbase-common:1.0.0-cdh5.4.7"
+  compile ('org.apache.hbase:hbase-server:1.0.0-cdh5.4.7') {
+    //this dependency caused a lot of issues.
+    exclude group: 'org.mortbay.jetty'
+  }
 
   // Provided config - needed to compile, expected to be available when deployed
   provided "org.apache.spark:spark-core_$dependencyScalaVersion:$sparkVersion"

@@ -13,6 +13,7 @@
 package software.uncharted.xdata.ops
 
 import java.io.{BufferedOutputStream, FileOutputStream, File}
+import java.util.ArrayList
 
 import grizzled.slf4j.Logging
 import org.apache.spark.rdd.RDD
@@ -138,19 +139,20 @@ package object io extends Logging {
    * @param layerName unique name for the layer, will be used as table name
    * @param input RDD of tile data to be processed and stored into HBase
    */
-  def writeToHBase(zookeeperQuorum: String, zookeeperPort: String, hBaseMaster: String, layerName: String, colName: String)(input: RDD[((Int, Int, Int), Seq[Byte])]): RDD[((Int, Int, Int), Seq[Byte])] = {
+  def writeToHBase(zookeeperQuorum: String, zookeeperPort: String, hBaseMaster: String, layerName: String, colName: String)
+  (input: RDD[((Int, Int, Int), Seq[Byte])]): RDD[((Int, Int, Int), Seq[Byte])] = {
 
-    input.foreachPartition { tileDataIter =>
-      val hBaseConnector = HBaseConnector(zookeeperQuorum, zooKeeperPort, hBaseMaster, layerName, colName)
-      val pullRowData = tileDataIter.map { tileData =>
+    val results = input.mapPartitions { tileDataIter =>
+      tileDataIter.map { tileData =>
         val coord = tileData._1
         // store tile in bucket as layerName/level-xIdx-yIdx.bin
         val fileName = s"$layerName/${coord._1}/${coord._2}/${coord._3}.bin"
-        (fileName, tileData._2.toArray)
+        (fileName, tileData._2)
       }
-      hBaseConnector.insertRows(layerName, colName, pullRowData)
-      hBaseConnector.close()
     }
+    val hBaseConnector = HBaseConnector(zookeeperQuorum, zookeeperPort, hBaseMaster, Some(layerName), Some(colName))
+    hBaseConnector.writeRows(layerName, colName, results)
+    hBaseConnector.close
     input
   }
 
@@ -165,10 +167,10 @@ package object io extends Logging {
    * @param layerName unique name for the layer, will be used as table name
    * @param input RDD of tile data to be processed and stored into HBase
    */
-  def writeBytesToHBase(zookeeperQuorum: String, zookeeperPort: String, hBaseMaster: String, colName: String, layerName: String)(fileName: String, bytes: Seq[Byte]): Unit = {
-    val hBaseConnector = HBaseConnector(zookeeperQuorum, zookeeperPort, hBaseMaster, layerName, colName)
-    hBaseConnector.insertRow(layerName, colName, (layerName + "/" + fileName), bytes)
-    hBaseConnector.close()
+  def writeBytesToHBase(zookeeperQuorum: String, zookeeperPort: String, hBaseMaster: String, layerName: String, colName: String)(fileName: String, bytes: Seq[Byte]): Unit = {
+    val hBaseConnector = HBaseConnector(zookeeperQuorum, zookeeperPort, hBaseMaster, Some(layerName), Some(colName))
+    hBaseConnector.writeRow(layerName, colName, (layerName + "/" + fileName), bytes)
+    hBaseConnector.close
   }
 
   /**
