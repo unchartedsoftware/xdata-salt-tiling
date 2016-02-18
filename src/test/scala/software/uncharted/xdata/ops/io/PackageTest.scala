@@ -127,35 +127,6 @@ class PackageTest extends SparkFunSpec {
     }
   }
 
-  describe("#serializeBinArray") {
-    it("should create an RDD of bin coordinate / byte array tuples from series data") {
-      val series = sc.parallelize(
-        Seq(
-          new SeriesData[(Int, Int, Int), Double, (Double, Double)]
-          ((1, 2, 3), Seq(0.0, 1.0, 2.0, 3.0), 4, 0.0, None, new MercatorTimeProjection()),
-          new SeriesData[(Int, Int, Int), Double, (Double, Double)]
-          ((4, 5, 6), Seq(4.0, 5.0, 6.0, 7.0), 4, 0.0, None, new MercatorTimeProjection())
-        ))
-      val result = serializeBinArray(series).collect()
-      assertResult(2)(result.length)
-      assertResult(result(0)._1)((1, 2, 3))
-      assertResult(result(0)._2)(
-        List(
-          0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, -16, 63,
-          0, 0, 0, 0, 0, 0, 0, 64,
-          0, 0, 0, 0, 0, 0, 8, 64))
-
-      assertResult(result(1)._1)((4, 5, 6))
-      assertResult(result(1)._2)(
-        List(
-          0, 0, 0, 0, 0, 0, 16, 64,
-          0, 0, 0, 0, 0, 0, 20, 64,
-          0, 0, 0, 0, 0, 0, 24, 64,
-          0, 0, 0, 0, 0, 0, 28, 64))
-    }
-  }
-
   describe("#writeToHBase") {
     it("should add tiles to the HBase Table Created", HBaseConnectorTest) {
       val data = sc.parallelize(Seq(
@@ -215,7 +186,7 @@ class PackageTest extends SparkFunSpec {
       connection.close()
     }
   }
-  //
+  
   describe("#writeBytesToHBase") {
     val testFile = "metadata.json"
     it("should write the byte data to the HBaseTable without changing it", HBaseConnectorTest) {
@@ -236,6 +207,35 @@ class PackageTest extends SparkFunSpec {
       admin.deleteTable(TableName.valueOf(testLayer))
       connection.close()
 
+    }
+  }
+
+  describe("#serializeBinArray") {
+    it("should create an RDD of bin coordinate / byte array tuples from series data") {
+      val series = sc.parallelize(
+        Seq(
+          new SeriesData[(Int, Int, Int), Double, (Double, Double)]
+          ((1, 2, 3), Seq(0.0, 1.0, 2.0, 3.0), 4, 0.0, None, new MercatorTimeProjection()),
+          new SeriesData[(Int, Int, Int), Double, (Double, Double)]
+          ((4, 5, 6), Seq(4.0, 5.0, 6.0, 7.0), 4, 0.0, None, new MercatorTimeProjection())
+        ))
+      val result = serializeBinArray(series).collect()
+      assertResult(2)(result.length)
+      assertResult(result(0)._1)((1, 2, 3))
+      assertResult(result(0)._2)(
+        List(
+          0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0, -16, 63,
+          0, 0, 0, 0, 0, 0, 0, 64,
+          0, 0, 0, 0, 0, 0, 8, 64))
+
+      assertResult(result(1)._1)((4, 5, 6))
+      assertResult(result(1)._2)(
+        List(
+          0, 0, 0, 0, 0, 0, 16, 64,
+          0, 0, 0, 0, 0, 0, 20, 64,
+          0, 0, 0, 0, 0, 0, 24, 64,
+          0, 0, 0, 0, 0, 0, 28, 64))
     }
   }
 

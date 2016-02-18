@@ -11,7 +11,7 @@
  * with Uncharted Software Inc.
  */
 package software.uncharted.xdata.ops.io
-import org.scalatest.{BeforeAndAfterAll, FunSpec, Tag}
+import org.scalatest.{BeforeAndAfterAll, Tag}
 import java.io.ByteArrayInputStream
 import org.apache.hadoop.hbase.client._;
 import org.apache.hadoop.conf.Configuration;
@@ -20,33 +20,15 @@ import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 
-import org.apache.spark.SparkContext
-import org.apache.spark.SparkConf
 import org.apache.spark.rdd.RDD
+
+import software.uncharted.xdata.spark.SparkFunSpec
 
 object HBaseConnectorTest extends Tag("hBase.test")
 
-class HBaseConnectorTest extends FunSpec with BeforeAndAfterAll {
-
-  //need to create the private variables and objects needed to verify whether the functions work.
-  //after this and the review, check if the client actually works by running the client tests on it.
-  var existingTable: Table = _
-  var testTable2: Table = _
-
-  private val master = "local[2]"
-  private val appName = "example-spark"
-  private var sc: SparkContext = _
+class HBaseConnectorTest extends SparkFunSpec with BeforeAndAfterAll {
 
   protected override def beforeAll() = {
-    val conf = new SparkConf()
-      .setMaster(master)
-      .setAppName(appName)
-
-    sc = new SparkContext(conf)
-
-    rddData2 = sc.parallelize(data2)
-    rddData3 = sc.parallelize(data3)
-
     val config = HBaseConfiguration.create()
     config.set("hbase.zookeeper.quorum", "uscc0-node08.uncharted.software")
     config.set("hbase.zookeeper.property.clientPort", "2181")
@@ -63,24 +45,12 @@ class HBaseConnectorTest extends FunSpec with BeforeAndAfterAll {
     existingTable = connection.getTable(TableName.valueOf(existingTableName))
     testTable2 = connection.getTable(TableName.valueOf(testTable2Name))
 
-    //to be deleted after getting the table object so that test cases can create this table again
-    // admin.deleteTable(TableName.valueOf(testTable2Name))
-    //
     admin.disableTable(TableName.valueOf(testTable2Name))
     admin.deleteTable(TableName.valueOf(testTable2Name))
     connection.close()
-
-
   }
 
-  private lazy val s3 = HBaseConnector("uscc0-node08.uncharted.software", "2181", "hdfs://uscc0-master0.uncharted.software:60000")
-
   protected override def afterAll() = {
-    if (sc != null) {
-      sc.stop()
-    }
-
-
     val config = HBaseConfiguration.create()
     config.set("hbase.zookeeper.quorum", "uscc0-node08.uncharted.software")
     config.set("hbase.zookeeper.property.clientPort", "2181")
@@ -100,9 +70,13 @@ class HBaseConnectorTest extends FunSpec with BeforeAndAfterAll {
     admin.deleteTable(TableName.valueOf(testTable2Name))
     connection.close()
 
-    s3.close
+    hb.close
   }
 
+  private lazy val hb = HBaseConnector("uscc0-node08.uncharted.software", "2181", "hdfs://uscc0-master0.uncharted.software:60000")
+
+  var existingTable: Table = _
+  var testTable2: Table = _
 
   private val testColName = "testCol"
   private val nonExistantColName = "nonExistantCol"
@@ -117,106 +91,81 @@ class HBaseConnectorTest extends FunSpec with BeforeAndAfterAll {
   private val data2 = Array(("3", data.toSeq), ("4", data.toSeq))
   private val data3 = Array(("5", data.toSeq), ("6", data.toSeq))
 
-  private var rddData2: RDD[(String, Seq[Byte])] = _
-  private var rddData3: RDD[(String, Seq[Byte])] = _
-
-
   describe("HBaseConnectorTest") {
 
     describe("#createTable") {
       it("should return true on table creation") {
-        val result = s3.createTable(testTableName, testColName)
+        val result = hb.createTable(testTableName, testColName)
         assertResult(true)(result)
       }
       it("should return false when trying to create a table that already exists") {
-        val result = s3.createTable(existingTableName, testColName)
+        val result = hb.createTable(existingTableName, testColName)
         assertResult(false)(result)
       }
       it("should create a table in HBase when true is returned") {
-        val result = s3.createTable(testTable2Name, testColName)
-        val table = s3.getTable(testTable2Name).map(item => item.getName().getNameAsString())
+        val result = hb.createTable(testTable2Name, testColName)
+        val table = hb.getTable(testTable2Name).map(item => item.getName().getNameAsString())
         assertResult(Some(testTable2Name))(table)
       }
     }
-
     describe("#writeRow") {
       it("should return true on row insertion into table+column") {
-        val result = s3.writeRow(existingTableName, testColName, "1", data)
+        val result = hb.writeRow(existingTableName, testColName, "1", data)
         assertResult(true)(result)
       }
-
       it("should store the data in the specified table+column in HBase") {
-        s3.writeRow(existingTableName, testColName, "2", data)
-        //double check if this even works
-        val rowDataTable = s3.getTable(existingTableName)
+        hb.writeRow(existingTableName, testColName, "2", data)
+        val rowDataTable = hb.getTable(existingTableName)
         val rowData = rowDataTable.get.get(new Get("2".getBytes).addFamily(testColName.getBytes)).value().toSeq
         assertResult(data)(rowData)
       }
-
       it("should return false if column does not exist") {
-        val result = s3.writeRow(existingTableName, nonExistantColName, "2", data)
+        val result = hb.writeRow(existingTableName, nonExistantColName, "2", data)
         assertResult(false)(result)
       }
-      //this was done previously for robustness purposes. Now if you try to write to a table that doesn't exist there's a failure.
-      // it("should create the table specified if table does not exist") {
-      //   s3.writeRow(testTable3, "testCol", "1", data)
-      //   val table = s3.getTable(testTable3)
-      //   assertResult(testTable3)(table)
-      //
-      // }
-
     }
-
     describe("#writeRows") {
       it("should return true when rows are written to table") {
-        val result = s3.writeRows(testTableName, "testCol", rddData2)
+        //can't have private vals in unit test?
+        val rddData2: RDD[(String, Seq[Byte])] = sc.parallelize(data2)
+
+        val result = hb.writeRows(testTableName, "testCol", rddData2)
         assertResult(true)(result)
       }
-
       it("should return false when provided with a column that is not in the table") {
-        val result = s3.writeRows(testTableName, "nonExistantCol", rddData2)
+        val rddData2: RDD[(String, Seq[Byte])] = sc.parallelize(data2)
+
+        val result = hb.writeRows(testTableName, "nonExistantCol", rddData2)
         assertResult(false)(result)
       }
-
       it("should write the rows into HBase") {
-        s3.writeRows(testTableName, "testCol", rddData3)
-        val table = s3.getTable(testTableName).get
+        val rddData3: RDD[(String, Seq[Byte])] = sc.parallelize(data3)
+
+        hb.writeRows(testTableName, "testCol", rddData3)
+        val table = hb.getTable(testTableName).get
         List(("5", data), ("6", data)).foreach { row =>
           val rowData = table.get(new Get(row._1.getBytes()).addFamily("testCol".getBytes())).getValue("testCol".getBytes(), Array[Byte]())
           assertResult(row._2)(rowData)
         }
       }
     }
-
     describe("#getTable") {
       it("should return a table instance") {
-        val result = s3.getTable(existingTableName).map(item => item.getName().getNameAsString())
-
+        val result = hb.getTable(existingTableName).map(item => item.getName().getNameAsString())
         assertResult(Some(existingTableName))(result)
       }
-
       it("should return none if table doesn't exist") {
-        val result = s3.getTable(nonExistantTableName)
+        val result = hb.getTable(nonExistantTableName)
         assertResult(None)(result)
       }
     }
-
     describe("#createConnection") {
       it ("should create a connection object given the correct parameters") {
           val HBaseObjectTest = HBaseConnector("uscc0-node08.uncharted.software", "2181", "hdfs://uscc0-master0.uncharted.software:60000")
           HBaseObjectTest.close
           assertResult("software.uncharted.xdata.ops.io.HBaseConnector")(HBaseObjectTest.getClass.getName)
       }
-
-      // it ("should return an error on incorrect connection parameters") {
-      //   val thrown = intercept[Exception] {
-      //     HBaseConnector("wrong.wrong", "1212", "wrong")
-      //   }
-      //
-      //   assert(thrown.getMessage === "java.lang.reflect.InvocationTargetException")
-      // }
     }
-
     describe("#initTableIfNeeded"){
       it("should create a table on connector instantiation, when passed in, for a non existant HBase Table"){
         val hbc = HBaseConnector("uscc0-node08.uncharted.software", "2181", "hdfs://uscc0-master0.uncharted.software:60000", Some("testTableToBeCreated"), Some("testCol"))
@@ -224,7 +173,6 @@ class HBaseConnectorTest extends FunSpec with BeforeAndAfterAll {
         hbc.close
         assertResult("testTableToBeCreated")(tableName)
       }
-
       it("should not create a table when no table arguments are passed in to the constructor"){
         val hbc = HBaseConnector("uscc0-node08.uncharted.software", "2181", "hdfs://uscc0-master0.uncharted.software:60000")
         val tableName = hbc.getTable("tableThatWasntCreated")
@@ -232,15 +180,7 @@ class HBaseConnectorTest extends FunSpec with BeforeAndAfterAll {
         assertResult(None)(tableName)
       }
 
-      //do I really need one for passing in an existing table? it is a unit method, so it doesn't do anything regardless.
     }
-
-
-    //do I even need a test case for this?
-    // describe("#close") {
-    //
-    // }
-
   }
 
 }

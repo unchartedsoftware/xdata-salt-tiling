@@ -26,36 +26,11 @@ import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.{Admin, Connection, ConnectionFactory, Put, Table};
-
 import org.apache.spark.rdd.RDD
-
 import org.apache.hadoop.hbase.TableName
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable
 import org.apache.hadoop.hbase.mapred.TableOutputFormat
 import org.apache.hadoop.mapred.JobConf
-
-//THINGS TO DO:
-  //ADD HEADER (SCALA TEST CHECKS THESE THINGS. LOOK INTO IT)
-  //NEED TO INCLUDE HADOOP PACKAGE TO USE CONNECTOR.
-  //tALK TO NATHAN ABOUT HBASE CONNECTOR DESIGN CONSIDERATION
-  //USE DEFAULT VALUES FOR THE APPLY METHOD.
-  //PLAY AROUND WITH THE TEST CASES
-
-
-
-  //USE HBASETILEIO
-
-
-//initial HBaseConnector is to write layer details into HBase like S3 does.
-//Each Layer has its own table
-//So each tableName -> layerName
-//Each Layer table will have the file name as the key (Like S3)
-  //in this case the key will be the rowID
-//The table will have one family column
-
-  //CURRENTLY CLASS IS SET UP SUCH THAT THE CLIENT CAN MAKE THEIR OWN COLUMN FAMILY NAME WHEN CREATING TABLES
-    //DO WE WANT IT LIKE THIS OR DO WE WANT THE FAMILY COLUMN NAME TO BE A CONSTANT FOR EACH LAYER TABLE
-
 
 object HBaseConnector {
 
@@ -79,15 +54,6 @@ class HBaseConnector(zookeeperQuorum: String, zookeeperPort: String, hBaseMaster
       } else { error(s"$tableName already exists"); false }
     } catch {
       case e: Exception => error(s"Error while creating table"); false
-    }
-  }
-
-  private def initTableIfNeeded(tableName: Option[String], colName: Option[String]): Unit = {
-    val tableItems = List(tableName, colName).flatMap(item => item)
-    if(!tableItems.isEmpty ) {
-      if(getTable(tableItems(0)) == None) {
-        createTable(tableItems(0), tableItems(1))
-      }
     }
   }
 
@@ -119,17 +85,12 @@ class HBaseConnector(zookeeperQuorum: String, zookeeperPort: String, hBaseMaster
   }
 
 
-  //attempts to gets Table. Returns nothing if table doesn't exist
-  //Do we want the getTable method to just try to get the table? don't check if the table exists first
-  //Efficiency: get table; throw error on table not found.
-  //User should check table themselves
   def getTable(tableName: String): Option[Table] = {
     try {
       if(admin.tableExists(TableName.valueOf(tableName))) {
         Some(connection.getTable(TableName.valueOf(tableName)))
       }
       else {
-        //OR SHOULD I THROW AN EXCEPTION SO THAT IT CATCHES BELOW?
         None
       }
     } catch {
@@ -139,7 +100,6 @@ class HBaseConnector(zookeeperQuorum: String, zookeeperPort: String, hBaseMaster
 
   def close: Unit = admin.close()
 
-  //if return value type gives an ambiguity error somehow, try HBaseAdmin
   private def createConnection(zookeeperQuorum: String, zookeeperPort: String, hBaseMaster: String): Connection = {
     val config = getConfig()
     ConnectionFactory.createConnection(config)
@@ -153,4 +113,14 @@ class HBaseConnector(zookeeperQuorum: String, zookeeperPort: String, hBaseMaster
     config.set("hbase.client.keyvalue.maxsize", "0")
     config
   }
+
+  private def initTableIfNeeded(tableName: Option[String], colName: Option[String]): Unit = {
+    val tableItems = List(tableName, colName).flatMap(item => item)
+    if(!tableItems.isEmpty ) {
+      if(getTable(tableItems(0)) == None) {
+        createTable(tableItems(0), tableItems(1))
+      }
+    }
+  }
+
 }

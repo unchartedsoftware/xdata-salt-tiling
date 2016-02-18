@@ -122,16 +122,11 @@ package object io extends Logging {
     s3Client.upload(bytes, bucketName, layerName + "/" + fileName)
   }
   /**
-   *Write binary array data to HBase Table as a batch instead of row by row.
-   *This is done so that you don't have to check if the table exists before you write
-   *every record.
-   *Other alternative is the method above. Where you check for table first.
-   *With the other method you instantiate the connector one more time just to check a table
-   *Write binary array data to HBase Table
+   *Write binary array tiling layer data to HBase Table
    *
    *RDD Layer Data is stored in their own table with tile info stored in a column and tile name as the rowID
    * This Data is first mapped to a list of tuples containing required data to store into HBase table
-   * Then the list of tuples are sent to HBase connector to batch put the list into the table
+   * Then the list of tuples are sent to HBase connector write the RDDPairs into HBase
    * @param zookeeperQuorum HBase Connection Parameter
    * @param zookeeperPort HBase Connection Parameter
    * @param hBaseMaster HBase Connection Parameter
@@ -165,7 +160,8 @@ package object io extends Logging {
    * @param hBaseMaster HBase Connection Parameter
    * @param colName name of column where data will be inserted into
    * @param layerName unique name for the layer, will be used as table name
-   * @param input RDD of tile data to be processed and stored into HBase
+   * @param fileName name of file that the data belongs to. Will be stored as the RowID
+   * @param bytes sequence of bytes to be stored in HBase Table
    */
   def writeBytesToHBase(zookeeperQuorum: String, zookeeperPort: String, hBaseMaster: String, layerName: String, colName: String)(fileName: String, bytes: Seq[Byte]): Unit = {
     val hBaseConnector = HBaseConnector(zookeeperQuorum, zookeeperPort, hBaseMaster, Some(layerName), Some(colName))
