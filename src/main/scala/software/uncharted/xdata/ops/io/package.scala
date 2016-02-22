@@ -163,11 +163,11 @@ package object io extends Logging {
    * @param fileName name of file that the data belongs to. Will be stored as the RowID
    * @param bytes sequence of bytes to be stored in HBase Table
    */
-  // def writeBytesToHBase(configFile: Seq[String], layerName: String, colName: String)(fileName: String, bytes: Seq[Byte]): Unit = {
-  //   val hBaseConnector = HBaseConnector(configFile)
-  //   hBaseConnector.writeRow(layerName, colName, (layerName + "/" + fileName), bytes)
-  //   hBaseConnector.close
-  // }
+  def writeBytesToHBase(configFile: Seq[String], layerName: String, colName: String)(fileName: String, bytes: Seq[Byte]): Unit = {
+    val hBaseConnector = HBaseConnector(configFile)
+    hBaseConnector.writeRow(layerName, colName, (layerName + "/" + fileName), bytes)
+    hBaseConnector.close
+  }
 
   /**
    * Serializes tile bins stored as a double array to tile index / byte sequence tuples.

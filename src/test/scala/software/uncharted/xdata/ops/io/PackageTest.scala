@@ -179,28 +179,27 @@ class PackageTest extends SparkFunSpec {
     }
   }
 
-  // describe("#writeBytesToHBase") {
-  //   val testFile = "metadata.json"
-  //   it("should write the byte data to the HBaseTable without changing it", HBaseConnectorTest) {
-  //     writeBytesToHBase(configFile, testLayer, "testCol")(testFile, Seq(0, 1, 2, 3, 4, 5))
-  //     val hbc = HBaseConnector(zookeeperQuorum, zookeeperPort, hBaseMaster)
-  //     assertResult(true)(hbc.getTable(testLayer).get.exists(new Get (s"${testLayer}/${testFile}".getBytes())))
-  //     hbc.close
-  //     //disable and delete table
-  //     val config = HBaseConfiguration.create()
-  //     config.set("hbase.zookeeper.quorum", zookeeperQuorum)
-  //     config.set("hbase.zookeeper.property.clientPort", zookeeperPort)
-  //     config.set("hbase.master", hBaseMaster)
-  //     config.set("hbase.client.keyvalue.maxsize", "0")
-  //     val connection = ConnectionFactory.createConnection(config)
-  //     val admin = connection.getAdmin
-  //
-  //     admin.disableTable(TableName.valueOf(testLayer))
-  //     admin.deleteTable(TableName.valueOf(testLayer))
-  //     connection.close()
-  //
-  //   }
-  // }
+  describe("#writeBytesToHBase") {
+    val testFile = "metadata.json"
+    it("should write the byte data to the HBaseTable without changing it", HBaseConnectorTest) {
+      writeBytesToHBase(configFile, testLayer, "tileData")(testFile, Seq(0, 1, 2, 3, 4, 5))
+      val hbc = HBaseConnector(configFile)
+      //disable and delete table
+      val config = HBaseConfiguration.create()
+      config.set("hbase.zookeeper.quorum", zookeeperQuorum)
+      config.set("hbase.zookeeper.property.clientPort", zookeeperPort)
+      config.set("hbase.master", hBaseMaster)
+      config.set("hbase.client.keyvalue.maxsize", "0")
+      val connection = ConnectionFactory.createConnection(config)
+      val admin = connection.getAdmin
+
+      assertResult(true)(connection.getTable(TableName.valueOf(testLayer)).exists(new Get (s"${testLayer}/${testFile}".getBytes())))
+      admin.disableTable(TableName.valueOf(testLayer))
+      admin.deleteTable(TableName.valueOf(testLayer))
+      connection.close()
+
+    }
+  }
 
   describe("#serializeBinArray") {
     it("should create an RDD of bin coordinate / byte array tuples from series data") {

@@ -76,145 +76,129 @@ class HBaseConnectorTest extends SparkFunSpec with BeforeAndAfterAll {
   private val nonExistantTable = "nonExistantTable"
   private val nonExistantTable2 = "nonExistantTable2"
 
+  private val qualifier1 = "layer"
+  private val qualifier2 = "anotherLayer"
+
   private val data = Seq[Byte](0, 1, 2, 3, 4, 5)
 
   private val data2 = Array(("3", data.toSeq), ("4", data.toSeq))
   private val data3 = Array(("5", data.toSeq), ("6", data.toSeq))
   private val data4 = Array(("7", data.toSeq), ("8", data.toSeq))
-//WHAT IS THE FORMAT FOR DATA.
-  //should be a tuple collection with rowID and the value)
-      describe("HBaseConnectorTest") {
+  describe("HBaseConnectorTest") {
 
-        //private method. Check if it works by using public methods.
-        describe("getConnection") {
-          it("should create a connection object based on the config file that allows client to write to HBase") {
-            val rddData: RDD[(String, Seq[Byte])] = sc.parallelize(data2)
-            val testHBCObject = HBaseConnector(configFile)
-            assertResult(true)(testHBCObject.writeRows(tableName =  testTable, colFamilyName = testColFamilyName)(rddData))
-            testHBCObject.close
-          }
-
-          // //is it possible that the config file can be incorrect?
-          // it("should return false when connection is not established") {
-          //   val rddData: RDD[(String, Seq[Byte])] = sc.parallelize(data2)
-          //   val testHBCObject = HBaseConnector(incorrectConfigFile)
-          //   assertResult(false)(testHBCObject.writeRows(tableName = testTable, colFamilyName = testColFamilyName)(rddData))
-          //   testHBCObject.close
-          // }
-        }
-
-
-        //private method
-        //createTable
-        //RETURNS TRUE OR FALSE DEPENDING ON WHETHER CREATION WAS SUCCESSFUL OR NOT
-
-        describe("writeRows") {
-          it("should return true when rows are inserted into database") {
-            val rddData: RDD[(String, Seq[Byte])] = sc.parallelize(data2)
-            val result = hbc.writeRows(tableName = testTable, colFamilyName = testColFamilyName)(rddData)
-            assertResult(true)(result)
-          }
-
-          // it("should return false and not create a table when admin object isn't created") {
-          //   val testHBCObject = HBConn(incorrectConfigFile)
-          //   assertResult(false)(testHBCObject.writeRows(tableName = nonExistantTable, colFamilyName = testColFamilyName)(data))
-          //   testHBCObject.close
-          // }
-
-          it("should create table and write into table when non existant table is given") {
-            val rddData: RDD[(String, Seq[Byte])] = sc.parallelize(data2)
-            assertResult(true)(hbc.writeRows(tableName = nonExistantTable2, colFamilyName = testColFamilyName)(rddData))
-          }
-
-          it("should add the rows to the specified table in HBase") {
-            val rddData: RDD[(String, Seq[Byte])] = sc.parallelize(data4)
-            hbc.writeRows(tableName = testTable, colFamilyName = testColFamilyName)(rddData)
-
-            //create connection
-            val config = HBaseConfiguration.create()
-            config.set("hbase.zookeeper.quorum", "uscc0-node08.uncharted.software")
-            config.set("hbase.zookeeper.property.clientPort", "2181")
-            config.set("hbase.master", "hdfs://uscc0-master0.uncharted.software:60000")
-            config.set("hbase.client.keyvalue.maxsize", "0")
-            val connection = ConnectionFactory.createConnection(config)
-            //get table
-            val rowDataTable = connection.getTable(TableName.valueOf(testTable))
-            val rowData = rowDataTable.get(new Get("7".getBytes).addFamily(testColFamilyName.getBytes)).value().toSeq
-            //get value for specific rowID
-            assertResult(data)(rowData)
-
-            connection.close
-          }
-
-        }
-
-        //private method. Check if it works by using public methods.
-        describe("tableExistsOrCreate") {
-          it("should return true if table exists.") {
-            val rddData: RDD[(String, Seq[Byte])] = sc.parallelize(data2)
-            val result = hbc.writeRows(tableName = testTable, colFamilyName = testColFamilyName)(rddData)
-            assertResult(true)(result)
-          }
-
-          it("should create a table in HBase when specified table does not exist") {
-            val rddData: RDD[(String, Seq[Byte])] = sc.parallelize(data2)
-            //create connection
-            val config = HBaseConfiguration.create()
-            config.set("hbase.zookeeper.quorum", "uscc0-node08.uncharted.software")
-            config.set("hbase.zookeeper.property.clientPort", "2181")
-            config.set("hbase.master", "hdfs://uscc0-master0.uncharted.software:60000")
-            config.set("hbase.client.keyvalue.maxsize", "0")
-            val connection = ConnectionFactory.createConnection(config)
-            val isTableExist = connection.getAdmin().tableExists(TableName.valueOf(nonExistantTable))
-            //check if table exists
-            assertResult(false)(isTableExist)
-
-            val result = hbc.writeRows(tableName = nonExistantTable, colFamilyName = testColFamilyName)(rddData)
-
-            //use connection to see if table exists Now
-            val isTableExistNow = connection.getAdmin().tableExists(TableName.valueOf(nonExistantTable))
-            assertResult(true)(isTableExistNow)
-
-            connection.close
-          }
-
-        }
-
-        // //private method. Check if it works by using public methods.
-        // describe("columnFamilyExistsOrCreate") {
-        //   it("should return true when column family exists in given table") {
-        //     val rddData: RDD[(String, Seq[Byte])] = sc.parallelize(data2)
-        //     val result = hbc.writeRows(tableName = testTable, colFamilyName = testColFamilyName)(rddData)
-        //     assertResult(true)(result)
-        //   }
-        //
-        //   it("should create a column family for the table name specified when the column family does not exist") {
-        //     val rddData: RDD[(String, Seq[Byte])] = sc.parallelize(data2)
-        //     //create connecion, check if family name exists
-        //     val config = HBaseConfiguration.create()
-        //     config.set("hbase.zookeeper.quorum", "uscc0-node08.uncharted.software")
-        //     config.set("hbase.zookeeper.property.clientPort", "2181")
-        //     config.set("hbase.master", "hdfs://uscc0-master0.uncharted.software:60000")
-        //     config.set("hbase.client.keyvalue.maxsize", "0")
-        //     val connection = ConnectionFactory.createConnection(config)
-        //     var checkTrue = false
-        //     connection.getTable(TableName.valueOf(testTable)).getTableDescriptor().getColumnFamilies().foreach(item => if(item.getNameAsString() == nonExistantColFamilyName){ checkTrue = true})
-        //     assertResult(false)(checkTrue)
-        //
-        //     val result = hbc.writeRows(tableName = testTable, colFamilyName = nonExistantColFamilyName)(rddData)
-        //
-        //     //use connection, check if family name exists now
-        //     checkTrue = false
-        //     connection.getTable(TableName.valueOf(testTable)).getTableDescriptor().getColumnFamilies().foreach { item =>
-        //       println(item)
-        //       if(item.getNameAsString() == nonExistantColFamilyName){ checkTrue = true}
-        //     }
-        //     assertResult(true)(checkTrue)
-        //
-        //     connection.close
-        //   }
-        //
-        // }
+    describe("getConnection") {
+      it("should create a connection object based on the config file that allows client to write to HBase") {
+        val rddData: RDD[(String, Seq[Byte])] = sc.parallelize(data2)
+        val testHBCObject = HBaseConnector(configFile)
+        assertResult(true)(testHBCObject.writeRows(tableName =  testTable, colFamilyName = testColFamilyName)(rddData))
+        testHBCObject.close
       }
 
+      // //is it possible that the config file can be incorrect?
+      // it("should return false when connection is not established") {
+      //   val rddData: RDD[(String, Seq[Byte])] = sc.parallelize(data2)
+      //   val testHBCObject = HBaseConnector(incorrectConfigFile)
+      //   assertResult(false)(testHBCObject.writeRows(tableName = testTable, colFamilyName = testColFamilyName)(rddData))
+      //   testHBCObject.close
+      // }
+    }
+
+    describe("writeRows") {
+      it("should return true when rows are inserted into database") {
+        val rddData: RDD[(String, Seq[Byte])] = sc.parallelize(data2)
+        val result = hbc.writeRows(tableName = testTable, colFamilyName = testColFamilyName)(rddData)
+        assertResult(true)(result)
+      }
+
+      // it("should return false and not create a table when admin object isn't created") {
+      //   val testHBCObject = HBConn(incorrectConfigFile)
+      //   assertResult(false)(testHBCObject.writeRows(tableName = nonExistantTable, colFamilyName = testColFamilyName)(data))
+      //   testHBCObject.close
+      // }
+
+      it("should create table and write into table when non existant table is given") {
+        val rddData: RDD[(String, Seq[Byte])] = sc.parallelize(data2)
+        assertResult(true)(hbc.writeRows(tableName = nonExistantTable2, colFamilyName = testColFamilyName)(rddData))
+      }
+
+      it("should add the rows to the specified table in HBase") {
+        val rddData: RDD[(String, Seq[Byte])] = sc.parallelize(data4)
+        hbc.writeRows(tableName = testTable, colFamilyName = testColFamilyName)(rddData)
+
+        //create connection
+        val config = HBaseConfiguration.create()
+        config.set("hbase.zookeeper.quorum", "uscc0-node08.uncharted.software")
+        config.set("hbase.zookeeper.property.clientPort", "2181")
+        config.set("hbase.master", "hdfs://uscc0-master0.uncharted.software:60000")
+        config.set("hbase.client.keyvalue.maxsize", "0")
+        val connection = ConnectionFactory.createConnection(config)
+        //get table
+        val rowDataTable = connection.getTable(TableName.valueOf(testTable))
+        val rowData = rowDataTable.get(new Get("7".getBytes).addFamily(testColFamilyName.getBytes)).value().toSeq
+        //get value for specific rowID
+        assertResult(data)(rowData)
+
+        connection.close
+      }
+
+      it("should return false when incorrect family name is passed in") {
+        val rddData: RDD[(String, Seq[Byte])] = sc.parallelize(data4)
+        assertResult(false)(hbc.writeRows(tableName = testTable, colFamilyName = nonExistantColFamilyName)(rddData))
+      }
+
+      it("should write data into column qualifier when specified") {
+        val rddData: RDD[(String, Seq[Byte])] = sc.parallelize(data4)
+        val result = hbc.writeRows(tableName = testTable, colFamilyName = testColFamilyName, qualifierName = qualifier1)(rddData)
+        assertResult(true)(result)
+      }
+
+      it("should store the data in a column qualifier when specified") {
+        val rddData: RDD[(String, Seq[Byte])] = sc.parallelize(data3)
+        hbc.writeRows(tableName = testTable, colFamilyName = testColFamilyName, qualifierName = qualifier2)(rddData)
+        //create connection
+        val config = HBaseConfiguration.create()
+        config.set("hbase.zookeeper.quorum", "uscc0-node08.uncharted.software")
+        config.set("hbase.zookeeper.property.clientPort", "2181")
+        config.set("hbase.master", "hdfs://uscc0-master0.uncharted.software:60000")
+        config.set("hbase.client.keyvalue.maxsize", "0")
+        val connection = ConnectionFactory.createConnection(config)
+        //get table
+        val rowDataTable = connection.getTable(TableName.valueOf(testTable))
+        val rowData = rowDataTable.get(new Get("5".getBytes).addColumn(testColFamilyName.getBytes, qualifier2.getBytes)).value().toSeq
+        assertResult(data)(rowData)
+      }
+
+    }
+
+    //private method. Check if it works by using public methods.
+    describe("tableExistsOrCreate") {
+      it("should return true if table exists.") {
+        val rddData: RDD[(String, Seq[Byte])] = sc.parallelize(data2)
+        val result = hbc.writeRows(tableName = testTable, colFamilyName = testColFamilyName)(rddData)
+        assertResult(true)(result)
+      }
+
+      it("should create a table in HBase when specified table does not exist") {
+        val rddData: RDD[(String, Seq[Byte])] = sc.parallelize(data2)
+        //create connection
+        val config = HBaseConfiguration.create()
+        config.set("hbase.zookeeper.quorum", "uscc0-node08.uncharted.software")
+        config.set("hbase.zookeeper.property.clientPort", "2181")
+        config.set("hbase.master", "hdfs://uscc0-master0.uncharted.software:60000")
+        config.set("hbase.client.keyvalue.maxsize", "0")
+        val connection = ConnectionFactory.createConnection(config)
+        val isTableExist = connection.getAdmin().tableExists(TableName.valueOf(nonExistantTable))
+        //check if table exists
+        assertResult(false)(isTableExist)
+
+        val result = hbc.writeRows(tableName = nonExistantTable, colFamilyName = testColFamilyName)(rddData)
+
+        //use connection to see if table exists Now
+        val isTableExistNow = connection.getAdmin().tableExists(TableName.valueOf(nonExistantTable))
+        assertResult(true)(isTableExistNow)
+
+        connection.close
+      }
+    }
+  }
 }
