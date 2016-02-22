@@ -134,7 +134,7 @@ package object io extends Logging {
    * @param layerName unique name for the layer, will be used as table name
    * @param input RDD of tile data to be processed and stored into HBase
    */
-  def writeToHBase(zookeeperQuorum: String, zookeeperPort: String, hBaseMaster: String, layerName: String, colName: String)
+  def writeToHBase(configFile: Seq[String], layerName: String, colName: String)
   (input: RDD[((Int, Int, Int), Seq[Byte])]): RDD[((Int, Int, Int), Seq[Byte])] = {
 
     val results = input.mapPartitions { tileDataIter =>
@@ -145,8 +145,8 @@ package object io extends Logging {
         (fileName, tileData._2)
       }
     }
-    val hBaseConnector = HBaseConnector(zookeeperQuorum, zookeeperPort, hBaseMaster, Some(layerName), Some(colName))
-    hBaseConnector.writeRows(layerName, colName, results)
+    val hBaseConnector = HBaseConnector(configFile)
+    hBaseConnector.writeRows(layerName, colName)(results)
     hBaseConnector.close
     input
   }
@@ -163,11 +163,11 @@ package object io extends Logging {
    * @param fileName name of file that the data belongs to. Will be stored as the RowID
    * @param bytes sequence of bytes to be stored in HBase Table
    */
-  def writeBytesToHBase(zookeeperQuorum: String, zookeeperPort: String, hBaseMaster: String, layerName: String, colName: String)(fileName: String, bytes: Seq[Byte]): Unit = {
-    val hBaseConnector = HBaseConnector(zookeeperQuorum, zookeeperPort, hBaseMaster, Some(layerName), Some(colName))
-    hBaseConnector.writeRow(layerName, colName, (layerName + "/" + fileName), bytes)
-    hBaseConnector.close
-  }
+  // def writeBytesToHBase(configFile: Seq[String], layerName: String, colName: String)(fileName: String, bytes: Seq[Byte]): Unit = {
+  //   val hBaseConnector = HBaseConnector(configFile)
+  //   hBaseConnector.writeRow(layerName, colName, (layerName + "/" + fileName), bytes)
+  //   hBaseConnector.close
+  // }
 
   /**
    * Serializes tile bins stored as a double array to tile index / byte sequence tuples.
