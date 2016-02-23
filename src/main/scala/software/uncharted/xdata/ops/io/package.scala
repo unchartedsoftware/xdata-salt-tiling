@@ -141,8 +141,9 @@ package object io extends Logging {
       tileDataIter.map { tileData =>
         val coord = tileData._1
         // store tile in bucket as layerName/level-xIdx-yIdx.bin
-        val fileName = s"$layerName/${coord._1}/${coord._2}/${coord._3}.bin"
-        (fileName, tileData._2)
+        //val fileName = s"$layerName/${coord._1}/${coord._2}/${coord._3}.bin"
+        val rowID = s"${coord._1},${coord._2},${coord._3}"
+        (rowID, tileData._2)
       }
     }
     val hBaseConnector = HBaseConnector(configFile)

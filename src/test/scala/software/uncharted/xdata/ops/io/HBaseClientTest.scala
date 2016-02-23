@@ -81,9 +81,9 @@ class HBaseConnectorTest extends SparkFunSpec with BeforeAndAfterAll {
 
   private val data = Seq[Byte](0, 1, 2, 3, 4, 5)
 
-  private val data2 = Array(("3", data.toSeq), ("4", data.toSeq))
-  private val data3 = Array(("5", data.toSeq), ("6", data.toSeq))
-  private val data4 = Array(("7", data.toSeq), ("8", data.toSeq))
+  private val data2 = Array(("3,4,5", data.toSeq), ("4,4,5", data.toSeq))
+  private val data3 = Array(("5,4,5", data.toSeq), ("6,4,5", data.toSeq))
+  private val data4 = Array(("7,4,5", data.toSeq), ("8,4,5", data.toSeq))
   describe("HBaseConnectorTest") {
 
     describe("getConnection") {
@@ -134,7 +134,7 @@ class HBaseConnectorTest extends SparkFunSpec with BeforeAndAfterAll {
         val connection = ConnectionFactory.createConnection(config)
         //get table
         val rowDataTable = connection.getTable(TableName.valueOf(testTable))
-        val rowData = rowDataTable.get(new Get("7".getBytes).addFamily(testColFamilyName.getBytes)).value().toSeq
+        val rowData = rowDataTable.get(new Get("7,4,5".getBytes).addFamily(testColFamilyName.getBytes)).value().toSeq
         //get value for specific rowID
         assertResult(data)(rowData)
 
@@ -164,8 +164,9 @@ class HBaseConnectorTest extends SparkFunSpec with BeforeAndAfterAll {
         val connection = ConnectionFactory.createConnection(config)
         //get table
         val rowDataTable = connection.getTable(TableName.valueOf(testTable))
-        val rowData = rowDataTable.get(new Get("5".getBytes).addColumn(testColFamilyName.getBytes, qualifier2.getBytes)).value().toSeq
+        val rowData = rowDataTable.get(new Get("5,4,5".getBytes).addColumn(testColFamilyName.getBytes, qualifier2.getBytes)).value().toSeq
         assertResult(data)(rowData)
+        connection.close
       }
 
     }

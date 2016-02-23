@@ -146,8 +146,8 @@ class PackageTest extends SparkFunSpec {
       config.set("hbase.client.keyvalue.maxsize", "0")
       val connection = ConnectionFactory.createConnection(config)
       val admin = connection.getAdmin
-      assertResult(true)(connection.getTable(TableName.valueOf(testLayer)).exists(new Get (s"${testLayer}/2/2/2.bin".getBytes())))
-      assertResult(true)(connection.getTable(TableName.valueOf(testLayer)).exists(new Get (s"${testLayer}/2/2/3.bin".getBytes())))
+      assertResult(true)(connection.getTable(TableName.valueOf(testLayer)).exists(new Get (s"2,2,2".getBytes())))
+      assertResult(true)(connection.getTable(TableName.valueOf(testLayer)).exists(new Get (s"2,2,3".getBytes())))
       //disable and delete test table
       admin.disableTable(TableName.valueOf(testLayer))
       admin.deleteTable(TableName.valueOf(testLayer))
@@ -171,7 +171,7 @@ class PackageTest extends SparkFunSpec {
       val connection = ConnectionFactory.createConnection(config)
       val admin = connection.getAdmin
 
-      assertResult(Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))(connection.getTable(TableName.valueOf(testLayer)).get(new Get(s"${testLayer}/2/2/2.bin".getBytes).addFamily(testCol.getBytes)).value().toSeq)
+      assertResult(Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))(connection.getTable(TableName.valueOf(testLayer)).get(new Get(s"2,2,2".getBytes).addFamily(testCol.getBytes)).value().toSeq)
 
       admin.disableTable(TableName.valueOf(testLayer))
       admin.deleteTable(TableName.valueOf(testLayer))

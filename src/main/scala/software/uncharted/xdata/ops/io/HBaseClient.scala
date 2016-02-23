@@ -110,4 +110,12 @@ class HBaseConnector(configFile: Seq[String]) extends Logging {
   private def getConnection(hbaseConfiguration: Configuration): Connection = {
     ConnectionFactory.createConnection(hbaseConfiguration)
   }
+  //CHANGE TO JAVA. MAKE IT ACCEPT STRING
+    /**
+   * Determine the row ID we use in HBase for a given tile index
+   */
+   private def rowIdFromTileIndex(rowID: String): String = {
+     return rowID
+  }
+
 }
