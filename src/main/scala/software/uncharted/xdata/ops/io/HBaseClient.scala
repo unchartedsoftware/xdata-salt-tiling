@@ -41,19 +41,42 @@ object HBaseConnector {
   }
 }
 
-class HBaseConnector(configFile: Seq[String]) extends Logging {
+class HBaseConnector(configFiles: Seq[String]) extends Logging {
   private val hbaseConfiguration = HBaseConfiguration.create()
-  configFile.foreach{configFileItem =>
-  hbaseConfiguration.addResource(new Path(new URI(configFileItem)))
+  configFiles.foreach{configFile =>
+  hbaseConfiguration.addResource(new Path(new URI(configFile)))
   }
   private val connection = getConnection(hbaseConfiguration)
   private val admin = connection.getAdmin
 
   private val colFamilyData = "tileData"
   private val colFamilyMetaData = "tileMetaData"
+  /**
+   *Write Tile Data into a Table
+   *
+   *RDD Layer Data is stored in their own table with tile info stored in a column and tile name as the rowID
+   * @param tableName name of the table to be written to
+   * @param qualifierName qualifier column to be written to, if passed in
+   * @param listOfRowInfo RDD tuple of String and a Sequence of Bytes; Row ID and data to be stored in table
+   */
+  def writeTileData(tableName: String, qualifierName: String = "")(listOfRowInfo: RDD[(String, Seq[Byte])]): Boolean = {
+    writeRows(tableName = tableName, colFamilyName = colFamilyData, qualifierName = qualifierName)(listOfRowInfo)
+  }
+  /**
+   *Write Meta Data into a Table
+   *
+   *RDD Layer Data is stored in their own table with tile info stored in a column and tile name as the rowID
+   * @param tableName name of the table to be written to
+   * @param qualifierName qualifier column to be written to, if passed in
+   * @param rowID row ID where data is to be inserted into
+   * @param data data to be inserted
+   */
+  def writeMetaData(tableName: String, qualifierName: String = "", rowID: String, data: Seq[Byte]): Boolean = {
+    writeRow(tableName = tableName, colName = colFamilyMetaData, qualifierName = qualifierName, rowID = rowID, data = data)
+  }
 
-  def writeRows(tableName: String, colFamilyName: String, qualifierName: String = "")(listOfRowInfo: RDD[(String, Seq[Byte])]): Boolean = {
-    tableExistsOrCreate(tableName)
+  private def writeRows(tableName: String, colFamilyName: String, qualifierName: String)(listOfRowInfo: RDD[(String, Seq[Byte])]): Boolean = {
+    createTableIfNecessary(tableName)
     try {
       val putList = listOfRowInfo.map { rowInfo =>
         (new ImmutableBytesWritable, new Put(rowInfo._1.getBytes).addColumn(colFamilyName.getBytes, qualifierName.getBytes, rowInfo._2.toArray))
@@ -68,12 +91,12 @@ class HBaseConnector(configFile: Seq[String]) extends Logging {
     }
   }
 
-  def writeRow(tableName: String, colName: String, rowID: String, data: Seq[Byte]): Boolean = {
+  private def writeRow(tableName: String, colName: String, qualifierName: String, rowID: String, data: Seq[Byte]): Boolean = {
     try {
-      tableExistsOrCreate(tableName)
+      createTableIfNecessary(tableName)
       val table = connection.getTable(TableName.valueOf(tableName))
-      table.put(new Put(rowID.getBytes).addColumn(colName.getBytes, Array[Byte](), data.toArray))
-      val checkEmpty = table.close
+      table.put(new Put(rowID.getBytes).addColumn(colName.getBytes, qualifierName.getBytes, data.toArray))
+      table.close
       true
     } catch {
       case e: Exception => error(s"Failed to write row into table"); false
@@ -82,7 +105,7 @@ class HBaseConnector(configFile: Seq[String]) extends Logging {
 
   def close: Unit = admin.close()
 
-  private def tableExistsOrCreate(tableName: String): Boolean = {
+  private def createTableIfNecessary(tableName: String): Boolean = {
     try {
       if(!admin.tableExists(TableName.valueOf(tableName))) {
         createTable(tableName)
@@ -110,12 +133,4 @@ class HBaseConnector(configFile: Seq[String]) extends Logging {
   private def getConnection(hbaseConfiguration: Configuration): Connection = {
     ConnectionFactory.createConnection(hbaseConfiguration)
   }
-  //CHANGE TO JAVA. MAKE IT ACCEPT STRING
-    /**
-   * Determine the row ID we use in HBase for a given tile index
-   */
-   private def rowIdFromTileIndex(rowID: String): String = {
-     return rowID
-  }
-
 }

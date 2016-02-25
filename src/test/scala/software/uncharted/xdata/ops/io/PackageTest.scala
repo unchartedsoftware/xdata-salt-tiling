@@ -136,8 +136,9 @@ class PackageTest extends SparkFunSpec {
         ((2, 2, 3), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))
       ))
       val testCol = "tileData"
+      val testQualifier = "tileDataQuali"
 
-      writeToHBase(configFile, testLayer, testCol)(data).collect()
+      writeToHBase(configFile, testLayer, testQualifier)(data).collect()
 
       val config = HBaseConfiguration.create()
       config.set("hbase.zookeeper.quorum", zookeeperQuorum)
@@ -146,8 +147,8 @@ class PackageTest extends SparkFunSpec {
       config.set("hbase.client.keyvalue.maxsize", "0")
       val connection = ConnectionFactory.createConnection(config)
       val admin = connection.getAdmin
-      assertResult(true)(connection.getTable(TableName.valueOf(testLayer)).exists(new Get (s"2,2,2".getBytes())))
-      assertResult(true)(connection.getTable(TableName.valueOf(testLayer)).exists(new Get (s"2,2,3".getBytes())))
+      assertResult(true)(connection.getTable(TableName.valueOf(testLayer)).exists(new Get (s"${testLayer}/02/2/2.bin".getBytes())))
+      assertResult(true)(connection.getTable(TableName.valueOf(testLayer)).exists(new Get (s"${testLayer}/02/2/3.bin".getBytes())))
       //disable and delete test table
       admin.disableTable(TableName.valueOf(testLayer))
       admin.deleteTable(TableName.valueOf(testLayer))
@@ -161,8 +162,8 @@ class PackageTest extends SparkFunSpec {
       ))
 
       val testCol = "tileData"
-
-      writeToHBase(configFile, testLayer, testCol)(data)
+      val testQualifier = "tileDataQuali"
+      writeToHBase(configFile, testLayer, testQualifier)(data)
       val config = HBaseConfiguration.create()
       config.set("hbase.zookeeper.quorum", zookeeperQuorum)
       config.set("hbase.zookeeper.property.clientPort", zookeeperPort)
@@ -171,7 +172,7 @@ class PackageTest extends SparkFunSpec {
       val connection = ConnectionFactory.createConnection(config)
       val admin = connection.getAdmin
 
-      assertResult(Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))(connection.getTable(TableName.valueOf(testLayer)).get(new Get(s"2,2,2".getBytes).addFamily(testCol.getBytes)).value().toSeq)
+      assertResult(Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))(connection.getTable(TableName.valueOf(testLayer)).get(new Get(s"${testLayer}/02/2/2.bin".getBytes).addFamily(testCol.getBytes)).value().toSeq)
 
       admin.disableTable(TableName.valueOf(testLayer))
       admin.deleteTable(TableName.valueOf(testLayer))
@@ -181,8 +182,9 @@ class PackageTest extends SparkFunSpec {
 
   describe("#writeBytesToHBase") {
     val testFile = "metadata.json"
+    val testQualifier = "tileQualifier"
     it("should write the byte data to the HBaseTable without changing it", HBaseConnectorTest) {
-      writeBytesToHBase(configFile, testLayer, "tileData")(testFile, Seq(0, 1, 2, 3, 4, 5))
+      writeBytesToHBase(configFile, testLayer, testQualifier)(testFile, Seq(0, 1, 2, 3, 4, 5))
       val hbc = HBaseConnector(configFile)
       //disable and delete table
       val config = HBaseConfiguration.create()

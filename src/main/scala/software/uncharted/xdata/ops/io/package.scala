@@ -122,51 +122,49 @@ package object io extends Logging {
     s3Client.upload(bytes, bucketName, layerName + "/" + fileName)
   }
   /**
-   *Write binary array tiling layer data to HBase Table
+   *Write Tiling Data to the TileData column in an HBase Table
    *
    *RDD Layer Data is stored in their own table with tile info stored in a column and tile name as the rowID
    * This Data is first mapped to a list of tuples containing required data to store into HBase table
    * Then the list of tuples are sent to HBase connector write the RDDPairs into HBase
-   * @param zookeeperQuorum HBase Connection Parameter
-   * @param zookeeperPort HBase Connection Parameter
-   * @param hBaseMaster HBase Connection Parameter
-   * @param colName name of column where data will be updated
+   * @param configFile HBaseConfig Files used to connect to HBase
    * @param layerName unique name for the layer, will be used as table name
+   * @param qualifierName name of column qualifier where data will be updated
    * @param input RDD of tile data to be processed and stored into HBase
    */
-  def writeToHBase(configFile: Seq[String], layerName: String, colName: String)
+  def writeToHBase(configFile: Seq[String], layerName: String, qualifierName: String)
   (input: RDD[((Int, Int, Int), Seq[Byte])]): RDD[((Int, Int, Int), Seq[Byte])] = {
 
     val results = input.mapPartitions { tileDataIter =>
       tileDataIter.map { tileData =>
         val coord = tileData._1
-        // store tile in bucket as layerName/level-xIdx-yIdx.bin
-        //val fileName = s"$layerName/${coord._1}/${coord._2}/${coord._3}.bin"
-        val rowID = s"${coord._1},${coord._2},${coord._3}"
+        val rowID = mkRowId(s"${layerName}/", "/", ".bin")(coord._1, coord._2, coord._3)
         (rowID, tileData._2)
       }
     }
     val hBaseConnector = HBaseConnector(configFile)
-    hBaseConnector.writeRows(layerName, colName)(results)
+    hBaseConnector.writeTileData(layerName, qualifierName)(results)
     hBaseConnector.close
     input
   }
 
+  private def mkRowId (prefix: String, separator: String, suffix: String)(level: Int, x: Int, y: Int): String = {
+    val digits = math.log10(1 << level).floor.toInt + 1
+    (prefix+"%02d"+separator+"%0"+digits+"d"+separator+"%0"+digits+"d"+suffix).format(level, x, y)
+  }
   /**
-   *Write binary array data to HBase Table
+   *Write binary array data to a MetaData column in an HBase Table
    *
    *RDD Layer Data is stored in their own table with tile info stored in a column and tile name as the rowID
-   * @param zookeeperQuorum HBase Connection Parameter
-   * @param zookeeperPort HBase Connection Parameter
-   * @param hBaseMaster HBase Connection Parameter
-   * @param colName name of column where data will be inserted into
+   * @param configFile HBaseConfig Files used to connect to HBase
    * @param layerName unique name for the layer, will be used as table name
+   * @param qualifierName name of column qualifier where data will be updated
    * @param fileName name of file that the data belongs to. Will be stored as the RowID
    * @param bytes sequence of bytes to be stored in HBase Table
    */
-  def writeBytesToHBase(configFile: Seq[String], layerName: String, colName: String)(fileName: String, bytes: Seq[Byte]): Unit = {
+  def writeBytesToHBase(configFile: Seq[String], layerName: String, qualifierName: String)(fileName: String, bytes: Seq[Byte]): Unit = {
     val hBaseConnector = HBaseConnector(configFile)
-    hBaseConnector.writeRow(layerName, colName, (layerName + "/" + fileName), bytes)
+    hBaseConnector.writeMetaData(tableName = layerName, rowID = (layerName + "/" + fileName), data = bytes)
     hBaseConnector.close
   }
 
