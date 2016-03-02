@@ -13,6 +13,7 @@
 package software.uncharted.xdata.ops
 
 import java.io.{BufferedOutputStream, FileOutputStream, File}
+import java.util.ArrayList
 
 import grizzled.slf4j.Logging
 import org.apache.spark.rdd.RDD
@@ -119,6 +120,52 @@ package object io extends Logging {
   def writeBytesToS3(accessKey: String, secretKey: String, bucketName: String, layerName: String)(fileName: String, bytes: Seq[Byte]): Unit = {
     val s3Client = S3Client(accessKey, secretKey)
     s3Client.upload(bytes, bucketName, layerName + "/" + fileName)
+  }
+  /**
+   *Write Tiling Data to the TileData column in an HBase Table
+   *
+   *RDD Layer Data is stored in their own table with tile info stored in a column and tile name as the rowID
+   * This Data is first mapped to a list of tuples containing required data to store into HBase table
+   * Then the list of tuples are sent to HBase connector write the RDDPairs into HBase
+   * @param configFile HBaseConfig Files used to connect to HBase
+   * @param layerName unique name for the layer, will be used as table name
+   * @param qualifierName name of column qualifier where data will be updated
+   * @param input RDD of tile data to be processed and stored into HBase
+   */
+  def writeToHBase(configFile: Seq[String], layerName: String, qualifierName: String)
+  (input: RDD[((Int, Int, Int), Seq[Byte])]): RDD[((Int, Int, Int), Seq[Byte])] = {
+
+    val results = input.mapPartitions { tileDataIter =>
+      tileDataIter.map { tileData =>
+        val coord = tileData._1
+        val rowID = mkRowId(s"${layerName}/", "/", ".bin")(coord._1, coord._2, coord._3)
+        (rowID, tileData._2)
+      }
+    }
+    val hBaseConnector = HBaseConnector(configFile)
+    hBaseConnector.writeTileData(layerName, qualifierName)(results)
+    hBaseConnector.close
+    input
+  }
+
+  private def mkRowId (prefix: String, separator: String, suffix: String)(level: Int, x: Int, y: Int): String = {
+    val digits = math.log10(1 << level).floor.toInt + 1
+    (prefix+"%02d"+separator+"%0"+digits+"d"+separator+"%0"+digits+"d"+suffix).format(level, x, y)
+  }
+  /**
+   *Write binary array data to a MetaData column in an HBase Table
+   *
+   *RDD Layer Data is stored in their own table with tile info stored in a column and tile name as the rowID
+   * @param configFile HBaseConfig Files used to connect to HBase
+   * @param layerName unique name for the layer, will be used as table name
+   * @param qualifierName name of column qualifier where data will be updated
+   * @param fileName name of file that the data belongs to. Will be stored as the RowID
+   * @param bytes sequence of bytes to be stored in HBase Table
+   */
+  def writeBytesToHBase(configFile: Seq[String], layerName: String, qualifierName: String)(fileName: String, bytes: Seq[Byte]): Unit = {
+    val hBaseConnector = HBaseConnector(configFile)
+    hBaseConnector.writeMetaData(tableName = layerName, rowID = (layerName + "/" + fileName), data = bytes)
+    hBaseConnector.close
   }
 
   /**
