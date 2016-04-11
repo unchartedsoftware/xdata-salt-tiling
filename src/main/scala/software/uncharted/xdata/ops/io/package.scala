@@ -25,6 +25,9 @@ package object io extends Logging {
 
   val doubleBytes = 8
 
+  //to remove scalastyle:string literal error
+  val slash = "/"
+
   /**
    * Write binary array data to the file system.  Folder structure is
    * baseFilePath/layerName/level/xIdx/yIdx.bin.  Indexing is TMS style
@@ -119,7 +122,7 @@ package object io extends Logging {
    */
   def writeBytesToS3(accessKey: String, secretKey: String, bucketName: String, layerName: String)(fileName: String, bytes: Seq[Byte]): Unit = {
     val s3Client = S3Client(accessKey, secretKey)
-    s3Client.upload(bytes, bucketName, layerName + "/" + fileName)
+    s3Client.upload(bytes, bucketName, layerName + slash + fileName)
   }
   /**
    *Write Tiling Data to the TileData column in an HBase Table
@@ -138,7 +141,7 @@ package object io extends Logging {
     val results = input.mapPartitions { tileDataIter =>
       tileDataIter.map { tileData =>
         val coord = tileData._1
-        val rowID = mkRowId(s"${layerName}/", "/", ".bin")(coord._1, coord._2, coord._3)
+        val rowID = mkRowId(s"${layerName}/", slash, ".bin")(coord._1, coord._2, coord._3)
         (rowID, tileData._2)
       }
     }
@@ -150,7 +153,7 @@ package object io extends Logging {
 
   private def mkRowId (prefix: String, separator: String, suffix: String)(level: Int, x: Int, y: Int): String = {
     val digits = math.log10(1 << level).floor.toInt + 1
-    (prefix+"%02d"+separator+"%0"+digits+"d"+separator+"%0"+digits+"d"+suffix).format(level, x, y)
+    (prefix + "%02d" + separator + "%0" + digits + "d" + separator + "%0" + digits + "d" + suffix).format(level, x, y)
   }
   /**
    *Write binary array data to a MetaData column in an HBase Table
@@ -164,7 +167,7 @@ package object io extends Logging {
    */
   def writeBytesToHBase(configFile: Seq[String], layerName: String, qualifierName: String)(fileName: String, bytes: Seq[Byte]): Unit = {
     val hBaseConnector = HBaseConnector(configFile)
-    hBaseConnector.writeMetaData(tableName = layerName, rowID = (layerName + "/" + fileName), data = bytes)
+    hBaseConnector.writeMetaData(tableName = layerName, rowID = (layerName + slash + fileName), data = bytes)
     hBaseConnector.close
   }
 
