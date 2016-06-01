@@ -78,13 +78,13 @@ class MercatorTimeHeatmapTest extends SparkFunSpec {
 
     it("should sum values that are in the same bin ") {
       val result = MercatorTimeHeatmap(latCol, lonCol, timeCol, Some(value), None, RangeDescription.fromCount(0, 800, 10), Seq(0), 10)(genData).collect()
-      val proj = new MercatorTimeProjection(RangeDescription.fromCount(0L, 800L, 10))
+      val proj = new MercatorTimeProjection(Seq(0), RangeDescription.fromCount(0L, 800L, 10))
       assertResult(0.2)(result(0).bins(proj.binTo1D((0, 0, 3), (9, 9, 9))))
     }
 
     it("should not aggregate across time buckets") {
       val result = MercatorTimeHeatmap(latCol, lonCol, timeCol, None, None, RangeDescription.fromCount(0, 800, 10), (0 until 3), 10)(genData).collect()
-      val proj = new MercatorTimeProjection(RangeDescription.fromCount(0L, 800L, 10))
+      val proj = new MercatorTimeProjection(Seq(0), RangeDescription.fromCount(0L, 800L, 10))
 
       val tile = (t: (Int, Int, Int)) => result.find(s => s.coords == t)
 
@@ -95,7 +95,7 @@ class MercatorTimeHeatmapTest extends SparkFunSpec {
 
     it("should use a value of 1.0 for each bin when no value column is specified") {
       val result = MercatorTimeHeatmap(latCol, lonCol, timeCol, None, None, RangeDescription.fromCount(0, 800, 10), Seq(0), 10)(genData).collect()
-      val proj = new MercatorTimeProjection(RangeDescription.fromCount(0L, 800L, 10))
+      val proj = new MercatorTimeProjection(Seq(0), RangeDescription.fromCount(0L, 800L, 10))
       assertResult(2)(result(0).bins(proj.binTo1D((0, 0, 3), (9, 9, 9))))
     }
   }

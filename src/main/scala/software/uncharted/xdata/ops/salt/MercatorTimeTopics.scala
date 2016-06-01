@@ -32,18 +32,18 @@ object MercatorTimeTopics extends MercatorTimeOp {
             zoomLevels: Seq[Int],
             tms: Boolean = true)
            (input: DataFrame):
-  RDD[SeriesData[(Int, Int, Int), List[(String, Int)], Nothing]] = {
+  RDD[SeriesData[(Int, Int, Int), (Int, Int, Int), List[(String, Int)], Nothing]] = {
 
     // Extracts value data from row
-    val valueExtractor: Option[(Row) => Option[Seq[String]]] = Some((r: Row) => {
+    val valueExtractor: (Row) => Option[Seq[String]] = (r: Row) => {
       val rowIndex = r.schema.fieldIndex(textCol)
       if (!r.isNullAt(rowIndex) && r.getSeq(rowIndex).nonEmpty) Some(r.getSeq(rowIndex)) else None
-    })
+    }
 
     val aggregator = new TopElementsAggregator[String](topicLimit)
 
     val request = new TileLevelRequest(zoomLevels, (tc: (Int, Int, Int)) => tc._1)
-    super.apply(latCol, lonCol, rangeCol, latLonBounds, timeRange, valueExtractor, aggregator, None, 1, tms)(request)(input)
+    super.apply(latCol, lonCol, rangeCol, latLonBounds, timeRange, valueExtractor, aggregator, None, zoomLevels, 1, tms)(request)(input)
   }
 }
 

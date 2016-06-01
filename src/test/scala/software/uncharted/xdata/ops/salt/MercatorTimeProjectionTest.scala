@@ -19,29 +19,29 @@ class MercatorTimeProjectionTest extends FunSpec {
   describe("MercatorTimeProjectionTest") {
     describe("#project()") {
       it("should return None when the data space coordinate is none") {
-        val proj = new MercatorTimeProjection()
-        assertResult(None)(proj.project(None, 0, (32, 32, 32)))
+        val proj = new MercatorTimeProjection(Seq(0))
+        assertResult(None)(proj.project(None, (32, 32, 32)))
       }
 
       it("should return None when the time coord is out of range") {
-        val proj = new MercatorTimeProjection(RangeDescription.fromCount(0L, 100L, 10))
-        assertResult(None)(proj.project(Some(0.0, 0.0, 101L), 0, (32, 32, 32)))
+        val proj = new MercatorTimeProjection(Seq(0), RangeDescription.fromCount(0L, 100L, 10))
+        assertResult(None)(proj.project(Some(0.0, 0.0, 101L), (32, 32, 32)))
       }
 
       it("should return None when the geo coords are out of range") {
-        val proj = new MercatorTimeProjection(RangeDescription.fromCount(0L, 100L, 10))
-        assertResult(None)(proj.project(Some(0.0, MercatorTimeProjection.minLat - 1.0, 10L), 0, (32, 32, 32)))
+        val proj = new MercatorTimeProjection(Seq(0), RangeDescription.fromCount(0L, 100L, 10))
+        assertResult(None)(proj.project(Some(0.0, MercatorTimeProjection.minLat - 1.0, 10L), (32, 32, 32)))
       }
 
       it("should assign values to the correct time bucket") {
-        val proj = new MercatorTimeProjection(RangeDescription.fromCount(10L, 210L, 10))
-        assertResult(Some(((0, 0, 0), (50, 50, 2))))(proj.project(Some(0.0, 0.0, 53L), 0, (100, 100, 10)))
+        val proj = new MercatorTimeProjection(Seq(0), RangeDescription.fromCount(10L, 210L, 10))
+        assertResult(Some(((0, 0, 0), (50, 50, 2))))(proj.project(Some(0.0, 0.0, 53L), (100, 100, 10)))
       }
     }
 
     describe("#binTo1D()") {
       it("should convert a (lon,lat,time) tuple into a linear coordinate") {
-        val proj = new MercatorTimeProjection()
+        val proj = new MercatorTimeProjection(Seq(0))
         assertResult(8064)(proj.binTo1D((4, 8, 12), (30, 20, 10)))
       }
     }

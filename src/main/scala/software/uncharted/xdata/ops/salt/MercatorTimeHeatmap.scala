@@ -16,7 +16,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row}
 import software.uncharted.salt.core.analytic.numeric.{MinMaxAggregator, SumAggregator}
 import software.uncharted.salt.core.generation.output.SeriesData
-import software.uncharted.salt.core.generation.request.{TileLevelRequest, TileRequest}
+import software.uncharted.salt.core.generation.request.TileLevelRequest
 
 object MercatorTimeHeatmap extends MercatorTimeOp {
 
@@ -31,18 +31,21 @@ object MercatorTimeHeatmap extends MercatorTimeOp {
             tileSize: Int = defaultTileSize,
             tms: Boolean = true)
            (input: DataFrame):
-  RDD[SeriesData[(Int, Int, Int), Double, (Double, Double)]] = {
+  RDD[SeriesData[(Int, Int, Int), (Int, Int, Int), Double, (Double, Double)]] = {
 
     // Extracts value data from row
-    val valueExtractor: Option[(Row) => Option[Double]] = valueCol match {
-      case Some(colName: String) => Some((r: Row) => {
+    val valueExtractor: (Row) => Option[Double] = valueCol match {
+      case Some(colName: String) => (r: Row) => {
         val rowIndex = r.schema.fieldIndex(colName)
         if (!r.isNullAt(rowIndex)) Some(r.getDouble(rowIndex)) else None
-      })
-      case _ => Some((r: Row) => { Some(1.0) })
+      }
+      case _ => (r: Row) => {
+        Some(1.0)
+      }
     }
 
     val request = new TileLevelRequest(zoomLevels, (tc: (Int, Int, Int)) => tc._1)
-    super.apply(latCol, lonCol, rangeCol, latLonBounds, timeRange, valueExtractor,  SumAggregator, Some(MinMaxAggregator), tileSize, tms)(request)(input)
+    super.apply(latCol, lonCol, rangeCol, latLonBounds, timeRange, valueExtractor, SumAggregator,
+      Some(MinMaxAggregator), zoomLevels, tileSize, tms)(request)(input)
   }
 }

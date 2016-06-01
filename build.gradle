@@ -175,8 +175,8 @@ repositories {
 // Jars this project depends on
 dependencies {
 	// Compile config - needed to build and required at runtime
-  compile "software.uncharted.salt:salt-core:1.1.0"
-  compile "software.uncharted.sparkpipe:sparkpipe-core:0.9.4"
+  compile "software.uncharted.salt:salt-core:3.0.0"
+  compile "software.uncharted.sparkpipe:sparkpipe-core:0.9.6"
 	compile "org.clapper:grizzled-slf4j_$dependencyScalaVersion:1.0.2"
   compile 'log4j:apache-log4j-extras:1.2.17'
   compile "org.spire-math:spire_$dependencyScalaVersion:0.11.0"

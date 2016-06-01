@@ -16,8 +16,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.{DoubleType, TimestampType}
 import org.apache.spark.sql.{DataFrame, Row}
 import software.uncharted.salt.core.analytic.Aggregator
-import software.uncharted.salt.core.generation.Series
-import software.uncharted.salt.core.generation.mapreduce.MapReduceTileGenerator
+import software.uncharted.salt.core.generation.{TileGenerator, Series}
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.generation.request.TileRequest
 import software.uncharted.sparkpipe.Pipe
@@ -33,18 +32,19 @@ trait MercatorTimeOp {
                            rangeCol: String,
                            latLonBounds: Option[(Double, Double, Double, Double)],
                            timeRange: RangeDescription[Long],
-                           valueExtractor: Option[(Row) => Option[T]],
+                           valueExtractor: (Row) => Option[T],
                            binAggregator: Aggregator[T, U, V],
                            tileAggregator: Option[Aggregator[V, W, X]],
+                           zoomLevels: Seq[Int],
                            tileSize: Int,
                            tms: Boolean)
                           (request: TileRequest[(Int, Int, Int)])(input: DataFrame):
-  RDD[SeriesData[(Int, Int, Int), V, X]] = {
+  RDD[SeriesData[(Int, Int, Int), (Int, Int, Int), V, X]] = {
 
     // create a default projection from data-space into mercator tile space
     val projection = latLonBounds.map { b =>
-      new MercatorTimeProjection((b._2, b._1, timeRange.min), (b._4, b._3, timeRange.max), timeRange.count, tms)
-    }.getOrElse(new MercatorTimeProjection(timeRange))
+      new MercatorTimeProjection(zoomLevels, (b._2, b._1, timeRange.min), (b._4, b._3, timeRange.max), timeRange.count, tms)
+    }.getOrElse(new MercatorTimeProjection(zoomLevels, timeRange))
 
     // Use the pipeline to cast columns to expected values and select them into a new dataframe
     val castCols = Map(latCol -> DoubleType.simpleString, lonCol -> DoubleType.simpleString, rangeCol ->  TimestampType.simpleString)
@@ -74,7 +74,7 @@ trait MercatorTimeOp {
       tileAggregator
     )
 
-    val generator = new MapReduceTileGenerator(frame.sqlContext.sparkContext)
-    generator.generate(frame.rdd, series, request).map(t => series(t))
+    val generator = TileGenerator(frame.sqlContext.sparkContext)
+    generator.generate(frame.rdd, series, request).map(series(_).get)
   }
 }

@@ -78,13 +78,13 @@ class MercatorTimeTopicTest extends SparkFunSpec {
 
     it("should sum values that are in the same same tile") {
       val result = MercatorTimeTopics(latCol, lonCol, timeCol, textCol, None, RangeDescription.fromCount(0, 800, 10), 3, Seq(0))(genData).collect()
-      val proj = new MercatorTimeProjection(RangeDescription.fromCount(0L, 800L, 1))
+      val proj = new MercatorTimeProjection(Seq(0), RangeDescription.fromCount(0L, 800L, 1))
       assertResult(List("b" -> 3535, "a" -> 35))(result(0).bins(proj.binTo1D((0, 0, 3), (0, 0, 9))))
     }
 
     it("should not aggregate across time buckets") {
       val result = MercatorTimeTopics(latCol, lonCol, timeCol, textCol, None, RangeDescription.fromCount(0, 800, 10), 3, 0 until 3)(genData).collect()
-      val proj = new MercatorTimeProjection(RangeDescription.fromCount(0L, 800L, 10))
+      val proj = new MercatorTimeProjection(Seq(0), RangeDescription.fromCount(0L, 800L, 10))
 
       val tile = (t: (Int, Int, Int)) => result.find(s => s.coords == t)
 

@@ -21,32 +21,36 @@ object MercatorTimeProjection  {
   val maxLat = 85.05112878
 }
 
-class MercatorTimeProjection(min: (Double, Double, Long) = (MercatorTimeProjection.minLon, MercatorTimeProjection.minLat, 0),
+class MercatorTimeProjection(zoomLevels: Seq[Int],
+                             min: (Double, Double, Long) = (MercatorTimeProjection.minLon, MercatorTimeProjection.minLat, 0),
                              max: (Double, Double, Long) = (MercatorTimeProjection.maxLon, MercatorTimeProjection.maxLat, Long.MaxValue),
                              rangeBuckets: Long = Long.MaxValue,
                              tms: Boolean = true)
   extends NumericProjection[(Double, Double, Long), (Int, Int, Int), (Int, Int, Int)](min, max) {
 
-  def this(timeRange: RangeDescription[Long]) = {
-    this((MercatorTimeProjection.minLon, MercatorTimeProjection.minLat, timeRange.min),
+  def this(zoomLevels: Seq[Int], timeRange: RangeDescription[Long]) = {
+    this(zoomLevels, (MercatorTimeProjection.minLon, MercatorTimeProjection.minLat, timeRange.min),
       (MercatorTimeProjection.maxLon, MercatorTimeProjection.maxLat, timeRange.max),
     timeRange.count)
   }
 
   // Baseline mercator projection to compute X,Y coords
-  val mercatorProjection = new MercatorProjection((min._1, min._2), (max._1, max._2), tms)
+  val mercatorProjection = new MercatorProjection(zoomLevels, (min._1, min._2), (max._1, max._2), tms)
 
-  override def project (dCoords: Option[(Double, Double, Long)], z: Int, maxBin: (Int, Int, Int)): Option[((Int, Int, Int), (Int, Int, Int))] = {
-    // Call base project to get 2D tile coords, add in the computed time bin
+  override def project (dCoords: Option[(Double, Double, Long)], maxBin: (Int, Int, Int)):
+  Option[Seq[((Int, Int, Int), (Int, Int, Int))]] = {
     dCoords.flatMap { coords =>
-      mercatorProjection.project(Some((coords._1, coords._2)), z, (maxBin._1, maxBin._2)).flatMap { proj =>
-        if (coords._3 >= min._3 && coords._3 <= max._3) {
-          val binSize = (max._3 - min._3) / rangeBuckets
-          val timeBin = (coords._3 - min._3) / binSize
-          Some((proj._1, (proj._2._1, proj._2._2, timeBin.asInstanceOf[Int])))
-        } else {
-          None
-        }
+      if (coords._3 >= min._3 && coords._3 <= max._3) {
+        mercatorProjection.project(Some((coords._1, coords._2)), (maxBin._1, maxBin._2))
+          .flatMap { projectedCoords =>
+            Some(projectedCoords.map { projCoord =>
+              val binSize = (max._3 - min._3) / rangeBuckets
+              val timeBin = (coords._3 - min._3) / binSize
+              (projCoord._1, (projCoord._2._1, projCoord._2._2, timeBin.asInstanceOf[Int]))
+            })
+          }
+      } else {
+        None
       }
     }
   }
