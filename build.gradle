@@ -96,22 +96,43 @@ scalaStyle {
 //}
 
 // Test and scoverage tests should be forced to single threaded execution
-// since Spark can't run multiple contexts within in a single JVM.  Exclude
-// s3 tests by default since it depends on the definition of AWS_ACCESS_KEY
-// and AWS_SECRET env variables and corresponding S3 resources.
+// since Spark can't run multiple contexts within in a single JVM.  We ignore
+// tests relying on external systems (HBase + S3) by default, but they can be
+// include by adding -PincludeExternalTests to the command line.  Running tests on
+// a closed build environment like Bamboo block all IO, so an option is provided
+// to block those via -PexcludeIoTests.
 test {
   maxParallelForks = 1
   jvmArgs += ["-XX:MaxPermSize=512m", "-Xmx1000m"]
-  tags {
-    exclude 's3.test'
+  if (project.hasProperty('excludeIoTests')) {
+    tags {
+      exclude 's3.test'
+      exclude 'hbc.test'
+      exclude 'fileio.test'
+    }
+  } else if (!project.hasProperty('includeExternalTests')) {
+    tags {
+      exclude 's3.test'
+      exclude 'hbc.test'
+    }
   }
+
 }
 
 testScoverage {
   maxParallelForks = 1
   jvmArgs += ["-XX:MaxPermSize=512m", "-Xmx1000m"]
-  tags {
-    exclude 's3.test'
+  if (project.hasProperty('excludeIoTests')) {
+    tags {
+      exclude 's3.test'
+      exclude 'hbc.test'
+      exclude 'fileio.test'
+    }
+  } else if (!project.hasProperty('includeExternalTests')) {
+    tags {
+      exclude 's3.test'
+      exclude 'hbc.test'
+    }
   }
 }
 

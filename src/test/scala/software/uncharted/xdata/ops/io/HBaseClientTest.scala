@@ -24,7 +24,8 @@ import org.apache.spark.rdd.RDD
 
 import software.uncharted.xdata.spark.SparkFunSpec
 
-object HBaseConnectorTest extends Tag("hbc.test")
+object HBaseTest extends Tag("hbc.test")
+
 class HBaseConnectorTest extends SparkFunSpec with BeforeAndAfterAll {
 
   protected override def beforeAll() = {
@@ -95,7 +96,7 @@ class HBaseConnectorTest extends SparkFunSpec with BeforeAndAfterAll {
   describe("HBaseConnectorTest") {
 
     describe("getConnection") {
-      it("should create a connection object based on the config file that allows client to write to HBase") {
+      it("should create a connection object based on the config file that allows client to write to HBase", HBaseTest) {
         val rddData: RDD[(String, Seq[Byte])] = sc.parallelize(data2)
         val testHBCObject = HBaseConnector(configFile)
         assertResult(true)(testHBCObject.writeTileData(tableName =  testTable)(rddData))
@@ -104,13 +105,13 @@ class HBaseConnectorTest extends SparkFunSpec with BeforeAndAfterAll {
     }
 
     describe("writeTileData") {
-      it("should return true when rows are inserted into database") {
+      it("should return true when rows are inserted into database", HBaseTest) {
         val rddData: RDD[(String, Seq[Byte])] = sc.parallelize(data2)
         val result = hbc.writeTileData(tableName = testTable)(rddData)
         assertResult(true)(result)
       }
 
-      it("should add the rows to the specified table in HBase") {
+      it("should add the rows to the specified table in HBase", HBaseTest) {
         val rddData: RDD[(String, Seq[Byte])] = sc.parallelize(data4)
         hbc.writeTileData(tableName = testTable)(rddData)
 
@@ -130,13 +131,13 @@ class HBaseConnectorTest extends SparkFunSpec with BeforeAndAfterAll {
         connection.close
       }
 
-      it("should write data into column qualifier when specified") {
+      it("should write data into column qualifier when specified", HBaseTest) {
         val rddData: RDD[(String, Seq[Byte])] = sc.parallelize(data4)
         val result = hbc.writeTileData(tableName = testTable, qualifierName = qualifier1)(rddData)
         assertResult(true)(result)
       }
 
-      it("should store the data in a column qualifier when specified") {
+      it("should store the data in a column qualifier when specified", HBaseTest) {
         val rddData: RDD[(String, Seq[Byte])] = sc.parallelize(data3)
         hbc.writeTileData(tableName = testTable, qualifierName = qualifier2)(rddData)
         //create connection
@@ -153,12 +154,12 @@ class HBaseConnectorTest extends SparkFunSpec with BeforeAndAfterAll {
         connection.close
       }
 
-      it("should create table and write into table when non existant table is given") {
+      it("should create table and write into table when non existant table is given", HBaseTest) {
         val rddData: RDD[(String, Seq[Byte])] = sc.parallelize(data2)
         assertResult(true)(hbc.writeTileData(tableName = nonExistantTable2)(rddData))
       }
 
-      it("should create a table in HBase when specified table does not exist") {
+      it("should create a table in HBase when specified table does not exist", HBaseTest) {
         val rddData: RDD[(String, Seq[Byte])] = sc.parallelize(data2)
         //create connection
         val config = HBaseConfiguration.create()
@@ -182,11 +183,11 @@ class HBaseConnectorTest extends SparkFunSpec with BeforeAndAfterAll {
 
       describe("#writeMetaData") {
 
-        it("should return true when data is written into the row") {
+        it("should return true when data is written into the row", HBaseTest) {
           assertResult(true)(hbc.writeMetaData(tableName =  testTable, rowID = "testRowID", data = data))
         }
 
-        it("should add the rows to the specified table in HBase") {
+        it("should add the rows to the specified table in HBase", HBaseTest) {
           hbc.writeMetaData(tableName = testTable, rowID = "testRowID2", data = data)
           //create connection
           val config = HBaseConfiguration.create()
@@ -203,12 +204,12 @@ class HBaseConnectorTest extends SparkFunSpec with BeforeAndAfterAll {
           connection.close
         }
 
-        it("should write data into column qualifier when specified") {
+        it("should write data into column qualifier when specified", HBaseTest) {
           val result = hbc.writeMetaData(tableName = testTable, qualifierName = qualifier1, rowID = "testID1", data=data)
           assertResult(true)(result)
         }
 
-        it("should store the data in a column qualifier when specified") {
+        it("should store the data in a column qualifier when specified", HBaseTest) {
           hbc.writeMetaData(tableName = testTable, qualifierName = qualifier2, rowID = "testID", data = data)
           //create connection
           val config = HBaseConfiguration.create()
@@ -224,11 +225,11 @@ class HBaseConnectorTest extends SparkFunSpec with BeforeAndAfterAll {
           connection.close
         }
 
-        it("return true when non existant table is given") {
+        it("return true when non existant table is given", HBaseTest) {
           assertResult(true)(hbc.writeMetaData(tableName = nonExistantTable3, rowID = "anotherTestRowID", data = data))
         }
 
-        it("should create a table in HBase when specified table does not exist") {
+        it("should create a table in HBase when specified table does not exist", HBaseTest) {
           //create connection
           val config = HBaseConfiguration.create()
           config.set("hbase.zookeeper.quorum", "uscc0-node08.uncharted.software")
@@ -245,10 +246,7 @@ class HBaseConnectorTest extends SparkFunSpec with BeforeAndAfterAll {
           assertResult(true)(isTableExistNow)
           connection.close
         }
-
-
       }
-
     }
   }
 }

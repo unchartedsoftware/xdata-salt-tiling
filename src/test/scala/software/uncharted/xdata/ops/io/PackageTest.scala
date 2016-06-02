@@ -23,10 +23,7 @@ import software.uncharted.xdata.spark.SparkFunSpec
 import scala.util.parsing.json.JSONObject
 
 import org.apache.hadoop.hbase.client._;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hbase.HColumnDescriptor;
-import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 
 
@@ -130,7 +127,7 @@ class PackageTest extends SparkFunSpec {
   }
 
   describe("#writeToHBase") {
-    it("should add tiles to the HBase Table Created", HBaseConnectorTest) {
+    it("should add tiles to the HBase Table Created", HBaseTest) {
       val data = sc.parallelize(Seq(
         ((2, 2, 2), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7)),
         ((2, 2, 3), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))
@@ -155,7 +152,7 @@ class PackageTest extends SparkFunSpec {
       connection.close()
     }
 
-    it("should serialize the byte data to HBase without changing it", HBaseConnectorTest) {
+    it("should serialize the byte data to HBase without changing it", HBaseTest) {
       val data = sc.parallelize(Seq(
         ((2, 2, 2), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7)),
         ((2, 2, 3), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))
@@ -183,7 +180,7 @@ class PackageTest extends SparkFunSpec {
   describe("#writeBytesToHBase") {
     val testFile = "metadata.json"
     val testQualifier = "tileQualifier"
-    it("should write the byte data to the HBaseTable without changing it", HBaseConnectorTest) {
+    it("should write the byte data to the HBaseTable without changing it", HBaseTest) {
       writeBytesToHBase(configFile, testLayer, testQualifier)(testFile, Seq(0, 1, 2, 3, 4, 5))
       val hbc = HBaseConnector(configFile)
       //disable and delete table

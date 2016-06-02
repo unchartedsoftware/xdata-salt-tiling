@@ -22,20 +22,21 @@ import scala.collection.JavaConversions._ // scalastyle:ignore
 class MercatorTimeTopicsJobTest extends FunSpec {
 
   private val testOutputDir: String = "build/tmp/test_file_output/test_topics"
+  private val suffix: String = "bin"
 
   describe("MercatorTimeTopicsJobTest") {
     import net.liftweb.json.JsonDSL._ //scalastyle:ignore
     import net.liftweb.json._ //scalastyle:ignore
 
     describe("#execute") {
-      ignore("should create tiles from source csv data with time filter applied") {
+      it("should create tiles from source csv data with time filter applied", FileIOTest) {
         try {
           // run the job
           val path = classOf[MercatorTimeTopicsJobTest].getResource("/tiling-topic-file-io.conf").toURI.getPath
           MercatorTimeTopicsJob.execute(Array(path))
 
           // validate created tiles
-          val files = collectFiles()
+          val files = JobTestUtils.collectFiles(testOutputDir, suffix)
           val expected = Set(
             (0,0,0), // l0
             (1,0,0), (1,1,0), (1,1,1), (1,0,1), // l1
@@ -65,12 +66,12 @@ class MercatorTimeTopicsJobTest extends FunSpec {
         }
       }
 
-      ignore("should convert string date to timestamp") {
+      it("should convert string date to timestamp", FileIOTest) {
         try {
           val path = classOf[MercatorTimeTopicsJobTest].getResource("/tiling-topic-file-io.conf").toURI.getPath
           MercatorTimeTopicsJob.execute(Array(path))
 
-          val files = collectFiles
+          val files = JobTestUtils.collectFiles(testOutputDir, suffix)
           val expected = Set(
             (0,0,0), // l0
             (1,0,0), (1,1,0), (1,1,1), (1,0,1), // l1
@@ -82,16 +83,5 @@ class MercatorTimeTopicsJobTest extends FunSpec {
         }
       }
     }
-
-  }
-
-  def collectFiles(): Set[(Int, Int, Int)] = {
-    // convert produced filenames into indices
-    val filename =
-      """.*\\(\d+)\\(\d+)\\(\d+).bin""".r
-    val files = FileUtils.listFiles(new File(testOutputDir), Array("bin"), true)
-      .map(_.toString match { case filename(level, x, y) => (level.toInt, x.toInt, y.toInt) })
-      .toSet
-    files
   }
 }

@@ -18,25 +18,25 @@ import net.liftweb.json._
 import org.apache.commons.io.FileUtils
 import org.scalatest.FunSpec
 
-import scala.collection.JavaConversions._ // scalastyle:ignore
-
 class MercatorTimeHeatmapJobTest extends FunSpec {
 
   private val testOutputDir: String = "build/tmp/test_file_output/test_heatmap"
+  private val suffix: String = "bin"
 
   describe("MercatorTimeHeatmapJobTest") {
-    import net.liftweb.json.JsonDSL._ // scalastyle:ignore
+    import net.liftweb.json.JsonDSL._
+    // scalastyle:ignore
     describe("#execute") {
-      ignore("should create tiles from source csv data with time filter applied") {
+      it("should create tiles from source csv data with time filter applied", FileIOTest) {
         try {
           // run the job
           val path = classOf[MercatorTimeHeatmapJobTest].getResource("/tiling-file-io.conf").toURI.getPath
           MercatorTimeHeatmapJob.execute(Array(path))
 
-          val files = collectFiles
+          val files = JobTestUtils.collectFiles(testOutputDir, suffix)
           val expected = Set(
-            (0,0,0), // l0
-            (1,0,0), (1,1,0), (1,1,1), (1,0,1), // l1
+            (0, 0, 0), // l0
+            (1, 0, 0), (1, 1, 0), (1, 1, 1), (1, 0, 1), // l1
             (2, 0, 0), (2, 2, 0), (2, 1, 1), (2, 3, 1), (2, 0, 2), (2, 2, 2), (2, 1, 3), (2, 3, 3)) // l2
 
           assertResult((Set(), Set()))((expected diff files, files diff expected))
@@ -57,31 +57,22 @@ class MercatorTimeHeatmapJobTest extends FunSpec {
         }
       }
 
-      ignore("should convert string date to timestamp") {
+      it("should convert string date to timestamp", FileIOTest) {
         try {
           val path = classOf[MercatorTimeHeatmapJobTest].getResource("/tiling-date-file-io.conf").toURI.getPath
           MercatorTimeHeatmapJob.execute(Array(path))
 
-          val files = collectFiles
+          val files = JobTestUtils.collectFiles(testOutputDir, suffix)
           val expected = Set(
-            (0,0,0), // l0
-            (1,0,0), (1,1,0), (1,1,1), (1,0,1), // l1
+            (0, 0, 0), // l0
+            (1, 0, 0), (1, 1, 0), (1, 1, 1), (1, 0, 1), // l1
             (2, 0, 0), (2, 2, 0), (2, 1, 1), (2, 3, 1), (2, 0, 2), (2, 2, 2), (2, 1, 3), (2, 3, 3)) // l2
 
           assertResult((Set(), Set()))((expected diff files, files diff expected))
         } finally {
-          FileUtils.deleteDirectory(new File(testOutputDir))
+          FileUtils.deleteDirectory(new File(testOutputDir, suffix))
         }
       }
     }
-  }
-
-  def collectFiles: Set[(Int, Int, Int)] = {
-    // convert produced filenames into indices
-    val filename = """.*\\(\d+)\\(\d+)\\(\d+).bin""".r
-    val files = FileUtils.listFiles(new File(testOutputDir), Array("bin"), true)
-      .map(_.toString match { case filename(level, x, y) => (level.toInt, x.toInt, y.toInt) })
-      .toSet
-    files
   }
 }
