@@ -1,19 +1,23 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
 <log4j:configuration debug="false">
+    <logger name="org.spark-project.jetty.util.component.AbstractLifeCycle">
+        <level value="error"/>
+    </logger>
+
+    <logger name="org.apache.spark.util.Utils">
+        <level value="error"/>
+    </logger>
+
+    <logger name="org.apache.spark.metrics.MetricsSystem">
+        <level value="error"/>
+    </logger>
+
     <appender name='stdout' class='org.apache.log4j.ConsoleAppender'>
         <layout class='org.apache.log4j.PatternLayout'>
             <!-- param name='ConversionPattern' value='%-10r %-5p %-20c{1} %x - %m%n'/ -->
-            <param name="ConversionPattern" value="[%p] %d{dd MMM yyyy HH:mm:ss} %m%n"/>
+            <param name="ConversionPattern" value="%c [%p] %d{dd MMM yyyy HH:mm:ss} %m%n"/>
         </layout>
-        <filter class="org.apache.log4j.filter.ExpressionFilter">
-            <param name="expression" value="EXCEPTION ~= 'Address already in use: bind'" />
-            <param name="acceptOnMatch" value="false"/>
-        </filter>
-        <filter class="org.apache.log4j.filter.ExpressionFilter">
-            <param name="expression" value="EXCEPTION ~= 'Could not locate executable null\bin\winutils.exe in the Hadoop binaries'" />
-            <param name="acceptOnMatch" value="false"/>
-        </filter>
     </appender>
 
     <appender name="general" class="org.apache.log4j.DailyRollingFileAppender">
@@ -24,14 +28,6 @@
         <layout class="org.apache.log4j.PatternLayout">
             <param name="ConversionPattern" value="%5p; %d{dd MMM yyyy HH:mm:ss}; %C; %m%n"/>
         </layout>
-        <filter class="org.apache.log4j.filter.ExpressionFilter">
-            <param name="expression" value="EXCEPTION ~= 'Address already in use: bind'" />
-            <param name="acceptOnMatch" value="false"/>
-        </filter>
-        <filter class="org.apache.log4j.filter.ExpressionFilter">
-            <param name="expression" value="EXCEPTION ~= 'Could not locate executable null\bin\winutils.exe in the Hadoop binaries'" />
-            <param name="acceptOnMatch" value="false"/>
-        </filter>
     </appender>
 
     <root>
