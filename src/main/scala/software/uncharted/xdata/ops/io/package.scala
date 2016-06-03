@@ -172,16 +172,17 @@ package object io extends Logging {
   }
 
   /**
-   * Serializes tile bins stored as a double array to tile index / byte sequence tuples.
+   * Serializes tile bins stored as a double sparse array to tile index / byte sequence tuples.
    * @param tiles The input tile set.
    * @return Index/byte tuples.
    */
   def serializeBinArray(tiles: RDD[SeriesData[(Int, Int, Int), (Int, Int, Int), Double, (Double, Double)]]):
   RDD[((Int, Int, Int), Seq[Byte])] = {
-    tiles.map { tile =>
-        val data = for (bin <- tile.bins; i <- 0 until doubleBytes) yield {
-          val data = java.lang.Double.doubleToLongBits(bin)
-          ((data >> (i * doubleBytes)) & 0xff).asInstanceOf[Byte]
+    tiles.filter(tile => tile.bins.density > 0)
+      .map { tile =>
+        val data = for (bin <- tile.bins.seq; i <- 0 until doubleBytes) yield {
+          val datum = java.lang.Double.doubleToLongBits(bin)
+          ((datum >> (i * doubleBytes)) & 0xff).asInstanceOf[Byte]
         }
         (tile.coords, data.toSeq)
       }
@@ -194,7 +195,8 @@ package object io extends Logging {
    */
   def serializeElementScore(tiles: RDD[SeriesData[(Int, Int, Int), (Int, Int, Int), List[(String, Int)], Nothing]]):
   RDD[((Int, Int, Int), Seq[Byte])] = {
-    tiles.map { t =>
+    tiles.filter(t => t.bins.density() > 0)
+      .map { t =>
         val bytes = new JSONObject(t.bins.head.toMap).toString().getBytes
         (t.coords, bytes.toSeq)
       }

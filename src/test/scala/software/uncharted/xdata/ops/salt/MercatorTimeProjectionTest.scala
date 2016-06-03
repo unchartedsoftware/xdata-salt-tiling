@@ -35,7 +35,7 @@ class MercatorTimeProjectionTest extends FunSpec {
 
       it("should assign values to the correct time bucket") {
         val proj = new MercatorTimeProjection(Seq(0), RangeDescription.fromCount(10L, 210L, 10))
-        assertResult(Some(((0, 0, 0), (50, 50, 2))))(proj.project(Some(0.0, 0.0, 53L), (100, 100, 10)))
+        assertResult(Some(List(((0, 0, 0), (50, 50, 2)))))(proj.project(Some(0.0, 0.0, 53L), (100, 100, 10)))
       }
     }
 
