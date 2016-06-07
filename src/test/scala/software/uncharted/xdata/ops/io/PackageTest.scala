@@ -55,7 +55,7 @@ class PackageTest extends SparkFunSpec {
       try {
         val data = sc.parallelize(Seq(((1, 2, 3), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))))
         writeToFile(s"${testDir}_1", testLayer, extension)(data)
-        val testFile = new File(s"${testDir}_1/$testLayer/1/2")
+        val testFile = new File(s"${testDir}_1/$testLayer/01/2")
         assertResult(true)(testFile.exists())
       } finally {
         FileUtils.deleteDirectory(new File(s"${testDir}_1"))
@@ -69,8 +69,8 @@ class PackageTest extends SparkFunSpec {
           ((2, 2, 3), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))
         ))
         writeToFile(s"${testDir}_2", testLayer, extension)(data)
-        assertResult(true)(new File(s"${testDir}_2/$testLayer/2/2/2.tst").exists())
-        assertResult(true)(new File(s"${testDir}_2/$testLayer/2/2/3.tst").exists())
+        assertResult(true)(new File(s"${testDir}_2/$testLayer/02/2/2.tst").exists())
+        assertResult(true)(new File(s"${testDir}_2/$testLayer/02/2/3.tst").exists())
       } finally {
         FileUtils.deleteDirectory(new File(s"${testDir}_2"))
       }
@@ -80,7 +80,7 @@ class PackageTest extends SparkFunSpec {
       try {
         val data = sc.parallelize(Seq(((2, 2, 2), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))))
         writeToFile(s"${testDir}_3", testLayer, extension)(data)
-        val bytes = Files.readAllBytes(Paths.get(s"${testDir}_3/$testLayer/2/2/2.tst"))
+        val bytes = Files.readAllBytes(Paths.get(s"${testDir}_3/$testLayer/02/2/2.tst"))
         assertResult(Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))(bytes)
       } finally {
         FileUtils.deleteDirectory(new File(s"${testDir}_3"))

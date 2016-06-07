@@ -28,9 +28,16 @@ class MercatorTimeHeatmapJobTest extends FunSpec {
     // scalastyle:ignore
     describe("#execute") {
       it("should create tiles from source csv data with time filter applied", FileIOTest) {
+        // When test are run from another project that includes this project, the current working directory is set such
+        // that the data files referenced in tiling-file-io.conf can't be found.  We reset the CWD to the
+        // xdata-pipeline-ops directory, and reset it afterwards, to get around this problem.
+        val oldDir = System.getProperty("user.dir")
         try {
           // run the job
           val path = classOf[MercatorTimeHeatmapJobTest].getResource("/tiling-file-io.conf").toURI.getPath
+          // Make sure to run the test from the correct directory
+          val newDir = path.substring(0, path.indexOf("xdata-pipeline-ops")+18)
+          System.setProperty("user.dir", newDir)
           MercatorTimeHeatmapJob.execute(Array(path))
 
           val files = JobTestUtils.collectFiles(testOutputDir, suffix)
@@ -53,6 +60,7 @@ class MercatorTimeHeatmapJobTest extends FunSpec {
           assertResult(expectedJson)(jsonObject)
 
         } finally {
+          System.setProperty("user.dir", oldDir)
           FileUtils.deleteDirectory(new File(testOutputDir))
         }
       }

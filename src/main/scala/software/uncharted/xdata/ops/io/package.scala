@@ -14,6 +14,7 @@ package software.uncharted.xdata.ops
 
 import java.io.{BufferedOutputStream, FileOutputStream, File}
 import java.util.ArrayList
+import java.util.zip.ZipOutputStream
 
 import grizzled.slf4j.Logging
 import org.apache.spark.rdd.RDD
@@ -28,6 +29,7 @@ package object io extends Logging {
   //to remove scalastyle:string literal error
   val slash = "/"
 
+
   /**
    * Write binary array data to the file system.  Folder structure is
    * baseFilePath/layerName/level/xIdx/yIdx.bin.  Indexing is TMS style
@@ -39,22 +41,7 @@ package object io extends Logging {
    * @return input data unchanged
    */
   def writeToFile(baseFilePath: String, layerName: String, extension: String)(input: RDD[((Int, Int, Int), Seq[Byte])]): RDD[((Int, Int, Int), Seq[Byte])] = {
-    input.collect().foreach { tileData =>
-      val coord = tileData._1
-      val dirPath = s"$baseFilePath/$layerName/${coord._1}/${coord._2}" //scalastyle:ignore
-      val path = s"$dirPath/${coord._3}.$extension"
-      try {
-        // create path if necessary
-        val file = new File(dirPath)
-        file.mkdirs()
-        val fos = new FileOutputStream(new File(path))
-        val bos = new BufferedOutputStream(fos)
-        bos.write(tileData._2.toArray)
-        bos.close()
-      } catch {
-        case e: Exception => error(s"Failed to write file $path", e)
-      }
-    }
+    new FileSystemClient(baseFilePath, Some(extension)).write(layerName, input.map{case (index, data) => (index, data.toArray)})
     input
   }
 
@@ -68,19 +55,42 @@ package object io extends Logging {
    * @param bytes byte array of data
    */
   def writeBytesToFile(baseFilePath: String, layerName: String)(fileName: String, bytes: Seq[Byte]): Unit = {
-    val dirPath = s"$baseFilePath/$layerName"
-    val path = s"$dirPath/$fileName"
-    try {
-      // create path if necessary
-      val file = new File(dirPath)
-      file.mkdirs()
-      val fos = new FileOutputStream(new File(path))
-      val bos = new BufferedOutputStream(fos)
-      bos.write(bytes.toArray)
-      bos.close()
-    } catch {
-      case e: Exception => error(s"Failed to write file $path", e)
-    }
+    new FileSystemClient(baseFilePath, None).writeRaw(layerName, fileName, bytes.toArray)
+  }
+
+  /**
+    * Write binary array data to the zip file baseZipDirectory/layerName.zip.  Entries will be level/xIdx/yIdx.  Indexing
+    * is TMS style, with (0, 0) in the lower left, y increasing as it moves north.
+    *
+    * @param baseZipDirectory Baseline output directory - can store multiple layers
+    * @param layerName Unique name for this layer.  Data will go into the layer file layerName.zip
+    * @param input tile coordinate / byte array tuples of tile data
+    * @return input data unchanged.
+    */
+  def writeToZip (baseZipDirectory: String, layerName: String) (input: RDD[((Int, Int, Int), Seq[Byte])]): RDD[((Int, Int, Int), Seq[Byte])] = {
+    val zipDirectory = new File(baseZipDirectory)
+    zipDirectory.mkdirs()
+
+    new ZipFileClient(zipDirectory).write(layerName + ".zip", input.map{case (index, data) => (index, data.toArray)})
+    input
+  }
+
+  /**
+    * Write binary array data directly to a zip file.
+    * @param baseZipDirectory Baseline output directory - can store multiple layer zip files
+    * @param layerName Unique name for the layer.  Associated zip file will be layerName.zip
+    * @param fileName The key by which the data will be put into the zip file.
+    * @param bytes byte array of data
+    */
+  def writeBytesToZip (baseZipDirectory: String, layerName: String) (fileName: String, bytes: Seq[Byte]): Unit = {
+    val zipDirectory = new File(baseZipDirectory)
+    zipDirectory.mkdirs()
+    val zipStream = new ZipOutputStream(new FileOutputStream(new File(zipDirectory, s"${layerName}.zip"), true))
+
+    new ZipFileClient(zipDirectory).writeRaw(zipStream, fileName, bytes.toArray)
+
+    zipStream.flush()
+    zipStream.close()
   }
 
   /**
@@ -130,7 +140,8 @@ package object io extends Logging {
    *RDD Layer Data is stored in their own table with tile info stored in a column and tile name as the rowID
    * This Data is first mapped to a list of tuples containing required data to store into HBase table
    * Then the list of tuples are sent to HBase connector write the RDDPairs into HBase
-   * @param configFile HBaseConfig Files used to connect to HBase
+    *
+    * @param configFile HBaseConfig Files used to connect to HBase
    * @param layerName unique name for the layer, will be used as table name
    * @param qualifierName name of column qualifier where data will be updated
    * @param input RDD of tile data to be processed and stored into HBase
@@ -159,7 +170,8 @@ package object io extends Logging {
    *Write binary array data to a MetaData column in an HBase Table
    *
    *RDD Layer Data is stored in their own table with tile info stored in a column and tile name as the rowID
-   * @param configFile HBaseConfig Files used to connect to HBase
+    *
+    * @param configFile HBaseConfig Files used to connect to HBase
    * @param layerName unique name for the layer, will be used as table name
    * @param qualifierName name of column qualifier where data will be updated
    * @param fileName name of file that the data belongs to. Will be stored as the RowID
@@ -172,8 +184,9 @@ package object io extends Logging {
   }
 
   /**
-   * Serializes tile bins stored as a double sparse array to tile index / byte sequence tuples.
-   * @param tiles The input tile set.
+   * Serializes tile bins stored as a double array to tile index / byte sequence tuples.
+    *
+    * @param tiles The input tile set.
    * @return Index/byte tuples.
    */
   def serializeBinArray(tiles: RDD[SeriesData[(Int, Int, Int), (Int, Int, Int), Double, (Double, Double)]]):
@@ -190,7 +203,8 @@ package object io extends Logging {
 
   /**
    * Serializes tile bins stored as a double array to tile index / byte sequence tuples.
-   * @param tiles The input tile set.
+    *
+    * @param tiles The input tile set.
    * @return Index/byte tuples.
    */
   def serializeElementScore(tiles: RDD[SeriesData[(Int, Int, Int), (Int, Int, Int), List[(String, Int)], Nothing]]):

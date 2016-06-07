@@ -12,6 +12,7 @@
  */
 package software.uncharted.xdata.ops
 
+import org.apache.spark.sql.catalyst.expressions.Literal
 import org.apache.spark.sql.{Column, DataFrame}
 import spire.math.Numeric
 import spire.implicits._  // scalastyle:ignore
@@ -34,5 +35,18 @@ package object numeric {
       if (exclude) result.unary_! else result
     }.reduce(_ && _)
     df.filter(test)
+  }
+
+  /**
+    * Add a column containing a constant value on every row.
+    *
+    * @param countColumnName The name of the column to use.  The caller is responsible for making sure this name is
+    *                        unique in the columns of the DataFrame
+    * @param constantValue The value to use for the contents of the new constant column
+    * @param input The DataFrame to which to add the constant column
+    * @return A new DataFrame, with the old data, plus a new constant column
+    */
+  def addConstantColumn (countColumnName: String, constantValue: Int)(input: DataFrame): DataFrame = {
+    input.withColumn(countColumnName, new Column(Literal(constantValue)))
   }
 }
