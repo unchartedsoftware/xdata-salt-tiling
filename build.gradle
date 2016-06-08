@@ -66,8 +66,10 @@ configurations {
   provided
   compile.extendsFrom provided
   dist
+  // IntelliJ is picking up an old version of jetty that we need to
+  // force exclude to run tests.
+  provided.exclude group: "org.jboss.netty", module: "netty"
 }
-
 // Add scripts zip to the artifacts of the dist assembly.  This can be used by downstream builds.
 artifacts {
   dist assemblyJar
