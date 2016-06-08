@@ -22,6 +22,7 @@ import software.uncharted.xdata.sparkpipe.config.{FileOutputConfig, S3OutputConf
 import scala.collection.JavaConverters._ // scalastyle:ignore
 
 object JobUtil {
+  type OutputOperation = (RDD[((Int, Int, Int), Seq[Byte])]) => RDD[((Int, Int, Int), Seq[Byte])]
 
   def dataframeFromSparkCsv(config: Config, source: String, schema: StructType, sqlc: SQLContext): DataFrame = {
     val sparkCsvConfig = config.getConfig("sparkCsv")
@@ -38,7 +39,7 @@ object JobUtil {
   }
 
 
-  def createTileOutputOperation(config: Config): Option[(RDD[((Int, Int, Int), Seq[Byte])]) => RDD[((Int, Int, Int), Seq[Byte])]] = {
+  def createTileOutputOperation(config: Config): Option[OutputOperation] = {
     if (config.hasPath(FileOutputConfig.fileOutputKey)) {
       FileOutputConfig(config).map(c => writeToFile(c.destPath, c.layer, c.extension))
     } else if (config.hasPath(S3OutputConfig.s3OutputKey)) {
