@@ -17,12 +17,12 @@ import software.uncharted.xdata.spark.SparkFunSpec
 
 // scalastyle:off magic.number
 
-case class TestData(lon: Double, lat: Double, value: Double, time: Long)
+case class CartesianTestData(x: Double, y: Double, value: Double, time: Long)
 
-class MercatorTimeHeatmapTest extends SparkFunSpec {
+class CartesianTimeHeatmapTest extends SparkFunSpec {
 
-  private val lonCol = "lon"
-  private val latCol = "lat"
+  private val xCol = "x"
+  private val yCol = "y"
   private val timeCol = "time"
   private val value = "value"
 
@@ -30,26 +30,30 @@ class MercatorTimeHeatmapTest extends SparkFunSpec {
 
     val testData =
       // 1st time bucket
-      List(TestData(-91.0, -67.0, 1.0, 101L),
-        TestData(-89.0, -65.0, 2.0, 101L),
-        TestData(91.0, -65.0, 3.0, 101L),
-        TestData(89.0, -67.0, 4.0, 101L),
-        TestData(89.0, 65.0, 5.0, 101L),
-        TestData(91.0, 67.0, 6.0, 101L),
-        TestData(-91.0, 65.0, 7.0, 101L),
-        TestData(-89.0, 67.0, 8.0, 101L),
+
+      //createTestString(1, 11)
+
+      List(
+        CartesianTestData(0.24, 0.24, 1.0, 101L),
+        CartesianTestData(0.6, 0.24, 2.0, 101L),
+        CartesianTestData(0.26, 0.26, 3.0, 101L),
+        CartesianTestData(0.76, 0.26, 4.0, 101L),
+        CartesianTestData(0.24, 0.6, 5.0, 101L),
+        CartesianTestData(0.6, 0.6, 6.0, 101L),
+        CartesianTestData(0.26, 0.76, 7.0, 101L),
+        CartesianTestData(0.76, 0.76, 8.0, 101L),
         // 2nd time bucket
-        TestData(-91.0, -67.0, 9.0, 201L),
-        TestData(-89.0, -65.0, 10.0, 201L),
-        TestData(91.0, -65.0, 11.0, 201L),
-        TestData(89.0, -67.0, 12.0, 201L),
-        TestData(89.0, 65.0, 13.0, 201L),
-        TestData(91.0, 67.0, 14.0, 201L),
-        TestData(-91.0, 65.0, 15.0, 201L),
-        TestData(-89.0, 67.0, 16.0, 201L),
+        CartesianTestData(0.24, 0.24, 9.0, 201L),
+        CartesianTestData(0.6, 0.24, 10.0, 201L),
+        CartesianTestData(0.26, 0.26, 11.0, 201L),
+        CartesianTestData(0.76, 0.26, 12.0, 201L),
+        CartesianTestData(0.24, 0.6, 13.0, 201L),
+        CartesianTestData(0.6, 0.6, 14.0, 201L),
+        CartesianTestData(0.26, 0.76, 15.0, 201L),
+        CartesianTestData(0.76, 0.76, 16.0, 201L),
         // 3rd time bucket
-        TestData(-179, 84.0, 0.1, 301L),
-        TestData(-179, 84.0, 0.1, 301L))
+        CartesianTestData(0.01, 0.99, 0.1, 301L),
+        CartesianTestData(0.01, 0.99, 0.1, 301L))
 
     val tsqlc = sqlc
     import tsqlc.implicits._ // scalastyle:ignore
@@ -57,9 +61,10 @@ class MercatorTimeHeatmapTest extends SparkFunSpec {
     sc.parallelize(testData).toDF()
   }
 
-  describe("MercatorTimeHeatmapTest") {
+  describe("CartesianTimeHeatmapTest") {
     it("should create a quadtree of tiles where empty tiles are skipped") {
-      val result = MercatorTimeHeatmap(latCol, lonCol, timeCol, Some(value), None, RangeDescription.fromCount(0, 800, 10), (0 until 3), 10)(genData)
+      val result = CartesianTimeHeatmap(xCol, yCol, timeCol, Some(value), Some((0.0, 0.0, 1.0, 1.0)),
+        RangeDescription.fromCount(0, 800, 10), (0 to 2), 10)(genData)
         .collect()
         .map(_.coords).
         toSet
@@ -72,30 +77,30 @@ class MercatorTimeHeatmapTest extends SparkFunSpec {
     }
 
     it("should create time bins from a range and bucket count") {
-      val result = MercatorTimeHeatmap(latCol, lonCol, timeCol, Some(value), None, RangeDescription.fromCount(0, 800, 10), (0 until 3), 10)(genData).collect()
+      val result = CartesianTimeHeatmap(xCol, yCol, timeCol, Some(value), None, RangeDescription.fromCount(0, 800, 10), (0 until 3), 10)(genData).collect()
       assertResult(10 * 10 * 10)(result(0).bins.length)
     }
 
     it("should sum values that are in the same bin ") {
-      val result = MercatorTimeHeatmap(latCol, lonCol, timeCol, Some(value), None, RangeDescription.fromCount(0, 800, 10), Seq(0), 10)(genData).collect()
-      val proj = new MercatorTimeProjection(Seq(0), RangeDescription.fromCount(0L, 800L, 10))
+      val result = CartesianTimeHeatmap(xCol, yCol, timeCol, Some(value), None, RangeDescription.fromCount(0, 800, 10), Seq(0), 10)(genData).collect()
+      val proj = new CartesianTimeProjection(Seq(0), (0.0, 0.0), (1.0, 1.0), RangeDescription.fromCount(0L, 800L, 10))
       assertResult(0.2)(result(0).bins(proj.binTo1D((0, 0, 3), (9, 9, 9))))
     }
 
     it("should not aggregate across time buckets") {
-      val result = MercatorTimeHeatmap(latCol, lonCol, timeCol, None, None, RangeDescription.fromCount(0, 800, 10), (0 until 3), 10)(genData).collect()
-      val proj = new MercatorTimeProjection(Seq(0), RangeDescription.fromCount(0L, 800L, 10))
+      val result = CartesianTimeHeatmap(xCol, yCol, timeCol, None, None, RangeDescription.fromCount(0, 800, 10), (0 until 3), 10)(genData).collect()
+      val proj = new CartesianTimeProjection(Seq(0), (0.0, 0.0), (1.0, 1.0), RangeDescription.fromCount(0L, 800L, 10))
 
       val tile = (t: (Int, Int, Int)) => result.find(s => s.coords == t)
 
       assertResult(2)(tile((0, 0, 0)).getOrElse(fail()).bins(proj.binTo1D((0, 0, 3), (9, 9, 9))))
       assertResult(2)(tile((1, 0, 1)).getOrElse(fail()).bins(proj.binTo1D((0, 0, 3), (9, 9, 9))))
-      assertResult(2)(tile((2, 0, 3)).getOrElse(fail()).bins(proj.binTo1D((0, 1, 3), (9, 9, 9))))
+      assertResult(2)(tile((2, 0, 3)).getOrElse(fail()).bins(proj.binTo1D((0, 0, 3), (9, 9, 9))))
     }
 
     it("should use a value of 1.0 for each bin when no value column is specified") {
-      val result = MercatorTimeHeatmap(latCol, lonCol, timeCol, None, None, RangeDescription.fromCount(0, 800, 10), Seq(0), 10)(genData).collect()
-      val proj = new MercatorTimeProjection(Seq(0), RangeDescription.fromCount(0L, 800L, 10))
+      val result = CartesianTimeHeatmap(xCol, yCol, timeCol, None, None, RangeDescription.fromCount(0, 800, 10), Seq(0), 10)(genData).collect()
+      val proj = new CartesianTimeProjection(Seq(0), (0.0, 0.0), (1.0, 1.0), RangeDescription.fromCount(0L, 800L, 10))
       assertResult(2)(result(0).bins(proj.binTo1D((0, 0, 3), (9, 9, 9))))
     }
   }

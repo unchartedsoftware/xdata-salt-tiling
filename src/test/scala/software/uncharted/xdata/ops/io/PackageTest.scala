@@ -88,120 +88,120 @@ class PackageTest extends SparkFunSpec {
     }
   }
 
-//  describe("#writeToS3") {
-//    val testKey0 = s"$testLayer/2/2/2.bin"
-//    val testKey1 = s"$testLayer/2/2/3.bin"
-//
-//    it("should add tiles to the s3 bucket using key names based on TMS coords", S3Test) {
-//      val data = sc.parallelize(Seq(
-//        ((2, 2, 2), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7)),
-//        ((2, 2, 3), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))
-//      ))
-//
-//      writeToS3(awsAccessKey, awsSecretKey, testBucket, testLayer)(data).collect()
-//
-//      val s3c = new S3Client(awsAccessKey, awsSecretKey)
-//      assert(s3c.download(testBucket,testKey0).isDefined)
-//      assert(s3c.download(testBucket, testKey1).isDefined)
-//      s3c.delete(testBucket, testKey0)
-//      s3c.delete(testBucket, testKey1)
-//    }
-//
-//    it("should serialize the byte data to the s3 bucket without changing it", S3Test) {
-//      val data = sc.parallelize(Seq(
-//        ((2, 2, 2), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))
-//      ))
-//
-//      writeToS3(awsAccessKey, awsSecretKey, testBucket, testLayer)(data)
-//      val s3c = new S3Client(awsAccessKey, awsSecretKey)
-//      assertResult(Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))(s3c.download(testBucket, testKey0).getOrElse(fail()))
-//      s3c.delete(testBucket, testKey0)
-//    }
-//  }
-//
-//  describe("#writeBytesToS3") {
-//    val testFile = "metadata.json"
-//    it("should write the byte data to the s3 bucket without changing it", S3Test) {
-//      writeBytesToS3(awsAccessKey, awsSecretKey, testBucket, testLayer)(testFile, Seq(0, 1, 2, 3, 4, 5))
-//      val s3c = new S3Client(awsAccessKey, awsSecretKey)
-//      assertResult(Seq[Byte](0, 1, 2, 3, 4, 5))(s3c.download(testBucket, s"$testLayer/$testFile").getOrElse(fail()))
-//      s3c.delete(testBucket, s"$testLayer/$testFile")
-//    }
-//  }
-//
-//  describe("#writeToHBase") {
-//    o("should add tiles to the HBase Table Created", HBaseTest) {
-//      val data = sc.parallelize(Seq(
-//        ((2, 2, 2), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7)),
-//        ((2, 2, 3), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))
-//      ))
-//      val testCol = "tileData"
-//      val testQualifier = "tileDataQuali"
-//
-//      writeToHBase(configFile, testLayer, testQualifier)(data).collect()
-//
-//      val config = HBaseConfiguration.create()
-//      config.set("hbase.zookeeper.quorum", zookeeperQuorum)
-//      config.set("hbase.zookeeper.property.clientPort", zookeeperPort)
-//      config.set("hbase.master", hBaseMaster)
-//      config.set("hbase.client.keyvalue.maxsize", "0")
-//      val connection = ConnectionFactory.createConnection(config)
-//      val admin = connection.getAdmin
-//      assertResult(true)(connection.getTable(TableName.valueOf(testLayer)).exists(new Get (s"${testLayer}/02/2/2.bin".getBytes())))
-//      assertResult(true)(connection.getTable(TableName.valueOf(testLayer)).exists(new Get (s"${testLayer}/02/2/3.bin".getBytes())))
-//      //disable and delete test table
-//      admin.disableTable(TableName.valueOf(testLayer))
-//      admin.deleteTable(TableName.valueOf(testLayer))
-//      connection.close()
-//    }
-//
-//    it("should serialize the byte data to HBase without changing it", HBaseTest) {
-//      val data = sc.parallelize(Seq(
-//        ((2, 2, 2), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7)),
-//        ((2, 2, 3), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))
-//      ))
-//
-//      val testCol = "tileData"
-//      val testQualifier = "tileDataQuali"
-//      writeToHBase(configFile, testLayer, testQualifier)(data)
-//      val config = HBaseConfiguration.create()
-//      config.set("hbase.zookeeper.quorum", zookeeperQuorum)
-//      config.set("hbase.zookeeper.property.clientPort", zookeeperPort)
-//      config.set("hbase.master", hBaseMaster)
-//      config.set("hbase.client.keyvalue.maxsize", "0")
-//      val connection = ConnectionFactory.createConnection(config)
-//      val admin = connection.getAdmin
-//
-//      assertResult(Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))(connection.getTable(TableName.valueOf(testLayer)).get(new Get(s"${testLayer}/02/2/2.bin".getBytes).addFamily(testCol.getBytes)).value().toSeq)
-//
-//      admin.disableTable(TableName.valueOf(testLayer))
-//      admin.deleteTable(TableName.valueOf(testLayer))
-//      connection.close()
-//    }
-//  }
-//
-//  describe("#writeBytesToHBase") {
-//    val testFile = "metadata.json"
-//    val testQualifier = "tileQualifier"
-//    it("should write the byte data to the HBaseTable without changing it", HBaseTest) {
-//      writeBytesToHBase(configFile, testLayer, testQualifier)(testFile, Seq(0, 1, 2, 3, 4, 5))
-//      val hbc = HBaseConnector(configFile)
-//      //disable and delete table
-//      val config = HBaseConfiguration.create()
-//      config.set("hbase.zookeeper.quorum", zookeeperQuorum)
-//      config.set("hbase.zookeeper.property.clientPort", zookeeperPort)
-//      config.set("hbase.master", hBaseMaster)
-//      config.set("hbase.client.keyvalue.maxsize", "0")
-//      val connection = ConnectionFactory.createConnection(config)
-//      val admin = connection.getAdmin
-//
-//      assertResult(true)(connection.getTable(TableName.valueOf(testLayer)).exists(new Get (s"${testLayer}/${testFile}".getBytes())))
-//      admin.disableTable(TableName.valueOf(testLayer))
-//      admin.deleteTable(TableName.valueOf(testLayer))
-//      connection.close()
-//
-//    }
-//  }
+  describe("#writeToS3") {
+    val testKey0 = s"$testLayer/2/2/2.bin"
+    val testKey1 = s"$testLayer/2/2/3.bin"
+
+    it("should add tiles to the s3 bucket using key names based on TMS coords", S3Test) {
+      val data = sc.parallelize(Seq(
+        ((2, 2, 2), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7)),
+        ((2, 2, 3), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))
+      ))
+
+      writeToS3(awsAccessKey, awsSecretKey, testBucket, testLayer)(data).collect()
+
+      val s3c = new S3Client(awsAccessKey, awsSecretKey)
+      assert(s3c.download(testBucket,testKey0).isDefined)
+      assert(s3c.download(testBucket, testKey1).isDefined)
+      s3c.delete(testBucket, testKey0)
+      s3c.delete(testBucket, testKey1)
+    }
+
+    it("should serialize the byte data to the s3 bucket without changing it", S3Test) {
+      val data = sc.parallelize(Seq(
+        ((2, 2, 2), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))
+      ))
+
+      writeToS3(awsAccessKey, awsSecretKey, testBucket, testLayer)(data)
+      val s3c = new S3Client(awsAccessKey, awsSecretKey)
+      assertResult(Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))(s3c.download(testBucket, testKey0).getOrElse(fail()))
+      s3c.delete(testBucket, testKey0)
+    }
+  }
+
+  describe("#writeBytesToS3") {
+    val testFile = "metadata.json"
+    it("should write the byte data to the s3 bucket without changing it", S3Test) {
+      writeBytesToS3(awsAccessKey, awsSecretKey, testBucket, testLayer)(testFile, Seq(0, 1, 2, 3, 4, 5))
+      val s3c = new S3Client(awsAccessKey, awsSecretKey)
+      assertResult(Seq[Byte](0, 1, 2, 3, 4, 5))(s3c.download(testBucket, s"$testLayer/$testFile").getOrElse(fail()))
+      s3c.delete(testBucket, s"$testLayer/$testFile")
+    }
+  }
+
+  describe("#writeToHBase") {
+    it("should add tiles to the HBase Table Created", HBaseTest) {
+      val data = sc.parallelize(Seq(
+        ((2, 2, 2), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7)),
+        ((2, 2, 3), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))
+      ))
+      val testCol = "tileData"
+      val testQualifier = "tileDataQuali"
+
+      writeToHBase(configFile, testLayer, testQualifier)(data).collect()
+
+      val config = HBaseConfiguration.create()
+      config.set("hbase.zookeeper.quorum", zookeeperQuorum)
+      config.set("hbase.zookeeper.property.clientPort", zookeeperPort)
+      config.set("hbase.master", hBaseMaster)
+      config.set("hbase.client.keyvalue.maxsize", "0")
+      val connection = ConnectionFactory.createConnection(config)
+      val admin = connection.getAdmin
+      assertResult(true)(connection.getTable(TableName.valueOf(testLayer)).exists(new Get (s"${testLayer}/02/2/2.bin".getBytes())))
+      assertResult(true)(connection.getTable(TableName.valueOf(testLayer)).exists(new Get (s"${testLayer}/02/2/3.bin".getBytes())))
+      //disable and delete test table
+      admin.disableTable(TableName.valueOf(testLayer))
+      admin.deleteTable(TableName.valueOf(testLayer))
+      connection.close()
+    }
+
+    it("should serialize the byte data to HBase without changing it", HBaseTest) {
+      val data = sc.parallelize(Seq(
+        ((2, 2, 2), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7)),
+        ((2, 2, 3), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))
+      ))
+
+      val testCol = "tileData"
+      val testQualifier = "tileDataQuali"
+      writeToHBase(configFile, testLayer, testQualifier)(data)
+      val config = HBaseConfiguration.create()
+      config.set("hbase.zookeeper.quorum", zookeeperQuorum)
+      config.set("hbase.zookeeper.property.clientPort", zookeeperPort)
+      config.set("hbase.master", hBaseMaster)
+      config.set("hbase.client.keyvalue.maxsize", "0")
+      val connection = ConnectionFactory.createConnection(config)
+      val admin = connection.getAdmin
+
+      assertResult(Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))(connection.getTable(TableName.valueOf(testLayer)).get(new Get(s"${testLayer}/02/2/2.bin".getBytes).addFamily(testCol.getBytes)).value().toSeq)
+
+      admin.disableTable(TableName.valueOf(testLayer))
+      admin.deleteTable(TableName.valueOf(testLayer))
+      connection.close()
+    }
+  }
+
+  describe("#writeBytesToHBase") {
+    val testFile = "metadata.json"
+    val testQualifier = "tileQualifier"
+    it("should write the byte data to the HBaseTable without changing it", HBaseTest) {
+      writeBytesToHBase(configFile, testLayer, testQualifier)(testFile, Seq(0, 1, 2, 3, 4, 5))
+      val hbc = HBaseConnector(configFile)
+      //disable and delete table
+      val config = HBaseConfiguration.create()
+      config.set("hbase.zookeeper.quorum", zookeeperQuorum)
+      config.set("hbase.zookeeper.property.clientPort", zookeeperPort)
+      config.set("hbase.master", hBaseMaster)
+      config.set("hbase.client.keyvalue.maxsize", "0")
+      val connection = ConnectionFactory.createConnection(config)
+      val admin = connection.getAdmin
+
+      assertResult(true)(connection.getTable(TableName.valueOf(testLayer)).exists(new Get (s"${testLayer}/${testFile}".getBytes())))
+      admin.disableTable(TableName.valueOf(testLayer))
+      admin.deleteTable(TableName.valueOf(testLayer))
+      connection.close()
+
+    }
+  }
 
   describe("#serializeBinArray") {
     val arr0 = genHeatmapArray(0.0, 1.0, 2.0, 3.0)
