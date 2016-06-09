@@ -17,31 +17,38 @@ import grizzled.slf4j.Logging
 import software.uncharted.xdata.ops.salt.RangeDescription
 
 // Parse config for geoheatmap sparkpipe op
-case class MercatorTimeHeatmapConfig(lonCol: String, latCol: String, timeCol: String, timeRange: RangeDescription[Long], timeFormat: Option[String] = None)
-object MercatorTimeHeatmapConfig extends Logging {
+case class XYTimeHeatmapConfig(xCol: String,
+                               yCol: String,
+                               timeCol: String,
+                               timeRange: RangeDescription[Long],
+                               timeFormat: Option[String] = None,
+                               projection: Option[String] = None)
+object XYTimeHeatmapConfig extends Logging {
 
-  val mercatorTimeHeatmapKey = "mercatorTimeHeatmap"
+  val xyTimeHeatmapKey = "xyTimeHeatmap"
   val timeFormatKey = "timeFormat"
-  val longitudeColumnKey = "longitudeColumn"
-  val latitudeColumnKey = "latitudeColumn"
+  val projectionKey = "projection"
+  val xColumnKey = "xColumn"
+  val yColumnKey = "yColumn"
   val timeColumnKey = "timeColumn"
   val timeMinKey = "min"
   val timeStepKey = "step"
   val timeCountKey =  "count"
 
-  def apply(config: Config): Option[MercatorTimeHeatmapConfig] = {
+  def apply(config: Config): Option[XYTimeHeatmapConfig] = {
     try {
-      val heatmapConfig = config.getConfig(mercatorTimeHeatmapKey)
-      Some(MercatorTimeHeatmapConfig(
-        heatmapConfig.getString(longitudeColumnKey),
-        heatmapConfig.getString(latitudeColumnKey),
+      val heatmapConfig = config.getConfig(xyTimeHeatmapKey)
+      Some(XYTimeHeatmapConfig(
+        heatmapConfig.getString(xColumnKey),
+        heatmapConfig.getString(yColumnKey),
         heatmapConfig.getString(timeColumnKey),
         RangeDescription.fromMin(heatmapConfig.getLong(timeMinKey), heatmapConfig.getLong(timeStepKey), heatmapConfig.getInt(timeCountKey)),
-        if (heatmapConfig.hasPath(timeFormatKey)) Some(heatmapConfig.getString(timeFormatKey)) else None)
+        if (heatmapConfig.hasPath(timeFormatKey)) Some(heatmapConfig.getString(timeFormatKey)) else None,
+        if (heatmapConfig.hasPath(projectionKey)) Some(heatmapConfig.getString(projectionKey)) else None)
       )
     } catch {
       case e: ConfigException =>
-        error("Failure parsing arguments from [" + mercatorTimeHeatmapKey + "]", e)
+        error("Failure parsing arguments from [" + xyTimeHeatmapKey + "]", e)
         None
     }
   }

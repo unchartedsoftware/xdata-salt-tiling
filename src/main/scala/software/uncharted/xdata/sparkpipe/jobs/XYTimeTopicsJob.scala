@@ -19,12 +19,12 @@ import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.temporal.parseDate
 import software.uncharted.sparkpipe.ops.core.dataframe.text.{includeTermFilter, split}
 import software.uncharted.xdata.ops.io.serializeElementScore
-import software.uncharted.xdata.ops.salt.{MercatorTimeHeatmap, MercatorTimeTopics}
-import software.uncharted.xdata.sparkpipe.config.{MercatorTimeTopicsConfig, Schema, SparkConfig, TilingConfig}
+import software.uncharted.xdata.ops.salt.{CartesianTimeTopics, MercatorTimeHeatmap, MercatorTimeTopics}
+import software.uncharted.xdata.sparkpipe.config.{Schema, SparkConfig, TilingConfig, XYTimeTopicsConfig}
 import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOperation, createTileOutputOperation, dataframeFromSparkCsv}
 
 // scalastyle:off method.length
-object MercatorTimeTopicsJob extends Logging {
+object XYTimeTopicsJob extends Logging {
 
   private val convertedTime = "convertedTime"
 
@@ -45,13 +45,20 @@ object MercatorTimeTopicsJob extends Logging {
     }
 
     // Parse geo heatmap parameters out of supplied config
-    val topicsConfig = MercatorTimeTopicsConfig(config).getOrElse {
+    val topicsConfig = XYTimeTopicsConfig(config).getOrElse {
       logger.error("Invalid heatmap op config")
       sys.exit(-1)
     }
 
     // when time format is used, need to pick up the converted time column
     val finalTimeCol = topicsConfig.timeFormat.map(p => convertedTime).getOrElse(topicsConfig.timeCol)
+    val topicsOp = topicsConfig.projection match {
+      case Some("mercator") => MercatorTimeTopics(topicsConfig.yCol, topicsConfig.xCol, finalTimeCol, topicsConfig.textCol,
+        None, topicsConfig.timeRange, topicsConfig.topicLimit, tilingConfig.levels)(_)
+      case Some("cartesian") | None => CartesianTimeTopics(topicsConfig.yCol, topicsConfig.xCol, finalTimeCol, topicsConfig.textCol,
+        None, topicsConfig.timeRange, topicsConfig.topicLimit, tilingConfig.levels)(_)
+      case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
+    }
 
     val outputOperation = createTileOutputOperation(config).getOrElse {
       logger.error("Output operation config")
@@ -75,19 +82,9 @@ object MercatorTimeTopicsJob extends Logging {
         }
         .to(split(topicsConfig.textCol, "\\b+"))
         .to(includeTermFilter(topicsConfig.textCol, topicsConfig.termList.keySet))
-        .to(_.select(topicsConfig.lonCol, topicsConfig.latCol, finalTimeCol, topicsConfig.textCol))
+        .to(_.select(topicsConfig.xCol, topicsConfig.yCol, finalTimeCol, topicsConfig.textCol))
         .to(_.cache())
-        .to {
-          MercatorTimeTopics(
-            topicsConfig.latCol,
-            topicsConfig.lonCol,
-            finalTimeCol,
-            topicsConfig.textCol,
-            None,
-            topicsConfig.timeRange,
-            topicsConfig.topicLimit,
-            tilingConfig.levels)
-        }
+        .to(topicsOp)
         .to(serializeElementScore)
         .to(outputOperation)
         .run()
@@ -99,7 +96,7 @@ object MercatorTimeTopicsJob extends Logging {
     }
   }
 
-  private def writeMetadata(baseConfig: Config, tilingConfig: TilingConfig, topicsConfig: MercatorTimeTopicsConfig): Unit = {
+  private def writeMetadata(baseConfig: Config, tilingConfig: TilingConfig, topicsConfig: XYTimeTopicsConfig): Unit = {
     import net.liftweb.json.JsonDSL._ // scalastyle:ignore
     import net.liftweb.json.JsonAST._ // scalastyle:ignore
 
@@ -132,6 +129,6 @@ object MercatorTimeTopicsJob extends Logging {
   }
 
   def main (args: Array[String]): Unit = {
-    MercatorTimeTopicsJob.execute(args)
+    XYTimeTopicsJob.execute(args)
   }
 }

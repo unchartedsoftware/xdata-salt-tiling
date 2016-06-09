@@ -23,21 +23,23 @@ import scala.collection.JavaConverters._ // scalastyle:ignore
 
 
 // Parse config for mercator time heatmap sparkpipe op
-case class MercatorTimeTopicsConfig(lonCol: String,
-                                    latCol: String,
-                                    timeCol: String,
-                                    textCol: String,
-                                    timeRange: RangeDescription[Long],
-                                    timeFormat: Option[String],
-                                    topicLimit: Int,
-                                    termList: Map[String, String])
+case class XYTimeTopicsConfig(xCol: String,
+                              yCol: String,
+                              timeCol: String,
+                              textCol: String,
+                              timeRange: RangeDescription[Long],
+                              timeFormat: Option[String],
+                              topicLimit: Int,
+                              termList: Map[String, String],
+                              projection: Option[String] = None)
 
-object MercatorTimeTopicsConfig extends Logging {
+object XYTimeTopicsConfig extends Logging {
 
-  val mercatorTimeTopicKey = "mercatorTimeTopics"
+  val xyTimeTopicsKey = "xyTimeTopics"
   val timeFormatKey = "timeFormat"
-  val longitudeColumnKey = "longitudeColumn"
-  val latitudeColumnKey = "latitudeColumn"
+  val xColumnKey = "xColumn"
+  val yColumnKey = "yColumn"
+  val projectionKey = "projection"
   val timeColumnKey = "timeColumn"
   val timeMinKey = "min"
   val timeStepKey = "step"
@@ -46,23 +48,24 @@ object MercatorTimeTopicsConfig extends Logging {
   val topicLimitKey = "topicLimit"
   val termPathKey = "terms"
 
-  def apply(config: Config): Option[MercatorTimeTopicsConfig] = {
+  def apply(config: Config): Option[XYTimeTopicsConfig] = {
     try {
-      val topicConfig = config.getConfig(mercatorTimeTopicKey)
+      val topicConfig = config.getConfig(xyTimeTopicsKey)
 
-      Some(MercatorTimeTopicsConfig(
-        topicConfig.getString(longitudeColumnKey),
-        topicConfig.getString(latitudeColumnKey),
+      Some(XYTimeTopicsConfig(
+        topicConfig.getString(xColumnKey),
+        topicConfig.getString(yColumnKey),
         topicConfig.getString(timeColumnKey),
         topicConfig.getString(textColumnKey),
         RangeDescription.fromMin(topicConfig.getLong(timeMinKey), topicConfig.getLong(timeStepKey), topicConfig.getInt(timeCountKey)),
         if (topicConfig.hasPath(timeFormatKey)) Some(topicConfig.getString(timeFormatKey)) else None,
         topicConfig.getInt(topicLimitKey),
-        readTerms(topicConfig.getString(termPathKey)))
+        readTerms(topicConfig.getString(termPathKey)),
+        if (topicConfig.hasPath(projectionKey)) Some(topicConfig.getString(projectionKey)) else None)
       )
     } catch {
       case e: ConfigException =>
-        error(s"Failure parsing arguments from [$mercatorTimeTopicKey]", e)
+        error(s"Failure parsing arguments from [$xyTimeTopicsKey]", e)
         None
     }
   }
