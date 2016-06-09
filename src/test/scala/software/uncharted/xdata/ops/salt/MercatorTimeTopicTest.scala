@@ -15,9 +15,8 @@ package software.uncharted.xdata.ops.salt
 import org.apache.spark.sql.DataFrame
 import software.uncharted.xdata.spark.SparkFunSpec
 
-
-// scalastyle:off multiple.string.literals magic.number
 case class TopicTestData(lon: Double, lat: Double, time: Long, text: List[String])
+
 
 class MercatorTimeTopicTest extends SparkFunSpec {
 
@@ -26,6 +25,7 @@ class MercatorTimeTopicTest extends SparkFunSpec {
   private val timeCol = "time"
   private val textCol = "text"
 
+  // scalastyle:off multiple.string.literals magic.number
   private def createTestString(aCount: Int, bCount: Int) = List.fill(aCount)("a") ++ List.fill(bCount)("b")
 
   def genData: DataFrame = {

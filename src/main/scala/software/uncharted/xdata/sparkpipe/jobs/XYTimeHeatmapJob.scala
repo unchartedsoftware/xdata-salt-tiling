@@ -18,12 +18,12 @@ import org.apache.spark.sql.DataFrame
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.temporal.parseDate
 import software.uncharted.xdata.ops.io.serializeBinArray
-import software.uncharted.xdata.ops.salt.MercatorTimeHeatmap
-import software.uncharted.xdata.sparkpipe.config.{MercatorTimeHeatmapConfig, Schema, SparkConfig, TilingConfig}
+import software.uncharted.xdata.ops.salt.{CartesianTimeHeatmap, MercatorTimeHeatmap}
+import software.uncharted.xdata.sparkpipe.config.{Schema, SparkConfig, TilingConfig, XYTimeHeatmapConfig}
 import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOperation, createTileOutputOperation, dataframeFromSparkCsv}
 
 // scalastyle:off method.length
-object MercatorTimeHeatmapJob extends Logging {
+object XYTimeHeatmapJob extends Logging {
 
   private val convertedTime: String = "convertedTime"
 
@@ -42,7 +42,7 @@ object MercatorTimeHeatmapJob extends Logging {
     }
 
     // Parse geo heatmap parameters out of supplied config
-    val heatmapConfig = MercatorTimeHeatmapConfig(config).getOrElse {
+    val heatmapConfig = XYTimeHeatmapConfig(config).getOrElse {
       logger.error("Invalid heatmap op config")
       sys.exit(-1)
     }
@@ -53,14 +53,25 @@ object MercatorTimeHeatmapJob extends Logging {
       sys.exit(-1)
     }
 
+    // when time format is used, need to pick up the converted time column
+    val finalTimeCol = heatmapConfig.timeFormat.map(p => convertedTime).getOrElse(heatmapConfig.timeCol)
+
+    // create the heatmap operation based on the projection
+    val heatmapOperation = heatmapConfig.projection match {
+      case Some("mercator") => MercatorTimeHeatmap(heatmapConfig.yCol, heatmapConfig.xCol, finalTimeCol,
+        None, None, heatmapConfig.timeRange, tilingConfig.levels,
+        tilingConfig.bins.getOrElse(MercatorTimeHeatmap.defaultTileSize))(_)
+      case Some("cartesian") | None => CartesianTimeHeatmap(heatmapConfig.yCol, heatmapConfig.xCol, finalTimeCol,
+        None, None, heatmapConfig.timeRange, tilingConfig.levels,
+        tilingConfig.bins.getOrElse(CartesianTimeHeatmap.defaultTileSize))(_)
+      case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
+    }
+
     // Create the spark context from the supplied config
     val sqlc = SparkConfig(config)
     try {
       // Create the dataframe from the input config
       val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc)
-
-      // when time format is used, need to pick up the converted time column
-      val finalTimeCol = heatmapConfig.timeFormat.map(p => convertedTime).getOrElse(heatmapConfig.timeCol)
 
       // Pipe the dataframe
       Pipe(df)
@@ -69,19 +80,9 @@ object MercatorTimeHeatmapJob extends Logging {
             .map(tf => parseDate(heatmapConfig.timeCol, convertedTime, tf)(_))
             .getOrElse((df: DataFrame) => df)
         }
-        .to(_.select(heatmapConfig.lonCol, heatmapConfig.latCol, finalTimeCol))
+        .to(_.select(heatmapConfig.xCol, heatmapConfig.yCol, finalTimeCol))
         .to(_.cache())
-        .to {
-          MercatorTimeHeatmap(
-            heatmapConfig.latCol,
-            heatmapConfig.lonCol,
-            finalTimeCol,
-            None,
-            None,
-            heatmapConfig.timeRange,
-            tilingConfig.levels,
-            tilingConfig.bins.getOrElse(MercatorTimeHeatmap.defaultTileSize))
-        }
+        .to(heatmapOperation)
         .to(serializeBinArray)
         .to(outputOperation)
         .run()
@@ -94,7 +95,7 @@ object MercatorTimeHeatmapJob extends Logging {
     }
   }
 
-  private def writeMetadata(baseConfig: Config, tilingConfig: TilingConfig, heatmapConfig: MercatorTimeHeatmapConfig): Unit = {
+  private def writeMetadata(baseConfig: Config, tilingConfig: TilingConfig, heatmapConfig: XYTimeHeatmapConfig): Unit = {
     import net.liftweb.json.JsonDSL._ // scalastyle:ignore
     import net.liftweb.json.JsonAST._ // scalastyle:ignore
 
@@ -122,6 +123,6 @@ object MercatorTimeHeatmapJob extends Logging {
   }
 
   def main (args: Array[String]): Unit = {
-    MercatorTimeHeatmapJob.execute(args)
+    XYTimeHeatmapJob.execute(args)
   }
 }

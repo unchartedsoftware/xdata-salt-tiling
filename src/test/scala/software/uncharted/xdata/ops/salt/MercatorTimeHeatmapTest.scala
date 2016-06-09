@@ -15,10 +15,9 @@ package software.uncharted.xdata.ops.salt
 import org.apache.spark.sql.DataFrame
 import software.uncharted.xdata.spark.SparkFunSpec
 
-// scalastyle:off magic.number
-
 case class TestData(lon: Double, lat: Double, value: Double, time: Long)
 
+// scalastyle:off multiple.string.literals magic.number
 class MercatorTimeHeatmapTest extends SparkFunSpec {
 
   private val lonCol = "lon"
