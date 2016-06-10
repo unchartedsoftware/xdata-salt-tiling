@@ -91,6 +91,7 @@ scalaStyle {
   source = sourceSets.main.allScala
   testSource = sourceSets.test.allScala
   failOnWarning = true
+  verbose = true
 }
 
 // configure scoverage plugin
