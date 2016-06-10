@@ -36,7 +36,8 @@ class S3ClientTest extends FunSpec with BeforeAndAfterAll {
   private val data = Array[Byte](0, 1, 2, 3, 4, 5)
   private val data_dl = Array[Byte](0, 11, 22, 33, 44, 55) // scalastyle:ignore
 
-  private val zipped_data = Array[Byte](31, -117, 8, 0, 0, 0, 0, 0, 0, 0, 99, 96, 100, 98, 102, 97, 5, 0, 74, -49, -21, 48, 6, 0, 0, 0)
+  private val zipped_data = Array[Byte](31, -117, 8, 0, 0, 0, 0, 0, 0, 0, 99, 96, 100,
+    98, 102, 97, 5, 0, 74, -49, -21, 48, 6, 0, 0, 0)
   private val zipped_zipped_data = Array[Byte](31, -117, 8, 0, 0, 0, 0, 0, 0, 0, -109, -17, -26, 96, -128, -128, -28, -124, -108, -92, -76, 68, 86, 6, -81, -13, -81, 13, -40, -128, 124, 0, -128, -2, 33, -115, 26, 0, 0, 0)
 
 

@@ -12,13 +12,11 @@
  */
 package software.uncharted.xdata.ops.io
 import org.scalatest.{BeforeAndAfterAll, Tag}
-import java.io.ByteArrayInputStream
-import org.apache.hadoop.hbase.client._;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hbase.HColumnDescriptor;
-import org.apache.hadoop.hbase.HTableDescriptor;
-import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client._ //scalastyle:ignore
+import org.apache.hadoop.hbase.HBaseConfiguration
+import org.apache.hadoop.hbase.HColumnDescriptor
+import org.apache.hadoop.hbase.HTableDescriptor
+import org.apache.hadoop.hbase.TableName
 
 import org.apache.spark.rdd.RDD
 
@@ -28,71 +26,74 @@ object HBaseTest extends Tag("hbc.test")
 
 class HBaseConnectorTest extends SparkFunSpec with BeforeAndAfterAll {
 
-  protected override def beforeAll() = {
+  private def createConfig() = {
     val config = HBaseConfiguration.create()
     config.set("hbase.zookeeper.quorum", "uscc0-node08.uncharted.software")
     config.set("hbase.zookeeper.property.clientPort", "2181")
     config.set("hbase.master", "hdfs://uscc0-master0.uncharted.software:60000")
     config.set("hbase.client.keyvalue.maxsize", "0")
-    val connection = ConnectionFactory.createConnection(config)
+    ConnectionFactory.createConnection(config)
+  }
+
+  protected override def beforeAll() = {
+    val connection = createConfig()
     val admin = connection.getAdmin
-    List(testTable).foreach { tableName =>
-      val tableDescriptor = new HTableDescriptor(TableName.valueOf(tableName))
-      tableDescriptor.addFamily(new HColumnDescriptor(testColFamilyName))
-      tableDescriptor.addFamily(new HColumnDescriptor(testColMetaDataName))
-      admin.createTable(tableDescriptor)
+
+    val tableName = TableName.valueOf(testTable)
+    if (admin.tableExists(tableName)) {
+      admin.disableTable(tableName)
+      admin.deleteTable(tableName)
     }
+
+    val tableDescriptor = new HTableDescriptor(tableName)
+    tableDescriptor.addFamily(new HColumnDescriptor(testColFamilyName))
+    tableDescriptor.addFamily(new HColumnDescriptor(testColMetaDataName))
+    admin.createTable(tableDescriptor)
+
     connection.close()
   }
 
   protected override def afterAll() = {
-    val config = HBaseConfiguration.create()
-    config.set("hbase.zookeeper.quorum", "uscc0-node08.uncharted.software")
-    config.set("hbase.zookeeper.property.clientPort", "2181")
-    config.set("hbase.master", "hdfs://uscc0-master0.uncharted.software:60000")
-    config.set("hbase.client.keyvalue.maxsize", "0")
-    val connection = ConnectionFactory.createConnection(config)
+    val connection = createConfig()
     val admin = connection.getAdmin
 
     admin.disableTable(TableName.valueOf(testTable))
     admin.deleteTable(TableName.valueOf(testTable))
-    admin.disableTable(TableName.valueOf(nonExistantTable))
-    admin.deleteTable(TableName.valueOf(nonExistantTable))
-    admin.disableTable(TableName.valueOf(nonExistantTable2))
-    admin.deleteTable(TableName.valueOf(nonExistantTable2))
-    admin.disableTable(TableName.valueOf(nonExistantTable3))
-    admin.deleteTable(TableName.valueOf(nonExistantTable3))
-    admin.disableTable(TableName.valueOf(nonExistantTable4))
-    admin.deleteTable(TableName.valueOf(nonExistantTable4))
+    admin.disableTable(TableName.valueOf(nonExistentTable))
+    admin.deleteTable(TableName.valueOf(nonExistentTable))
+    admin.disableTable(TableName.valueOf(nonExistentTable2))
+    admin.deleteTable(TableName.valueOf(nonExistentTable2))
+    admin.disableTable(TableName.valueOf(nonExistentTable3))
+    admin.deleteTable(TableName.valueOf(nonExistentTable3))
+    admin.disableTable(TableName.valueOf(nonExistentTable4))
+    admin.deleteTable(TableName.valueOf(nonExistentTable4))
     connection.close()
 
     hbc.close
   }
 
 
-  private val configFile = Seq("/home/asuri/Documents/hbase-site.xml")
-  private val incorrectConfigFile = Seq("/home/asuri/Documents/hbase-site-incorrect.xml")
+  private val configFile = Seq(classOf[HBaseConnectorTest].getResource("/hbase-site.xml").toURI.getPath)
   private lazy val hbc = HBaseConnector(configFile)
 
 
   private val testColFamilyName = "tileData"
   private val testColMetaDataName = "tileMetaData"
-  private val nonExistantColFamilyName = "nonExistantCol"
 
   private val testTable = "testTable"
-  private val nonExistantTable = "nonExistantTable"
-  private val nonExistantTable2 = "nonExistantTable2"
-  private val nonExistantTable3 = "nonExistantTable3"
-  private val nonExistantTable4 = "nonExistantTable4"
+  private val nonExistentTable = "nonExistentTable"
+  private val nonExistentTable2 = "nonExistentTable2"
+  private val nonExistentTable3 = "nonExistentTable3"
+  private val nonExistentTable4 = "nonExistentTable4"
 
   private val qualifier1 = "layer"
   private val qualifier2 = "anotherLayer"
 
   private val data = Seq[Byte](0, 1, 2, 3, 4, 5)
   //remove toSeq and run again
-  private val data2 = Array(("3,4,5", data.toSeq), ("4,4,5", data.toSeq))
-  private val data3 = Array(("5,4,5", data.toSeq), ("6,4,5", data.toSeq))
-  private val data4 = Array(("7,4,5", data.toSeq), ("8,4,5", data.toSeq))
+  private val data2 = Array(("3,4,5", data), ("4,4,5", data))
+  private val data3 = Array(("5,4,5", data), ("6,4,5", data))
+  private val data4 = Array(("7,4,5", data), ("8,4,5", data))
   describe("HBaseConnectorTest") {
 
     describe("getConnection") {
@@ -116,19 +117,14 @@ class HBaseConnectorTest extends SparkFunSpec with BeforeAndAfterAll {
         hbc.writeTileData(tableName = testTable)(rddData)
 
         //create connection
-        val config = HBaseConfiguration.create()
-        config.set("hbase.zookeeper.quorum", "uscc0-node08.uncharted.software")
-        config.set("hbase.zookeeper.property.clientPort", "2181")
-        config.set("hbase.master", "hdfs://uscc0-master0.uncharted.software:60000")
-        config.set("hbase.client.keyvalue.maxsize", "0")
-        val connection = ConnectionFactory.createConnection(config)
+        val connection = createConfig()
         //get table
         val rowDataTable = connection.getTable(TableName.valueOf(testTable))
         val rowData = rowDataTable.get(new Get("7,4,5".getBytes).addFamily(testColFamilyName.getBytes)).value().toSeq
         //get value for specific rowID
         assertResult(data)(rowData)
 
-        connection.close
+        connection.close()
       }
 
       it("should write data into column qualifier when specified", HBaseTest) {
@@ -141,44 +137,33 @@ class HBaseConnectorTest extends SparkFunSpec with BeforeAndAfterAll {
         val rddData: RDD[(String, Seq[Byte])] = sc.parallelize(data3)
         hbc.writeTileData(tableName = testTable, qualifierName = qualifier2)(rddData)
         //create connection
-        val config = HBaseConfiguration.create()
-        config.set("hbase.zookeeper.quorum", "uscc0-node08.uncharted.software")
-        config.set("hbase.zookeeper.property.clientPort", "2181")
-        config.set("hbase.master", "hdfs://uscc0-master0.uncharted.software:60000")
-        config.set("hbase.client.keyvalue.maxsize", "0")
-        val connection = ConnectionFactory.createConnection(config)
+        val connection = createConfig()
         //get table
         val rowDataTable = connection.getTable(TableName.valueOf(testTable))
         val rowData = rowDataTable.get(new Get("5,4,5".getBytes).addColumn(testColFamilyName.getBytes, qualifier2.getBytes)).value().toSeq
         assertResult(data)(rowData)
-        connection.close
+        connection.close()
       }
 
-      it("should create table and write into table when non existant table is given", HBaseTest) {
+      it("should create table and write into table when non-existent table is given", HBaseTest) {
         val rddData: RDD[(String, Seq[Byte])] = sc.parallelize(data2)
-        assertResult(true)(hbc.writeTileData(tableName = nonExistantTable2)(rddData))
+        assertResult(true)(hbc.writeTileData(tableName = nonExistentTable2)(rddData))
       }
 
       it("should create a table in HBase when specified table does not exist", HBaseTest) {
         val rddData: RDD[(String, Seq[Byte])] = sc.parallelize(data2)
-        //create connection
-        val config = HBaseConfiguration.create()
-        config.set("hbase.zookeeper.quorum", "uscc0-node08.uncharted.software")
-        config.set("hbase.zookeeper.property.clientPort", "2181")
-        config.set("hbase.master", "hdfs://uscc0-master0.uncharted.software:60000")
-        config.set("hbase.client.keyvalue.maxsize", "0")
-        val connection = ConnectionFactory.createConnection(config)
-        val isTableExist = connection.getAdmin().tableExists(TableName.valueOf(nonExistantTable))
+        val connection = createConfig()
+        val isTableExist = connection.getAdmin.tableExists(TableName.valueOf(nonExistentTable))
         //check if table exists
         assertResult(false)(isTableExist)
 
-        val result = hbc.writeTileData(tableName = nonExistantTable)(rddData)
+        hbc.writeTileData(tableName = nonExistentTable)(rddData)
 
         //use connection to see if table exists Now
-        val isTableExistNow = connection.getAdmin().tableExists(TableName.valueOf(nonExistantTable))
+        val isTableExistNow = connection.getAdmin.tableExists(TableName.valueOf(nonExistentTable))
         assertResult(true)(isTableExistNow)
 
-        connection.close
+        connection.close()
       }
 
       describe("#writeMetaData") {
@@ -190,18 +175,13 @@ class HBaseConnectorTest extends SparkFunSpec with BeforeAndAfterAll {
         it("should add the rows to the specified table in HBase", HBaseTest) {
           hbc.writeMetaData(tableName = testTable, rowID = "testRowID2", data = data)
           //create connection
-          val config = HBaseConfiguration.create()
-          config.set("hbase.zookeeper.quorum", "uscc0-node08.uncharted.software")
-          config.set("hbase.zookeeper.property.clientPort", "2181")
-          config.set("hbase.master", "hdfs://uscc0-master0.uncharted.software:60000")
-          config.set("hbase.client.keyvalue.maxsize", "0")
-          val connection = ConnectionFactory.createConnection(config)
+          val connection = createConfig()
           //get table
           val rowDataTable = connection.getTable(TableName.valueOf(testTable))
           val rowData = rowDataTable.get(new Get("testRowID2".getBytes).addFamily(testColMetaDataName.getBytes)).value().toSeq
           //get value for specific rowID
           assertResult(data)(rowData)
-          connection.close
+          connection.close()
         }
 
         it("should write data into column qualifier when specified", HBaseTest) {
@@ -212,39 +192,29 @@ class HBaseConnectorTest extends SparkFunSpec with BeforeAndAfterAll {
         it("should store the data in a column qualifier when specified", HBaseTest) {
           hbc.writeMetaData(tableName = testTable, qualifierName = qualifier2, rowID = "testID", data = data)
           //create connection
-          val config = HBaseConfiguration.create()
-          config.set("hbase.zookeeper.quorum", "uscc0-node08.uncharted.software")
-          config.set("hbase.zookeeper.property.clientPort", "2181")
-          config.set("hbase.master", "hdfs://uscc0-master0.uncharted.software:60000")
-          config.set("hbase.client.keyvalue.maxsize", "0")
-          val connection = ConnectionFactory.createConnection(config)
+          val connection = createConfig()
           //get table
           val rowDataTable = connection.getTable(TableName.valueOf(testTable))
           val rowData = rowDataTable.get(new Get("testID".getBytes).addColumn(testColMetaDataName.getBytes, qualifier2.getBytes)).value().toSeq
           assertResult(data)(rowData)
-          connection.close
+          connection.close()
         }
 
-        it("return true when non existant table is given", HBaseTest) {
-          assertResult(true)(hbc.writeMetaData(tableName = nonExistantTable3, rowID = "anotherTestRowID", data = data))
+        it("return true when non-existent table is given", HBaseTest) {
+          assertResult(true)(hbc.writeMetaData(tableName = nonExistentTable3, rowID = "anotherTestRowID", data = data))
         }
 
         it("should create a table in HBase when specified table does not exist", HBaseTest) {
           //create connection
-          val config = HBaseConfiguration.create()
-          config.set("hbase.zookeeper.quorum", "uscc0-node08.uncharted.software")
-          config.set("hbase.zookeeper.property.clientPort", "2181")
-          config.set("hbase.master", "hdfs://uscc0-master0.uncharted.software:60000")
-          config.set("hbase.client.keyvalue.maxsize", "0")
-          val connection = ConnectionFactory.createConnection(config)
-          val isTableExist = connection.getAdmin().tableExists(TableName.valueOf(nonExistantTable4))
+          val connection = createConfig()
+          val isTableExist = connection.getAdmin.tableExists(TableName.valueOf(nonExistentTable4))
           //check if table exists
           assertResult(false)(isTableExist)
-          val result = hbc.writeMetaData(tableName = nonExistantTable4, rowID = "anotherTestID", data = data)
+          hbc.writeMetaData(tableName = nonExistentTable4, rowID = "anotherTestID", data = data)
           //use connection to see if table exists Now
-          val isTableExistNow = connection.getAdmin().tableExists(TableName.valueOf(nonExistantTable4))
+          val isTableExistNow = connection.getAdmin.tableExists(TableName.valueOf(nonExistentTable4))
           assertResult(true)(isTableExistNow)
-          connection.close
+          connection.close()
         }
       }
     }
