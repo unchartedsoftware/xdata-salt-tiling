@@ -53,7 +53,7 @@ class S3Client(accessKey: String, secretKey: String) extends Logging {
     }
   }
 
-  def upload(data: Seq[Byte], bucketName: String, key: String, contentType: String = "applilcation/octet-stream", compress: Boolean = true): Boolean = {
+  def upload(data: Seq[Byte], bucketName: String, key: String, contentType: String = "application/octet-stream", compress: Boolean = true): Boolean = {
     try {
       val streamData = if(compress) zipData(data.toArray).get else data.toArray
       val is = new ByteArrayInputStream(streamData)
