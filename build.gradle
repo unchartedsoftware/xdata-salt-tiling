@@ -17,7 +17,7 @@ buildscript {
     mavenCentral()
     jcenter()
     maven {
-    url = "https://repository.cloudera.com/artifactory/cloudera-repos"
+      url = "https://repository.cloudera.com/artifactory/cloudera-repos"
     }
   }
 
@@ -30,6 +30,7 @@ buildscript {
 
 apply plugin: 'scala'
 apply plugin: 'maven'
+apply plugin: 'maven-publish'
 apply plugin: 'distribution'
 apply plugin: 'idea'
 apply plugin: 'scalaStyle'
@@ -173,6 +174,31 @@ repositories {
   mavenLocal()
   maven {
     url = "https://repository.cloudera.com/artifactory/cloudera-repos"
+  }
+}
+
+// publishing setup - username/password need to be stored in environment
+// variables ARCHIVA_USERNAME and ARCHIVA_PASSWORD
+publishing {
+  publications {
+    maven(MavenPublication) {
+      from components.java
+    }
+  }
+}
+publishing {
+  repositories {
+    maven {
+      if (version.endsWith("SNAPSHOT")) {
+        url "http://maven.oculus.local:8080/archiva/repository/snapshots"
+      } else {
+        url "http://maven.oculus.local:8080/archiva/repository/internal"
+      }
+      credentials {
+        username "$System.env.ARCHIVA_USERNAME"
+        password "$System.env.ARCHIVA_PASSWORD"
+      }
+    }
   }
 }
 
