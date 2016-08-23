@@ -177,8 +177,8 @@ repositories {
   }
 }
 
-// publishing setup - username/password need to be stored in environment
-// variables ARCHIVA_USERNAME and ARCHIVA_PASSWORD
+// publishing setup - url, username, password need to be stored in environment
+// variables
 publishing {
   publications {
     maven(MavenPublication) {
@@ -190,13 +190,13 @@ publishing {
   repositories {
     maven {
       if (version.endsWith("SNAPSHOT")) {
-        url "http://maven.oculus.local:8080/archiva/repository/snapshots"
+        url "${System.env.MAVEN_REPO_URL}/snapshots"
       } else {
-        url "http://maven.oculus.local:8080/archiva/repository/internal"
+        url "${System.env.MAVEN_REPO_URL}/internal"
       }
       credentials {
-        username "$System.env.ARCHIVA_USERNAME"
-        password "$System.env.ARCHIVA_PASSWORD"
+        username "${System.env.MAVEN_REPO_USERNAME}"
+        password "${System.env.MAVEN_REPO_PASSWORD}"
       }
     }
   }
