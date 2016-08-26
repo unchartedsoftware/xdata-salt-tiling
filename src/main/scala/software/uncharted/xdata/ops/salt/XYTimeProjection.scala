@@ -30,8 +30,12 @@ class XYTimeProjection(min: (Double, Double, Long) = (0.0, 0.0, 0),
               projectedCoords.map { projCoord =>
                 val binSize = (max._3 - min._3) / rangeBuckets
                 val timeBin = (coords._3 - min._3) / binSize
-                (projCoord._1, (projCoord._2._1, projCoord._2._2, timeBin.asInstanceOf[Int]))
-              }.toSeq
+                if (timeBin < rangeBuckets) {
+                  Some(projCoord._1, (projCoord._2._1, projCoord._2._2, timeBin.asInstanceOf[Int]))
+                } else {
+                  None
+                }
+              }.toSeq.flatten
             )
           }
       } else {

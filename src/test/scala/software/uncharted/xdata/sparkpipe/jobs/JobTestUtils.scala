@@ -27,11 +27,10 @@ object JobTestUtils {
     // convert produced filenames into indices
     val filename = s""".*[/\\\\](\\d+)[/\\\\](\\d+)[/\\\\](\\d+)\\.$suffix""".r
     val files = FileUtils.listFiles(new File(rootDir), Array(suffix), true)
-      .map(_.toString match {
+      .flatMap(_.toString match {
         case filename(level, x, y) => Some((level.toInt, x.toInt, y.toInt))
         case _ => None
       })
-      .flatten
       .toSet
     files
   }

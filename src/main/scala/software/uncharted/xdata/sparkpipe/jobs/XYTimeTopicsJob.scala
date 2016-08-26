@@ -51,11 +51,10 @@ object XYTimeTopicsJob extends Logging {
     }
 
     // when time format is used, need to pick up the converted time column
-    val finalTimeCol = topicsConfig.timeFormat.map(p => convertedTime).getOrElse(topicsConfig.timeCol)
     val topicsOp = topicsConfig.projection match {
-      case Some("mercator") => MercatorTimeTopics(topicsConfig.yCol, topicsConfig.xCol, finalTimeCol, topicsConfig.textCol,
+      case Some("mercator") => MercatorTimeTopics(topicsConfig.yCol, topicsConfig.xCol, topicsConfig.timeCol, topicsConfig.textCol,
         None, topicsConfig.timeRange, topicsConfig.topicLimit, tilingConfig.levels)(_)
-      case Some("cartesian") | None => CartesianTimeTopics(topicsConfig.yCol, topicsConfig.xCol, finalTimeCol, topicsConfig.textCol,
+      case Some("cartesian") | None => CartesianTimeTopics(topicsConfig.yCol, topicsConfig.xCol, topicsConfig.timeCol, topicsConfig.textCol,
         None, topicsConfig.timeRange, topicsConfig.topicLimit, tilingConfig.levels)(_)
       case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
     }
@@ -65,8 +64,6 @@ object XYTimeTopicsJob extends Logging {
       sys.exit(-1)
     }
 
-    val nullOp = (df: DataFrame) => df
-
     // Create the spark context from the supplied config
     val sqlc = SparkConfig(config)
     try {
@@ -75,14 +72,9 @@ object XYTimeTopicsJob extends Logging {
 
       // Pipe the dataframe
       Pipe(df)
-        .to {
-          topicsConfig.timeFormat
-            .map(tf => parseDate(topicsConfig.timeCol, convertedTime, tf)(_))
-            .getOrElse(nullOp)
-        }
         .to(split(topicsConfig.textCol, "\\b+"))
         .to(includeTermFilter(topicsConfig.textCol, topicsConfig.termList.keySet))
-        .to(_.select(topicsConfig.xCol, topicsConfig.yCol, finalTimeCol, topicsConfig.textCol))
+        .to(_.select(topicsConfig.xCol, topicsConfig.yCol, topicsConfig.timeCol, topicsConfig.textCol))
         .to(_.cache())
         .to(topicsOp)
         .to(serializeElementScore)

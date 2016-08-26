@@ -53,15 +53,12 @@ object XYTimeHeatmapJob extends Logging {
       sys.exit(-1)
     }
 
-    // when time format is used, need to pick up the converted time column
-    val finalTimeCol = heatmapConfig.timeFormat.map(p => convertedTime).getOrElse(heatmapConfig.timeCol)
-
     // create the heatmap operation based on the projection
     val heatmapOperation = heatmapConfig.projection match {
-      case Some("mercator") => MercatorTimeHeatmap(heatmapConfig.yCol, heatmapConfig.xCol, finalTimeCol,
+      case Some("mercator") => MercatorTimeHeatmap(heatmapConfig.yCol, heatmapConfig.xCol, heatmapConfig.timeCol,
         None, None, heatmapConfig.timeRange, tilingConfig.levels,
         tilingConfig.bins.getOrElse(MercatorTimeHeatmap.defaultTileSize))(_)
-      case Some("cartesian") | None => CartesianTimeHeatmap(heatmapConfig.yCol, heatmapConfig.xCol, finalTimeCol,
+      case Some("cartesian") | None => CartesianTimeHeatmap(heatmapConfig.yCol, heatmapConfig.xCol, heatmapConfig.timeCol,
         None, None, heatmapConfig.timeRange, tilingConfig.levels,
         tilingConfig.bins.getOrElse(CartesianTimeHeatmap.defaultTileSize))(_)
       case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
@@ -75,12 +72,7 @@ object XYTimeHeatmapJob extends Logging {
 
       // Pipe the dataframe
       Pipe(df)
-        .to {
-          heatmapConfig.timeFormat
-            .map(tf => parseDate(heatmapConfig.timeCol, convertedTime, tf)(_))
-            .getOrElse((df: DataFrame) => df)
-        }
-        .to(_.select(heatmapConfig.xCol, heatmapConfig.yCol, finalTimeCol))
+        .to(_.select(heatmapConfig.xCol, heatmapConfig.yCol, heatmapConfig.timeCol))
         .to(_.cache())
         .to(heatmapOperation)
         .to(serializeBinArray)
