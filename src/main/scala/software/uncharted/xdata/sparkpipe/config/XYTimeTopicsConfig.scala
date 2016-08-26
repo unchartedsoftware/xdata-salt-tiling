@@ -28,7 +28,6 @@ case class XYTimeTopicsConfig(xCol: String,
                               timeCol: String,
                               textCol: String,
                               timeRange: RangeDescription[Long],
-                              timeFormat: Option[String],
                               topicLimit: Int,
                               termList: Map[String, String],
                               projection: Option[String] = None)
@@ -58,7 +57,6 @@ object XYTimeTopicsConfig extends Logging {
         topicConfig.getString(timeColumnKey),
         topicConfig.getString(textColumnKey),
         RangeDescription.fromMin(topicConfig.getLong(timeMinKey), topicConfig.getLong(timeStepKey), topicConfig.getInt(timeCountKey)),
-        if (topicConfig.hasPath(timeFormatKey)) Some(topicConfig.getString(timeFormatKey)) else None,
         topicConfig.getInt(topicLimitKey),
         readTerms(topicConfig.getString(termPathKey)),
         if (topicConfig.hasPath(projectionKey)) Some(topicConfig.getString(projectionKey)) else None)

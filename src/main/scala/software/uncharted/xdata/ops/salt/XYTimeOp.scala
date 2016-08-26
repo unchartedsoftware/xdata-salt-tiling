@@ -12,11 +12,14 @@
   */
 package software.uncharted.xdata.ops.salt
 
+import java.sql.{Date, Timestamp}
+
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.types.{DoubleType, TimestampType}
+import org.apache.spark.sql.types.{TimestampType, DateType, DoubleType, LongType}
 import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.functions.udf
 import software.uncharted.salt.core.analytic.Aggregator
-import software.uncharted.salt.core.generation.{TileGenerator, Series}
+import software.uncharted.salt.core.generation.{Series, TileGenerator}
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.generation.request.TileRequest
 import software.uncharted.sparkpipe.Pipe
@@ -40,19 +43,34 @@ trait XYTimeOp {
                           (request: TileRequest[(Int, Int, Int)])(input: DataFrame):
   RDD[SeriesData[(Int, Int, Int), (Int, Int, Int), V, X]] = {
 
+    // Optionally applies a udf to handle conversion from timestamp / date to long, or pass the
+    // dataframe through if the value is anything else. We can't use the spark sql cast to long
+    // functions because they were modified to return seconds rather than milliseconds in Spark 1.6+.
+    // See https://issues.apache.org/jira/browse/SPARK-13341.
+    def convertTimes(df: DataFrame) = {
+      val conversionUdf = input.schema(rangeCol).dataType match {
+        case ts: TimestampType => Some(udf( (t: Timestamp) => t.getTime))
+        case dt: DateType => Some(udf( (d: Date) => d.getTime))
+        case _ => None
+      }
+      conversionUdf.map(cudf => input.withColumn(rangeCol, cudf(input(rangeCol)))).getOrElse(df)
+    }
+
     // Use the pipeline to cast columns to expected values and select them into a new dataframe
-    val castCols = Map(xCol -> DoubleType.simpleString, yCol -> DoubleType.simpleString, rangeCol ->  TimestampType.simpleString)
+    val castCols = Map(xCol -> DoubleType.simpleString, yCol -> DoubleType.simpleString, rangeCol -> LongType.simpleString)
     val frame = Pipe(input)
+      .to(convertTimes)
       .to(castColumns(castCols))
       .run()
 
     // Extracts lat, lon, time coordinates from row
     val coordExtractor = (r: Row) => {
-      val xIndex = r.schema.fieldIndex(xCol)
-      val yIndex = r.schema.fieldIndex(yCol)
-      val rangeIndex = r.schema.fieldIndex(rangeCol)
+      val xIndex = input.schema.fieldIndex(xCol)
+      val yIndex = input.schema.fieldIndex(yCol)
+      val rangeIndex = input.schema.fieldIndex(rangeCol)
+
       if (!r.isNullAt(xIndex) && !r.isNullAt(yIndex) && !r.isNullAt(rangeIndex)) {
-        Some(r.getDouble(xIndex), r.getDouble(yIndex), r.getTimestamp(rangeIndex).getTime())
+        Some(r.getDouble(xIndex), r.getDouble(yIndex), r.getLong(rangeIndex))
       } else {
         None
       }

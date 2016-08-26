@@ -21,12 +21,10 @@ case class XYTimeHeatmapConfig(xCol: String,
                                yCol: String,
                                timeCol: String,
                                timeRange: RangeDescription[Long],
-                               timeFormat: Option[String] = None,
                                projection: Option[String] = None)
 object XYTimeHeatmapConfig extends Logging {
 
   val xyTimeHeatmapKey = "xyTimeHeatmap"
-  val timeFormatKey = "timeFormat"
   val projectionKey = "projection"
   val xColumnKey = "xColumn"
   val yColumnKey = "yColumn"
@@ -43,7 +41,6 @@ object XYTimeHeatmapConfig extends Logging {
         heatmapConfig.getString(yColumnKey),
         heatmapConfig.getString(timeColumnKey),
         RangeDescription.fromMin(heatmapConfig.getLong(timeMinKey), heatmapConfig.getLong(timeStepKey), heatmapConfig.getInt(timeCountKey)),
-        if (heatmapConfig.hasPath(timeFormatKey)) Some(heatmapConfig.getString(timeFormatKey)) else None,
         if (heatmapConfig.hasPath(projectionKey)) Some(heatmapConfig.getString(projectionKey)) else None)
       )
     } catch {
