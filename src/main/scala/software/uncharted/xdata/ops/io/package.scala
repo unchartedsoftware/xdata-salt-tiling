@@ -195,12 +195,8 @@ package object io extends Logging {
     * @return Index/byte tuples.
     */
   def serializeBinArray[TC, BC, X](tiles: RDD[SeriesData[TC, BC, Double, X]]):
-  RDD[(TC, Seq[Byte])] = {
-    tiles.filter(tile => tile.bins.density > 0)
-      .map { tile =>
-        (tile.coords, doubleTileToByteArrayDense2(tile.bins))
-      }
-  }
+  RDD[(TC, Seq[Byte])] =
+    serializeTiles(doubleTileToByteArrayDense2)(tiles)
 
   // Serialize a single tile's data
   val doubleTileToByteArrayDense1: SparseArray[Double] => Seq[Byte] = sparseData => {
@@ -226,13 +222,11 @@ package object io extends Logging {
     * @return Index/byte tuples.
     */
   def serializeElementScore[TC, BC, X](tiles: RDD[SeriesData[TC, BC, List[(String, Int)], X]]):
-  RDD[(TC, Seq[Byte])] = {
-    tiles.filter(t => t.bins.density() > 0)
-      .map { t =>
-        val bytes = new JSONObject(t.bins.head.toMap).toString().getBytes
-        (t.coords, bytes.toSeq)
-      }
-  }
+  RDD[(TC, Seq[Byte])] =
+    serializeTiles(scoreListToByteArray)(tiles)
+
+  def scoreListToByteArray: SparseArray[List[(String, Int)]] => Seq[Byte] = sparseData =>
+    new JSONObject(sparseData.head.toMap).toString().getBytes
 
   /**
     * Serializes tile bins according to an arbitrarily specified serialization function
