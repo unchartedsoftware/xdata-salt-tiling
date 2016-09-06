@@ -81,10 +81,7 @@ object CartesianSegmentOp {
       None
     )
 
-    val sc = input.sqlContext.sparkContext
-    val generator = new RDDTileGenerator(sc)
-
-    generator.generate(input.rdd, series, request).flatMap(t => series(t))
+    BasicSaltOperations.genericTiling(series)(request)(input.rdd)
   }
 }
 

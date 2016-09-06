@@ -21,7 +21,7 @@ import org.apache.spark.sql.{DataFrame, Row}
 /**
   * A group of operations to aid in debugging errors in pipelines.
   */
-object DebugGraphOperations {
+object DebugOperations {
   def countRDDRowsOp[T] (message: String = "Number of rows: ")(data: RDD[T]): RDD[T] = {
     println(message + data.count)
     data

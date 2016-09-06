@@ -86,8 +86,7 @@ trait XYTimeOp {
       tileAggregator
     )
 
-    val generator = TileGenerator(frame.sqlContext.sparkContext)
-    generator.generate(frame.rdd, series, request).map(series(_).get)
+    BasicSaltOperations.genericTiling(series)(request)(frame.rdd)
   }
 }
 

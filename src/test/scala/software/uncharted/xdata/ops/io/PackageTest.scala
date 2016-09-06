@@ -243,6 +243,24 @@ class PackageTest extends SparkFunSpec {
     }
   }
 
+  // Alternative reference version against which to test.
+  val canonicalDoubleTileToByteArrayDense: SparseArray[Double] => Seq[Byte] = sparseData => {
+    for (bin <- sparseData.seq;  i <- 0 until doubleBytes) yield {
+      val datum = java.lang.Double.doubleToLongBits(bin);
+      ((datum >> (i * doubleBytes)) & 0xff).asInstanceOf[Byte];
+    }
+  }
+
+  describe("#doubleTileToByteDenseArray") {
+    it("should be the same in version 1 and 2") {
+      val data = genHeatmapArray(1.0, 2.0, 3.0, 4.0)
+      val ba1 = canonicalDoubleTileToByteArrayDense(data)
+      val ba2 = doubleTileToByteArrayDense(data)
+      assertResult(ba1.length)(ba2.length)
+      for (i <- ba1.indices) assertResult(ba1(i))(ba2(i))
+    }
+  }
+
   describe("#serializeElementScore") {
 
     it("should create an RDD of JSON strings serialized to bytes from series data ") {
