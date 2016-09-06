@@ -243,39 +243,21 @@ class PackageTest extends SparkFunSpec {
     }
   }
 
+  // Alternative reference version against which to test.
+  val canonicalDoubleTileToByteArrayDense: SparseArray[Double] => Seq[Byte] = sparseData => {
+    for (bin <- sparseData.seq;  i <- 0 until doubleBytes) yield {
+      val datum = java.lang.Double.doubleToLongBits(bin);
+      ((datum >> (i * doubleBytes)) & 0xff).asInstanceOf[Byte];
+    }
+  }
+
   describe("#doubleTileToByteDenseArray") {
     it("should be the same in version 1 and 2") {
       val data = genHeatmapArray(1.0, 2.0, 3.0, 4.0)
-      val ba1 = doubleTileToByteArrayDense1(data)
-      val ba2 = doubleTileToByteArrayDense2(data)
+      val ba1 = canonicalDoubleTileToByteArrayDense(data)
+      val ba2 = doubleTileToByteArrayDense(data)
       assertResult(ba1.length)(ba2.length)
       for (i <- ba1.indices) assertResult(ba1(i))(ba2(i))
-    }
-    it("Should determine which is faster") {
-      def genSparseArray (n: Int): SparseArray[Double] = {
-        val result = new SparseArray(0, 0.0)
-        for (i <- 0 until n) result += (i / 2.0)
-        result
-      }
-      val iterations = 10000
-      for (i <- 5 to 10) {
-        val data = genSparseArray(1 << i)
-
-        val st1 = System.currentTimeMillis()
-        for (i <- 0 until iterations) {
-          doubleTileToByteArrayDense1(data)
-        }
-        val et1 = System.currentTimeMillis()
-        val st2 = System.currentTimeMillis()
-        for (i <- 0 until iterations) {
-          doubleTileToByteArrayDense2(data)
-        }
-        val et2 = System.currentTimeMillis()
-        println("%4d\t%.3f\t%.3f".format(
-          1 << i,
-          (et1-st1)/1000.0,
-          (et2-st2)/1000.0))
-      }
     }
   }
 

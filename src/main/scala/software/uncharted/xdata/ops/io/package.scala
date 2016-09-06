@@ -196,19 +196,11 @@ package object io extends Logging {
     */
   def serializeBinArray[TC, BC, X](tiles: RDD[SeriesData[TC, BC, Double, X]]):
   RDD[(TC, Seq[Byte])] =
-    serializeTiles(doubleTileToByteArrayDense2)(tiles)
-
-  // Serialize a single tile's data
-  val doubleTileToByteArrayDense1: SparseArray[Double] => Seq[Byte] = sparseData => {
-    for (bin <- sparseData.seq;  i <- 0 until doubleBytes) yield {
-      val datum = java.lang.Double.doubleToLongBits(bin);
-      ((datum >> (i * doubleBytes)) & 0xff).asInstanceOf[Byte];
-    }
-  }
+    serializeTiles(doubleTileToByteArrayDense)(tiles)
 
   // Serialize a single tile's data - an alternate version that does the same thing in a tenth the time
   // See unit test in PackageTest for confirmation
-  val doubleTileToByteArrayDense2: SparseArray[Double] => Seq[Byte] = sparseData => {
+  val doubleTileToByteArrayDense: SparseArray[Double] => Seq[Byte] = sparseData => {
     val data = sparseData.seq.toArray
     val byteBuffer = ByteBuffer.allocate(data.length * doubleBytes).order(ByteOrder.LITTLE_ENDIAN)
     byteBuffer.asDoubleBuffer().put(DoubleBuffer.wrap(data))
