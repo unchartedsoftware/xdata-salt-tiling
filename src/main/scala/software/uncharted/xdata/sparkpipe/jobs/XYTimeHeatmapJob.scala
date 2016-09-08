@@ -47,8 +47,11 @@ object XYTimeHeatmapJob extends Logging {
       sys.exit(-1)
     }
 
+    // Create the spark context from the supplied config
+    val sqlc = SparkConfig(config)
+
     // Parse output parameters and return the correspoding write function
-    val outputOperation = createTileOutputOperation(config).getOrElse {
+    val outputOperation = createTileOutputOperation(config, sqlc).getOrElse {
       logger.error("Output operation config")
       sys.exit(-1)
     }
@@ -64,8 +67,6 @@ object XYTimeHeatmapJob extends Logging {
       case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
     }
 
-    // Create the spark context from the supplied config
-    val sqlc = SparkConfig(config)
     try {
       // Create the dataframe from the input config
       val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc)
