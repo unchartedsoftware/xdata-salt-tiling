@@ -59,14 +59,13 @@ object XYTimeTopicsJob extends Logging {
       case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
     }
 
-    // Create the spark context from the supplied config
-    val sqlc = SparkConfig(config)
-
-    val outputOperation = createTileOutputOperation(config, sqlc).getOrElse {
+    val outputOperation = createTileOutputOperation(config).getOrElse {
       logger.error("Output operation config")
       sys.exit(-1)
     }
 
+    // Create the spark context from the supplied config
+    val sqlc = SparkConfig(config)
     try {
       // Create the dataframe from the input config
       val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc)

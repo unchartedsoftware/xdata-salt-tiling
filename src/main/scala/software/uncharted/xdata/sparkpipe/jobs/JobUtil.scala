@@ -39,9 +39,9 @@ object JobUtil {
   }
 
 
-  def createTileOutputOperation(config: Config, sqlc : SQLContext): Option[OutputOperation] = {
+  def createTileOutputOperation(config: Config): Option[OutputOperation] = {
     if (config.hasPath(FileOutputConfig.fileOutputKey)) {
-      FileOutputConfig(config).map(c => writeToFile(sqlc, c.destPath, c.layer, c.extension))
+      FileOutputConfig(config).map(c => writeToFile(c.destPath, c.layer, c.extension))
     } else if (config.hasPath(S3OutputConfig.s3OutputKey)) {
       S3OutputConfig(config).map(c => writeToS3(c.accessKey, c.secretKey, c.bucket, c.layer))
     } else {

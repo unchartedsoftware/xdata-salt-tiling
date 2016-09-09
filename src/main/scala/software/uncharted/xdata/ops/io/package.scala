@@ -42,8 +42,8 @@ package object io extends Logging {
     * @param input        tile coordinate / byte array tuples of tile data
     * @return input data unchanged
     */
-  def writeToFile(sqlc: SQLContext, baseFilePath: String, layerName: String, extension: String)(input: RDD[((Int, Int, Int), Seq[Byte])]): RDD[((Int, Int, Int), Seq[Byte])] = {
-    if (sqlc.getConf("spark.master") != "local") Throw new Exception("writeToFile() not permitted on non-local Spark instance")
+  def writeToFile(baseFilePath: String, layerName: String, extension: String)(input: RDD[((Int, Int, Int), Seq[Byte])]): RDD[((Int, Int, Int), Seq[Byte])] = {
+    if (input.context.getConf.get("spark.master") != "local") Throw new Exception("writeToFile() not permitted on non-local Spark instance")
     new FileSystemClient(baseFilePath, Some(extension)).write(layerName, input.map { case (index, data) => (index, data.toArray) })
     input
   }
