@@ -17,10 +17,7 @@ import grizzled.slf4j.Logging
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.{SparkConf, SparkContext}
 
-import scala.collection.JavaConverters._
-import scala.util.Try
-
-//scalastyle:ignore
+import scala.collection.JavaConverters._      // scalastyle:ignore
 
 // scalastyle:off multiple.string.literals
 
@@ -125,10 +122,11 @@ object HBaseOutputConfig extends Logging {
 
   def apply (config: Config): Option[HBaseOutputConfig] = {
     try {
-      val configFilesList = config.getStringList(configFilesKey)
+      val hbaseConfig = config.getConfig(hBaseOutputKey)
+      val configFilesList = hbaseConfig.getStringList(configFilesKey)
       val configFiles = configFilesList.toArray(new Array[String](configFilesList.size()))
-      val layer = config.getString(layerKey)
-      val qualifier = config.getString(qualifierKey)
+      val layer = hbaseConfig.getString(layerKey)
+      val qualifier = hbaseConfig.getString(qualifierKey)
       Some(HBaseOutputConfig(configFiles, layer, qualifier))
     } catch {
       case e: ConfigException =>

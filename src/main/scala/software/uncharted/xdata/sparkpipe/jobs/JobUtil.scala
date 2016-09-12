@@ -44,6 +44,8 @@ object JobUtil {
       FileOutputConfig(config).map(c => writeToFile(c.destPath, c.layer, c.extension))
     } else if (config.hasPath(S3OutputConfig.s3OutputKey)) {
       S3OutputConfig(config).map(c => writeToS3(c.accessKey, c.secretKey, c.bucket, c.layer))
+    } else if (config.hasPath(HBaseOutputConfig.hBaseOutputKey)) {
+      HBaseOutputConfig(config).map(c => writeToHBase(c.configFiles, c.layer, c.qualifier))
     } else {
       None
     }
