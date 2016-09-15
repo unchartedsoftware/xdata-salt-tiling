@@ -11,6 +11,7 @@ The jobs are run on the cluster using spark-submit with the following steps:
 ```bash
  spark-submit --class <full class name of Job> xdata-pipeline-ops.jar <config-file>
 ```
+NOTE: Some Jobs might take multiple config files
 
 ### Architecture
 Each Job reads a config file using [typesafe-config](https://github.com/typesafehub/config) and uses various classes in `../config` to extract the given configuration. The results are then constructed into pipeline operations and their arguments. These operations are then made into a pipe and run.
