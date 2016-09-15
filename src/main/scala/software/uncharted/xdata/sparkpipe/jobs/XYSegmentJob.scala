@@ -60,9 +60,9 @@ object XYSegmentJob extends Logging {
 
     // create the heatmap operation based on the projection
     val heatmapOperation = segmentConfig.projection match {
-      case Some("cartesian") => CartesianSegmentOp(
+      case Some("cartesian") => CartesianSegment(
         // TODO
-        // arcType: ArcTypes.Value,        // scalastyle:ignore
+        // arcType: ArcTypes.Value,
         // minSegLen: Option[Int],
         // maxSegLen: Option[Int],
         // x1Col: String,
@@ -71,9 +71,6 @@ object XYSegmentJob extends Logging {
         // y2Col: String,
         // xyBounds: (Double, Double, Double, Double),
         // zBounds: (Int, Int),
-        // valueExtractor: Row => Option[T],
-        // binAggregator: Aggregator[T, U, V],
-        // tileAggregator: Option[Aggregator[V, W, X]],
         // tileSize: Int) // ??? tilingConfig.bins.getOrElse(CartesianTimeHeatmap.defaultTileSize)
         // (request: TileRequest[(Int, Int, Int)])
       )(_)
@@ -84,9 +81,11 @@ object XYSegmentJob extends Logging {
     val sqlc = SparkConfig(config)
     try {
       // Create the dataframe from the input config
+      // TODO Can we infer the schema? (if there is a header). Probably not, it'll get the types wrong
       val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc)
 
       // Pipe the dataframe
+      // TODO figure out all the correct stages
       Pipe(df)
         // .to(_.select(segmentConfig.xCol, segmentConfig.yCol, segmentConfig.timeCol))
         // .to(_.cache())
@@ -95,7 +94,8 @@ object XYSegmentJob extends Logging {
         // .to(outputOperation)
         // .run()
 
-      // create and save extra level metadata - the tile x,y,z dimensions in this case
+      // Create and save extra level metadata - the tile x,y,z dimensions in this case
+      // Can we make writeMetadata take only one config?
       writeMetadata(config, tilingConfig, segmentConfig)
 
     } finally {
@@ -121,6 +121,7 @@ object XYSegmentJob extends Logging {
     // createMetadataOutputOperation(baseConfig).foreach(_("metadata.json", jsonBytes))
   }
 
+  // TODO only have one execute
   def execute(args: Array[String]): Unit = {
     // get the properties file path
     if (args.length < 1) {

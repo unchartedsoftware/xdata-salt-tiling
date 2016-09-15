@@ -23,7 +23,10 @@ import software.uncharted.salt.core.generation.request.TileRequest
 import scala.util.Try
 
 
-object CartesianSegmentOp {
+trait CartesianSegmentOp {
+
+  val defaultTileSize = 256
+
   def apply[T, U, V, W, X] (arcType: ArcTypes.Value,        // scalastyle:ignore
                             minSegLen: Option[Int],
                             maxSegLen: Option[Int],
