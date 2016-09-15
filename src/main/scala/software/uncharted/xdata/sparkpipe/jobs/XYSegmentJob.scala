@@ -19,50 +19,44 @@ import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.temporal.parseDate
 import software.uncharted.xdata.ops.io.serializeBinArray
 import software.uncharted.xdata.ops.salt.{CartesianTimeHeatmap, MercatorTimeHeatmap}
-import software.uncharted.xdata.sparkpipe.config.{Schema, SparkConfig, TilingConfig, XYTimeHeatmapConfig}
+import software.uncharted.xdata.sparkpipe.config.{Schema, SparkConfig, TilingConfig, XYSegmentConfig}
 import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOperation, createTileOutputOperation, dataframeFromSparkCsv}
 
 // scalastyle:off method.length
-object XYTSegmentJob extends Logging {
+object XYSegmentJob extends Logging {
 
   private val convertedTime: String = "convertedTime" // XXX what's this?
 
   def execute(config: Config): Unit = {
 
-    // // parse the schema, and exit on any errors
-    // val schema = Schema(config).getOrElse {
-    //   error("Couldn't create schema - exiting")
-    //   sys.exit(-1)
-    // }
-    //
-    // // Parse tiling parameters out of supplied config
-    // val tilingConfig = TilingConfig(config).getOrElse {
-    //   logger.error("Invalid tiling config")
-    //   sys.exit(-1)
-    // }
-    //
-    // // Parse geo heatmap parameters out of supplied config
-    // val segmentConfig = XYSegmentConfig(config).getOrElse {
-    //   logger.error("Invalid heatmap op config")
-    //   sys.exit(-1)
-    // }
-    //
-    // // Parse output parameters and return the correspoding write function
-    // val outputOperation = createTileOutputOperation(config).getOrElse {
-    //   logger.error("Output operation config")
-    //   sys.exit(-1)
-    // }
-    //
-    // case Some("cartesian") | None => CartesianSegmentOp(
-    //   segmentConfig.yCol                              xCol: String,
-    //   segmentConfig.xCol                              yCol: String,
-    //   segmentConfig.timeCol                           rangeCol: String,
-    //   None                                            valueCol: Option[String],
-    //   None                                            latLonBounds: Option[(Double, Double, Double, Double)],
-    //   segmentConfig.timeRange                         timeRange: RangeDescription[Long],
-    //   tilingConfig.levels,                            zoomLevels: Seq[Int],
-    //   tilingConfig.bins.getOrElse(CartesianTimeHeatmap.defaultTileSize) tileSize: Int = defaultTileSize)
-    // )(_)
+     // parse the schema, and exit on any errors
+     val schema = Schema(config).getOrElse {
+       error("Couldn't create schema - exiting")
+       sys.exit(-1)
+     }
+
+     // Parse tiling parameters out of supplied config
+     val tilingConfig = TilingConfig(config).getOrElse {
+       logger.error("Invalid tiling config")
+       sys.exit(-1)
+     }
+
+     // Parse geo heatmap parameters out of supplied config
+     val segmentConfig = XYSegmentConfig(config).getOrElse {
+       logger.error("Invalid heatmap op config")
+       sys.exit(-1)
+     }
+
+     // Parse output parameters and return the correspoding write function
+     val outputOperation = createTileOutputOperation(config).getOrElse {
+       logger.error("Output operation config")
+       sys.exit(-1)
+     }
+
+     val valueExtractor: (Row) => Option[Seq[String]] = (r: Row) => {
+       val rowIndex = r.schema.fieldIndex(textCol)
+       if (!r.isNullAt(rowIndex) && r.getSeq(rowIndex).nonEmpty) Some(r.getSeq(rowIndex)) else None
+     }
 
     // create the heatmap operation based on the projection
     val heatmapOperation = segmentConfig.projection match {
@@ -80,7 +74,7 @@ object XYTSegmentJob extends Logging {
         // valueExtractor: Row => Option[T],
         // binAggregator: Aggregator[T, U, V],
         // tileAggregator: Option[Aggregator[V, W, X]],
-        // tileSize: Int)
+        // tileSize: Int) // ??? tilingConfig.bins.getOrElse(CartesianTimeHeatmap.defaultTileSize)
         // (request: TileRequest[(Int, Int, Int)])
       )(_)
       case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
@@ -140,6 +134,6 @@ object XYTSegmentJob extends Logging {
   }
 
   def main (args: Array[String]): Unit = {
-    XYTSegmentJob.execute(args)
+    XYSegmentJob.execute(args)
   }
 }
