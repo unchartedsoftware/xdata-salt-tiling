@@ -24,15 +24,6 @@ import software.uncharted.xdata.sparkpipe.config
 
 object XYSegmentConfig extends Logging {
 
-  // val xyTimeHeatmapKey = "xyTimeHeatmap"
-  // val projectionKey = "projection"
-  // val xColumnKey = "xColumn"
-  // val yColumnKey = "yColumn"
-  // val timeColumnKey = "timeColumn"
-  // val timeMinKey = "min"
-  // val timeStepKey = "step"
-  // val timeCountKey =  "count"
-
   val arcTypeKey = "arcType"
   val minSegLenKey = "minSegLen" // Option[Int],
   val maxSegLenKey = "maxSegLen" // Option[Int],

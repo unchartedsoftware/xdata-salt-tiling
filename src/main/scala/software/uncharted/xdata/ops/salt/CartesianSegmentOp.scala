@@ -60,8 +60,8 @@ trait CartesianSegmentOp {
       case ArcTypes.LeaderLine =>
         new SimpleLeaderLineProjection(zoomLevels, minBounds, maxBounds, leaderLineLength,
           minLengthOpt = minSegLen, maxLengthOpt = maxSegLen, tms = true)
-      case ArcTypes.FullArc =>
         new SimpleArcProjection(zoomLevels, minBounds, maxBounds,
+      case ArcTypes.FullArc =>
           minLengthOpt = minSegLen, maxLengthOpt = maxSegLen, tms = true)
       case ArcTypes.LeaderArc =>
         new SimpleLeaderArcProjection(zoomLevels, minBounds, maxBounds, leaderLineLength,

@@ -31,7 +31,7 @@ object CartesianSegment extends CartesianSegmentOp {
   /**
     * TODO
     **/
-  def apply(
+  def apply( // scalastyle:off parameter.number
     arcType: ArcTypes.Value,
     minSegLen: Option[Int],
     maxSegLen: Option[Int],
@@ -39,8 +39,10 @@ object CartesianSegment extends CartesianSegmentOp {
     y1Col: String,
     x2Col: String,
     y2Col: String,
+    valueCol: Option[String],
     xyBounds: (Double, Double, Double, Double),
     zBounds: (Int, Int),
+    zoomLevels: Seq[Int],
     tileSize: Int)
     (input: DataFrame):
   RDD[SeriesData[(Int, Int, Int), (Int, Int, Int), Double, (Double, Double)]] = {

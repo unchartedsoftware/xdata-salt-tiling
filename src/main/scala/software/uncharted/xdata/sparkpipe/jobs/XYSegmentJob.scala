@@ -14,13 +14,10 @@ package software.uncharted.xdata.sparkpipe.jobs
 
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
-import org.apache.spark.sql.DataFrame
 import software.uncharted.sparkpipe.Pipe
-import software.uncharted.sparkpipe.ops.core.dataframe.temporal.parseDate
-import software.uncharted.xdata.ops.io.serializeBinArray
-import software.uncharted.xdata.ops.salt.{CartesianTimeHeatmap, MercatorTimeHeatmap}
+import software.uncharted.xdata.ops.salt.MercatorTimeHeatmap
 import software.uncharted.xdata.sparkpipe.config.{Schema, SparkConfig, TilingConfig, XYSegmentConfig}
-import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOperation, createTileOutputOperation, dataframeFromSparkCsv}
+import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createTileOutputOperation, dataframeFromSparkCsv}
 
 // scalastyle:off method.length
 object XYSegmentJob extends Logging {
@@ -51,11 +48,6 @@ object XYSegmentJob extends Logging {
      val outputOperation = createTileOutputOperation(config).getOrElse {
        logger.error("Output operation config")
        sys.exit(-1)
-     }
-
-     val valueExtractor: (Row) => Option[Seq[String]] = (r: Row) => {
-       val rowIndex = r.schema.fieldIndex(textCol)
-       if (!r.isNullAt(rowIndex) && r.getSeq(rowIndex).nonEmpty) Some(r.getSeq(rowIndex)) else None
      }
 
     // create the heatmap operation based on the projection
