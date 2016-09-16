@@ -48,10 +48,7 @@ object TFIDF extends Serializable {
 //  }
 
 
-
-
-
-  def getTfidf(path: String, date: String, word_dict: scala.collection.immutable.Map[String, Int]): scala.collection.immutable.Map[Int,Double] = {
+  def getTfidf_local(path: String, date: String, word_dict: scala.collection.immutable.Map[String, Int]): scala.collection.immutable.Map[Int,Double] = {
     val lines = Source.fromFile(path).getLines.map(_.split("\t"))
     val tfidf_dict = lines.filter(x => x(0) == date)
       .map(x => (x(1), x(2).toDouble))
@@ -60,6 +57,24 @@ object TFIDF extends Serializable {
       .toMap
     tfidf_dict
   }
+
+  // load tfidf file (word, score) and filter for date in dates. Return map of (word -> tfidf_score)
+//  def getTfidfDated(path: String, dates: Array[String]): scala.collection.immutable.Map[String,Double] = {
+  def loadTfidf(path: String, dates: Array[String]): Array[(String, String, Double)] = {
+    val lines = Source.fromFile(path).getLines.map(_.split("\t"))
+    val tfidf_array = lines.filter(x => dates contains x(0))
+      .map(x => (x(0), x(1), x(2).toDouble)).toArray
+    tfidf_array
+  }
+
+
+  def filterTfidf(tfidf: Array[(String, String, Double)], date: String, word_dict: scala.collection.immutable.Map[String, Int]): scala.collection.immutable.Map[Int,Double] = {
+    val filtered = tfidf.filter{case (d, w, s) => d == date}
+      .filter{case (d, w, s) => word_dict contains w }
+      .map{case (d, w, s) => (word_dict.get(w).get, s) }
+    filtered.toMap
+  }
+
 
 }
 

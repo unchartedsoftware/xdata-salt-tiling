@@ -83,9 +83,8 @@ class SampleRecorder (m: Int, kK:Int, weighted: Boolean = false) extends Seriali
   }
 
   def decrement(biterm: (Int, Int), z: Int, k: Int ) = {
-    val (w1, w2) = biterm
-    // n.b. if z > k there will be nothing to decrement since that cluster has been deleted for being empty
-     if ((z < k) & (k > 0)) {
+    val (w1, w2) = biter/ if z > k there will be nothing to decrement since that cluster has been deleted for being empty
+     if ((z < k) & (k >0)) {
 //    if (z < k) {
       // don't decrement below 0
       if (nz(z) > 0) nz(z) -= 1
@@ -98,26 +97,11 @@ class SampleRecorder (m: Int, kK:Int, weighted: Boolean = false) extends Seriali
 
 
   // ----------    Accessor methods: Get/Set Sample Recorders   ---------- //
-  def getNzMap() = {
-    nz
-  }
-
-  def getNwzMap() = {
-    nwz
-  }
-
-  def getNz(z: Int) = {
-    nz(z)
-  }
-
-  def getNwz(z: Int, w: Int) = {
-    nwz(z)(w)
-  }
-
-  def size() = {
-    nz.size
-  }
-
+  def getNzMap() = nz
+  def getNwzMap() = nwz
+  def getNz(z: Int) = nz(z)
+  def getNwz(z: Int, w: Int) = nwz(z)(w)
+  def size() = nz.size
 
   // -----------   Mutate/Modify Sample Recorders   ---------- //
   def addCluster() = {
@@ -170,5 +154,3 @@ class SampleRecorder (m: Int, kK:Int, weighted: Boolean = false) extends Seriali
   }
 
 }
-
-

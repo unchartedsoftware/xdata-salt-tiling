@@ -75,14 +75,12 @@ object BTMUtil  extends Serializable {
     biterms.flatMap(x => x).map(x => Biterm(x, -1)).toArray
   }
 
-
   def extractBitermStringFromText(text: String, word_dict: Map[String, Int], stopwords: Set[String]) = {
     val tokens = TextUtil.cleanText(text).split("\\s+")
     val d = getWordIds(tokens, word_dict, stopwords)
     val b = getBiterms(d).toArray
     b.map { case (w1, w2) => w1 + "," + w2}.mkString("\t")          // output tab-separated biterms where biterms are comma-separated words
   }
-
 
   def extractBitermsFromText(text: String, word_dict: Map[String, Int], stopwords: Set[String]) = {
     val tokens = TextUtil.cleanText(text).split("\\s+")
@@ -91,8 +89,6 @@ object BTMUtil  extends Serializable {
     b.map(x => Biterm(x, -1)).toSeq
   }
 
-
-  // def extractBitermsFromTextRandomK(text: String, word_dict:   scala.collection.immutable.Map[String, Int], stopwords: Set[String], k: Int) = {
   def extractBitermsFromTextRandomK(text: String, word_dict: Map[String, Int], stopwords: Set[String], k: Int) = {
     val tokens = TextUtil.cleanText(text).split("\\s+")
     val d = getWordIds(tokens, word_dict, stopwords)
@@ -104,12 +100,12 @@ object BTMUtil  extends Serializable {
     Array.tabulate(words.length)(i => (words(i) -> i) ).toMap
   }
 
-  // ToDo: delete this function - change all references to use createWordDictFromWordcount below
-  def loadSavedWordDict(path: String, stopwords: Set[String]) = {
-    val words = Source.fromFile(path).getLines.map(_.split("\t")).map(x => x(0)).filter(w => !(stopwords contains w)).toArray
-    val dict: Map[String, Int] = Array.tabulate(words.length)(i => (words(i) -> i) ).toMap
-    (words, dict)
-  }
+//  // ToDo: delete this function - change all references to use createWordDictFromWordcount below
+//  def loadSavedWordDict(path: String, stopwords: Set[String]) = {
+//    val words = Source.fromFile(path).getLines.map(_.split("\t")).map(x => x(0)).filter(w => !(stopwords contains w)).toArray
+//    val dict: Map[String, Int] = Array.tabulate(words.length)(i => (words(i) -> i) ).toMap
+//    (words, dict)
+//  }
 
   def createWordDictFromWordcount(path: String, stopwords: Set[String], minCount: Int = 1) = {
     // val wordcounts = Source.fromFile(wcpath).getLines.map(_.split("\t")).map(x => (x(0), x(1))).toMap
@@ -119,8 +115,6 @@ object BTMUtil  extends Serializable {
     val word_dict = createDictFromArray(filtered)
     (filtered, word_dict)
   }
-
-
 
   // ===================  save model, topics ====================================================================
 
@@ -206,7 +200,6 @@ object BTMUtil  extends Serializable {
     biterms
   }
 
-
   def fillUpSlidingWindow(biterms: Array[Biterm], bs_win: ArrayBuffer[Biterm], window: Int = 2000000) = {
     var i = 0
     for (bi <- biterms) {
@@ -216,11 +209,8 @@ object BTMUtil  extends Serializable {
     }
   }
 
-
-
-
-
   // ===================  reports ====================================================================
+
   def run_reports(theta: Array[Double], phi:Array[Double], words: Array[String], m: Int, k: Int) = {
     val top_dist = report_topics(theta, phi, words, m, k)
     for (td <- top_dist) println(td._1 + "\t" +  td._2.mkString(", "))
@@ -243,13 +233,11 @@ object BTMUtil  extends Serializable {
     topic_distribution
   }
 
-
   def printTopicDist(topic_dist: Array[(Double, scala.collection.immutable.Seq[String])]) = {
     println("\n\n")
     for (td <- topic_dist) println(td._1 + "\t" +  td._2.mkString(", "))
     println("\n\n")
   }
-
 
   def report_words(phi:Array[Double], words: Array[String], theta: Array[Double], m: Int, k: Int) = {
     words.zipWithIndex.map { wordIndex =>
@@ -261,7 +249,6 @@ object BTMUtil  extends Serializable {
       (word, p_z_w)
     }
   }
-
 
   def report_documents(documents:Array[(String, Array[Int])], theta: Array[Double],  phi:Array[Double], k: Int) = {
     val doc_k_distribution = documents.map { case (id, d) =>
@@ -285,7 +272,6 @@ object BTMUtil  extends Serializable {
   }
 
   // same as above but input text (not word_ids) and also return input text
-  // def report_documents2(documents:Array[(String, Array[Int])], theta: Array[Double],  phi:Array[Double], k: Int) = {
   def predict_documents(documents: Array[(String, String)], theta: Array[Double],  phi:Array[Double], k: Int, word_dict: Map[String, Int], stopwords: Set[String]) = {
     def t2wids(text: String) = {
       val tokens = TextUtil.cleanText(text).split("\\s+")
@@ -325,9 +311,7 @@ object BTMUtil  extends Serializable {
 
     val t_dist = Iterator.range(0, k).toArray.map { z =>
       val doc_dist_fil = doc_dist.filter(x => indexOfLargest(x._3) == z)
-      // val ds = doc_dist_fil.sortBy(x => -x._3(z))
       val ds = doc_dist_fil.sortBy(x => -x._3(z)).take(200).toList
-
       var textset = Set[String]()
       val top20 = ds.filterNot { row =>
         val (tid, text, dist) = row
@@ -365,10 +349,6 @@ object BTMUtil  extends Serializable {
     (idx, p_z_d(idx))
   }
 
-
-
-
-
   def auto_label2(topic_dist: Array[(Double, Seq[String])] ): Array[(Double, Seq[String], Seq[String])] = {
     // extract top 3 hashtags from each topic, append these 'labels' to each row
     def find_labels(tp: Seq[String]): Seq[String] = {
@@ -377,22 +357,10 @@ object BTMUtil  extends Serializable {
       val labels = if (hashtags.size >= 3) hashtags else  hashtags ++ terms take(3)
       labels
     }
-    // val labeled = topic_dist.map(x => (x._1, find_labels(x._2), x._2 ))
     val labeled = topic_dist.map{ case (theta, tpcs) => (theta, find_labels(tpcs), tpcs ) }
     labeled
   }
 
-  // def auto_label3(topic_dist: Array[(Double, Double, Seq[String])] ):  Array[(Double, Double, Seq[String])]  = {
-  //     // extract top 3 hashtags from each topic, append these 'labels' to each row
-  //     def find_labels(tp: Seq[String]): Seq[String] = {
-  //         val hashtags = tp.filter(_.startsWith("#")).take(3)
-  //         val terms = tp.filterNot(_.startsWith("#")).take(3)
-  //         val labels = if (hashtags.size >= 3) hashtags else  hashtags ++ terms take(3)
-  //         labels.toSeq
-  //     }
-  //     val labeled = topic_dist.map{ case(cs, theta, tpcs) => (cs, theta, find_labels(tpcs), tpcs )}
-  //     labeled
-  // }
 
   def print_topics(labeled_topic_dist: Array[(Double, scala.collection.immutable.Seq[String], scala.collection.immutable.Seq[String])], nzMap: scala.collection.immutable.Map[Int,Long], date: String, iterN: Int, m: Int, alpha: Double, beta: Double, duration: String) = {
     val k = labeled_topic_dist.size
@@ -404,39 +372,8 @@ object BTMUtil  extends Serializable {
     labeled_topic_dist.zipWithIndex.map{case (td, i) => i  + "\t" + nzMap(i) + "\t" + td._1 + "\t" +  td._2.mkString(", ") + "\t->\t" + td._3.take(20).mkString(", ") } foreach { println }
   }
 
-  // def write_topics(labeled_topic_dist: Array[(Double, Seq[String], Seq[String])], nzMap: scala.collection.immutable.Map[Int,Int], date: String, iterN: Int, m: Int, alpha: Double, beta: Double, duration: String, outfile: String) = {
-  //     val out = new PrintWriter(new File(outfile))
-  //     val k = labeled_topic_dist.size
-  //     out.println(s"# Date: ${date}\talpha: ${alpha}\tbeta: ${beta}\titerN: ${iterN}\tM: ${m}\tK: ${k}")
-  //     out.println(s"# Running time:\t${duration} min.")
-  //     out.println("#"+ "-" * 80)
-  //     out.println("#Z\tCount\tp(z)\t\t\tTop terms descending")
-  //     out.println("#"+ "-" * 80)
-  //     labeled_topic_dist.zipWithIndex.map{case (td, i) => i  + "\t" + nzMap(i) + "\t" + td._1 + "\t" +  td._2.mkString(", ") + "\t->\t" + td._3.take(20).mkString(", ") } foreach { out.println }
-  //     out.close
-  // }
-
-  // def write_topics3(labeled_topic_dist: Array[(Double, Double, Seq[String], Seq[String])], nzMap: scala.collection.immutable.Map[Int,Int], date: String, iterN: Int, m: Int, alpha: Double, beta: Double, duration: String, outfile: String) = {
-  //     val out = new PrintWriter(new File(outfile))
-  //     val k = labeled_topic_dist.size
-  //     out.println(s"# Date: ${date}\talpha: ${alpha}\tbeta: ${beta}\titerN: ${iterN}\tM: ${m}\tK: ${k}")
-  //     out.println(s"# Running time:\t${duration} min.")
-  //     out.println("#"+ "-" * 80)
-  //     out.println("#Z\tCount\tp(z)\t\t\tTop terms descending")
-  //     out.println("#"+ "-" * 80)
-  //     labeled_topic_dist.zipWithIndex.map{ case ((cs, theta, labels, tpcs), i)  => i  + "\t" + nzMap(i) + "\t" + cs + "\t" + theta + "\t" +  labels.mkString(", ") + "\t->\t" + tpcs.take(20).mkString(", ") }
-  //     out.close
-  // }
-
-
-
-
-
-
-
-
-
   // ===================  other ====================================================================
+
   def indexOfLargest(array: Array[Double]): Int = {
     val result = array.foldLeft(-1,Double.MinValue,0) {
       case ((maxIndex, maxValue, currentIndex), currentValue) =>
@@ -445,7 +382,6 @@ object BTMUtil  extends Serializable {
     }
     result._1
   }
-
 
   def endsWithSep(path: String) = {
     path(path.length-1) == File.separatorChar
@@ -456,9 +392,8 @@ object BTMUtil  extends Serializable {
     case _ => path + File.separatorChar
   }
 
+  // ====================  Measure Running Time  ======================
 
-
-  // ------------- Measure Running Time --------
   def time[R](block: => R): R = {
     val t0 = System.nanoTime()
     val result = block    // call-by-name
@@ -466,10 +401,6 @@ object BTMUtil  extends Serializable {
     println("\n\tRunning time: " + (t1 - t0) / 1000000000  + " sec\n")
     result
   }
-
-
-
-
 
   // ===================  date handling ====================================================================
   import java.text.SimpleDateFormat
@@ -484,7 +415,7 @@ object BTMUtil  extends Serializable {
     parsed
   }
 
-  /*
+  /*  Convert a Twitter 'created_at' timestamp into year-month-date format
       Receive: Fri Jan 02 19:05:00 +0000 2015
       Return: String = 2015-01-02
    */

@@ -2,6 +2,8 @@
 package com.uncharted.btm
 
 
+import java.io.InputStream
+
 import scala.io.Source
 import org.apache.spark.rdd.RDD
 
@@ -41,7 +43,13 @@ object WordDict extends Serializable {
   }
 
   def loadStopwords(swfiles: List[String]) = {
-    val stopwords = swfiles.map ( swpath => Source.fromFile(swpath).getLines.toArray).flatMap( w => w).toSet
+    def loadFile(fname: String) = {
+      val stream: InputStream = getClass.getResourceAsStream(fname)
+      val lines = scala.io.Source.fromInputStream(stream).getLines
+      lines.toArray
+    }
+//    val stopwords = swfiles.map (path => Source.fromFile(path).getLines.toArray).flatMap( w => w).toSet
+    val stopwords = swfiles.map (path => loadFile(path)).flatMap( w => w).toSet
     stopwords
   }
 

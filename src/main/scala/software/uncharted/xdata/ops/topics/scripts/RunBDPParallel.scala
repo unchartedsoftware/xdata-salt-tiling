@@ -1,21 +1,55 @@
-// spark-shell --master yarn-client  --executor-cores 4  --num-executors 3  --executor-memory 5G  --driver-memory 3g --conf spark.kryoserializer.buffer=256 --conf spark.kryoserializer.buffer.max=512 --jars /home/chagerman/target/btm-1.0-SNAPSHOT.jar
+// spark-shell --master yarn-client  --executor-cores 4  --num-executors 3  --executor-memory 5G  --driver-memory 3g --conf spark.kryoserializer.buffer=256 --conf spark.kryoserializer.buffer.max=512 --jars target/btm-1.0-SNAPSHOT.jar
+
+// val bdp = new RunBDPParallel(sc)
+// val hdfspath = "/xdata/data/twitter/isil-keywords/2016-03/*"
+// val outpath = "/home/chagerman/Topic_Modeling/BTM/Output/"
+// bdp.main(hdfspath, outpath)
 
 
-import java.io._
-import com.uncharted.btm._
+
+
+import java.io.{PrintWriter, File}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.broadcast._
+import org.apache.spark.broadcast.Broadcast
+
+import com.uncharted.btm._
+import com.uncharted.btm.BDPParallel
+import com.uncharted.btm.BTMUtil
+import com.uncharted.btm.Coherence
+import com.uncharted.btm.DatePartitioner
+import com.uncharted.btm.TFIDF
+import com.uncharted.btm.WordDict
 
 
 class RunBDPParallel(context: org.apache.spark.SparkContext) {
   val sc = context
 
   //  --------------------   Utility Functions   --------------------  //
-  def loadRDDDates(path: String, dates: Array[String], caIdx: Int = 0, idIdx: Int = 1, textIdx: Int = 2) = {
+  /** Load a sample of tweets I previously preprocessed for experiments. Schema => (YMD, id, text)
+   */
+  def loadCleanTweets(path: String, dates: Array[String], caIdx: Int = 0, idIdx: Int = 1, textIdx: Int = 2) = {
     val rdd = sc.textFile(path)
       .map(_.split("\t"))
       .filter(x => x.length > textIdx)
       .filter(x => dates contains x(caIdx))
+    rdd
+  }
+
+
+  /*
+  val path = "/xdata/data/twitter/isil-keywords/2016-09/isil_keywords.2016090 "
+  val dates = Array("2016-09-03", "2016-09-04", "2016-09-05")
+  val bdp = RunBDPParallel(sc)
+  val rdd = bdp.loadTSVTweets(path, dates, 1, 0, 6)
+
+   */
+  def loadTSVTweets(path: String, dates: Array[String], caIdx: Int = 0, idIdx: Int = 1, textIdx: Int = 2) = {
+    val rdd = sc.textFile(path)
+      .map(_.split("\t"))
+      .filter(x => x.length > textIdx)
+      .map(x => Array(x(caIdx), x(idIdx), x(textIdx) ))
+      .map{ case Array(d, i, t) => Array(BTMUtil.ca2ymd(d), i, t) }
+      .filter{ case Array( d, i, t) => dates contains d }
     rdd
   }
 
@@ -38,6 +72,7 @@ class RunBDPParallel(context: org.apache.spark.SparkContext) {
   def output_results(topic_dist: Array[(Double, Seq[String])], nzMap: scala.collection.immutable.Map[Int, Int], theta: Array[Double], phi: Array[Double], date: String = "---", iterN: Int, m: Int, alpha: Double, beta: Double, duration: Double, outdir: String, cs: Array[Double] = Array(Double.NaN), avg_cs: Double = Double.NaN) = {
     def auto_label2(topic_dist: Array[(Double, Seq[String])]): Array[(Double, Seq[String], Seq[String])] = {
       // extract top 3 hashtags from each topic, append these 'labels' to each row
+      // TODO function unnecessary
       def find_labels(tp: Seq[String]): Seq[String] = {
         val hashtags = tp.filter(_.startsWith("#")).take(3)
         val terms = tp.filterNot(_.startsWith("#")).take(3)
@@ -47,6 +82,7 @@ class RunBDPParallel(context: org.apache.spark.SparkContext) {
       val labeled = topic_dist.map { case (theta, tpcs) => (theta, find_labels(tpcs), tpcs) }
       labeled
     }
+    // TODO unnest
     def write_topics(labeled_topic_dist: Array[(Double, Seq[String], Seq[String])], nzMap: scala.collection.immutable.Map[Int, Int], date: String, iterN: Int, m: Int, alpha: Double, beta: Double, duration: String, outfile: String) = {
       val out = new PrintWriter(new File(outfile))
       val k = labeled_topic_dist.size
@@ -73,7 +109,7 @@ class RunBDPParallel(context: org.apache.spark.SparkContext) {
 
 
   //  --------------------   set up parameters & load data   --------------------  //
-  def setup() = {
+  def setup(hdfspath: String) = {
     // INIALIZE PARAMETERS
     val lang = "en"
     val iterN = 150
@@ -81,42 +117,40 @@ class RunBDPParallel(context: org.apache.spark.SparkContext) {
     val eta = 0.01
     var k = 2
 
-    // INITIALIZE DATA PATHS
-    val outdir = s"/home/chagerman/Topic_Modeling/BTM/OUTPUT/parallel_BDP2/"
-    val basedir = "/home/chagerman/Topic_Modeling/BTM/Input/" // nb. basedir contains LM input such as stopwords, word_dict, etc
-    val hdfspath = "/user/chagerman/BTM_eval_data/*"
-
     // LM INPUT DATA
-    val datadir = "/home/chagerman/data/"
-    val swfiles = List(datadir + "STOPWORDS/stopwords_all_en.v2.txt", datadir + "STOPWORDS/stopwords_ar.txt", datadir + "STOPWORDS/stopwords_html_tags.txt")
+    val swfiles = List("/Stopwords/stopwords_all_en.v2.txt",  "/Stopwords/stopwords_ar.txt",  "/Stopwords/stopwords_html_tags.txt")
     val stopwords = WordDict.loadStopwords(swfiles) ++ Set("#isis", "isis", "#isil", "isil")
     val stopwords_bcst = sc.broadcast(stopwords)
 
-    // dates +/- 1 day around significant events
-    val dates1 = Array("2015-01-06", "2015-01-07", "2015-01-08")
-    val dates2 = Array("2015-11-12", "2015-11-13", "2015-11-14", "2015-12-01", "2015-12-02", "2015-12-03")
-    val dates3 = Array("2016-03-21", "2016-03-22", "2016-03-23")
-    val dates = dates2 ++ dates3
+    // dates +/- 1 day around significant events: Brussel's Attack
+    val dates = Array("2016-03-21", "2016-03-22", "2016-03-23")
+
+    // load data (pre-cleaned)
+//    val caIdx = 0       // 'created_at' index
+//    val idIdx = 1       // twitter_id index
+//    val textIdx = 2     // text index
+//    val rdd = loadCleanTweets(hdfspath, dates, caIdx, idIdx, textIdx)
 
     // load data
-    val caIdx = 0
-    val idIdx = 1
-    val textIdx = 2
-    val rdd = loadRDDDates(hdfspath, dates, caIdx, idIdx, textIdx)
+    val c = 1     // 'created_at' index
+    val i = 0     // twitter_id index
+    val t = 6     // text index
+    val rdd = loadTSVTweets(hdfspath, dates, 1, 0, 6)
 
-    (rdd, dates, stopwords_bcst, iterN, k, alpha, eta, outdir)
+
+    (rdd, dates, stopwords_bcst, iterN, k, alpha, eta)
   }
 
 
 
 
-  def run(rdd: RDD[Array[String]], dates: Array[String], stopwords_bcst: Broadcast[Set[String]], iterN: Int, k: Int, alpha: Double, eta: Double, outdir: String, weighted: Boolean = false, tfidf_path: String = "") = {
+  def run(rdd: RDD[Array[String]], dates: Array[String], stopwords_bcst: Broadcast[Set[String]], iterN: Int, k: Int, alpha: Double, eta: Double, outdir: String, weighted: Boolean = false, tfidf_bcst: Broadcast[Array[(String, String, Double)]] = null) = {
     // group records by date
     val kvrdd = BDPParallel.keyvalueRDD(rdd)
     // partition data by date
     val partitions = kvrdd.partitionBy(new DatePartitioner(dates))
     // run BTM on each partition
-    val parts = partitions.mapPartitions { iter => BDPParallel.partitionBDP(iter, stopwords_bcst, iterN, k, alpha, eta, weighted, tfidf_path) }.collect
+    val parts = partitions.mapPartitions { iter => BDPParallel.partitionBDP(iter, stopwords_bcst, iterN, k, alpha, eta, weighted, tfidf_bcst) }.collect
 
     // Compute Coherence Scores for each of the topic distibutions
     // define number of top words to use to compute coherence score
@@ -126,22 +160,34 @@ class RunBDPParallel(context: org.apache.spark.SparkContext) {
       val (date, topic_dist, theta, phi, nzMap, m, duration) = cp
       val topic_terms = topic_dist.map(x => x._2.toArray)
       val textrdd = rdd.filter(x => x(0) == date).map(x => x(2))
-      val (cs, avg_cs) = Coherence.computeCoherence(textrdd, topic_terms, topT)
+      // takes a long time to calculate Coherence. Uncomment to enable
+//      val (cs, avg_cs) = Coherence.computeCoherence(textrdd, topic_terms, topT)
 
       // Save results to a local file
-      output_results(topic_dist, nzMap, theta, phi, date, iterN, m, alpha, eta, duration, outdir, cs.toArray, avg_cs)
+//      output_results(topic_dist, nzMap, theta, phi, date, iterN, m, alpha, eta, duration, outdir, cs.toArray, avg_cs)         // n.b. outputing coherence scores as well
+      output_results(topic_dist, nzMap, theta, phi, date, iterN, m, alpha, eta, duration, outdir)
     }
   }
 
 
 
-  def main = {
-    val (rdd, dates, stopwords_bcst, iterN, k, alpha, eta, outdir) = setup()
-    val weighted = false
-    val tfidf_path = ""
-    run(rdd, dates, stopwords_bcst, iterN, k, alpha, eta, outdir, weighted, tfidf_path)
-  }
+
+  def main(hdfspath: String, outdir: String, tfidf_path:String="") = {
+    var weighted = false
+    if (tfidf_path != "") weighted = true
+
+      val (rdd, dates, stopwords_bcst, iterN, k, alpha, eta) = setup(hdfspath)
+
+      val tfidf_bcst = if (weighted) {
+        val tfidf_array = TFIDF.loadTfidf(tfidf_path, dates)
+        sc.broadcast(tfidf_array)
+      }
+      else null
+
+      run(rdd, dates, stopwords_bcst, iterN, k, alpha, eta, outdir, weighted, tfidf_bcst)
+
+    }
+
+
 
 }
-
-

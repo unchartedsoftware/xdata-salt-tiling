@@ -35,10 +35,14 @@ class DatePartitioner (dates: Array[String]) extends Partitioner {
 
 object BDPParallel  extends Serializable {
 
+
+
+
   // **************************************************************************************************************
   //          Main Topic Modeling Function
   // **************************************************************************************************************
-def partitionBDP(iterator: Iterator[(String, (String, String))],  stpbroad: Broadcast[scala.collection.immutable.Set[String]], iterN: Int, k:Int, alpha: Double, eta: Double, weighted: Boolean = false, tfidf_path: String = "") = {
+//def partitionBDP(iterator: Iterator[(String, (String, String))],  stpbroad: Broadcast[scala.collection.immutable.Set[String]], iterN: Int, k:Int, alpha: Double, eta: Double, weighted: Boolean = false, tfidf_path: String = "") = {
+def partitionBDP(iterator: Iterator[(String, (String, String))],  stpbroad: Broadcast[scala.collection.immutable.Set[String]], iterN: Int, k:Int, alpha: Double, eta: Double, weighted: Boolean = false, tfidf_bcst: Broadcast[Array[(String, String, Double)]] = null) = {
     val datetexts = iterator.toSeq.map(x => (x._1, x._2._2))
     val date = datetexts.map(x => x._1).toSet.toArray.head.asInstanceOf[String]
     // val texts = datetexts.map(x => x._2)                        // all tweets
@@ -54,7 +58,8 @@ def partitionBDP(iterator: Iterator[(String, (String, String))],  stpbroad: Broa
     val biterms0 = texts.map(text => BTMUtil.extractBitermsFromTextRandomK(text, word_dict, stopwords.toSet, k)).flatMap(x => x)
     val biterms = biterms0.toArray
 
-    if (weighted) bdp.initTfidf(tfidf_path, date, word_dict)
+//    if (weighted) bdp.initTfidf(tfidf_path, date, word_dict)
+    if (weighted) bdp.initTfidf(tfidf_bcst, date, word_dict)
     val (topic_dist, theta, phi, nzMap, duration) = bdp.fit(biterms, words, iterN, k, alpha, eta, weighted)
     val result = List(Array(date, topic_dist, theta, phi, nzMap, m, duration)).iterator
 

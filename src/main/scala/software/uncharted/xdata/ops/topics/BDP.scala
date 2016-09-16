@@ -19,6 +19,8 @@
 
 package com.uncharted.btm
 
+import org.apache.spark.broadcast.Broadcast
+
 import scala.collection._
 import scala.io.Source
 import scala.util.Random
@@ -34,9 +36,18 @@ class BDP(kK: Int) extends Serializable {
   var k = kK
   var tfidf_dict: scala.collection.immutable.Map[Int,Double] = scala.collection.immutable.Map[Int,Double]()
 
-  def initTfidf(path: String, date: String, word_dict: scala.collection.immutable.Map[String, Int])= {
-    tfidf_dict = TFIDF.getTfidf(path, date, word_dict)
+//  def initTfidf(path: String, date: String, word_dict: scala.collection.immutable.Map[String, Int])= {
+//    tfidf_dict = TFIDF.getTfidf_local(path, date, word_dict)
+//  }
+
+  def initTfidf(tfidf_bcst: Broadcast[Array[(String, String, Double)]], date: String, word_dict: scala.collection.immutable.Map[String, Int])= {
+    val tfidf = tfidf_bcst.value
+    tfidf_dict = TFIDF.filterTfidf(tfidf, date, word_dict)
+    tfidf_dict
   }
+
+
+
 
   // ============================= MCMC sampling  ============================================
   def estimateMCMC(biterms:Array[Biterm], iterN: Int, model: SampleRecorder, m: Int, alpha: Double, eta: Double): (Int, Double) = {
@@ -175,3 +186,16 @@ class BDP(kK: Int) extends Serializable {
   }
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
