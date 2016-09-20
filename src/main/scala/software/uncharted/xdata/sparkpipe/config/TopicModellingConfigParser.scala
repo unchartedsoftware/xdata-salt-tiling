@@ -12,39 +12,36 @@
  */
 package software.uncharted.xdata.sparkpipe.config
 
-import java.io.FileReader
-
 import com.typesafe.config.{Config, ConfigException}
 import grizzled.slf4j.Logging
-import org.apache.commons.csv.CSVFormat
-import software.uncharted.xdata.ops.salt.RangeDescription
-import scala.collection.JavaConverters._ // scalastyle:ignore
+import org.apache.spark.broadcast.Broadcast
+import software.uncharted.xdata.ops.topics.{WordDict, TFIDF}
+import software.uncharted.xdata.sparkpipe.jobs.util.TopicModellingJobUtil
 
-// Parse config for mercator time heatmap sparkpipe op
 case class TopicModellingParams (
-  rdd: org.apache.spark.rdd.RDD,
-  dates: List[String],
+  rdd: org.apache.spark.rdd.RDD[Array[String]],
+  dates: Array[String],
   stopwords_bcst: Broadcast[Set[String]],
   iterN: Int,
   k: Int,
   alpha: Double,
-  eta Double: ,
+  eta: Double ,
   outdir: String,
   weighted: Boolean,
-  tfidf_bcst: Broadcast[Array[(String, String, Double)]]
+  tfidf_bcst: Option[Broadcast[Array[(String, String, Double)]]]
 )
 
 object TopicModellingConfigParser extends Logging {
-  def parse(config: Config): Option[TopicModellingParams] = {
+  def parse(config: Config): TopicModellingParams = {
     try {
       // Load Data
       val loadConfig = config.getConfig("loadTSVTweets")
       val hdfspath = loadConfig.getString("hdfspath")
-      val dates = loadConfig.getStringList("dates")
+      val dates = loadConfig.getStringList("dates").asInstanceOf[Array[String]] // FIXME avoid cast. typesafe have a fix?
       val caIdx = loadConfig.getInt("createdAtIndex")
       val idIdx = loadConfig.getInt("twitterIdIndex")
       val textIdx = loadConfig.getInt("textIndex")
-      val rdd = JobUtil.loadTSVTweets(hdfspath, dates, caIdx, idIdx, textIdx)
+      val rdd = TopicModellingJobUtil.loadTweets(hdfspath, dates, caIdx, idIdx, textIdx)
 
       val topicsConfig = config.getConfig("topics")
       val lang = topicsConfig.getString("lang")
@@ -55,23 +52,23 @@ object TopicModellingConfigParser extends Logging {
       val outdir = topicsConfig.getString("outdir")
 
       // LM INPUT DATA
-      val swfiles : List[String] = topicsConfig.getStringList("stopWordFiles")
+      val swfiles : List[String] = topicsConfig.getStringList("stopWordFiles").asInstanceOf[List[String]]
       val stopwords = WordDict.loadStopwords(swfiles) ++ Set("#isis", "isis", "#isil", "isil")
       val stopwords_bcst = sc.broadcast(stopwords)
 
-      val tfidf_path = if (config.hasPath("tfidf_path")) config.getString(tfidf_path_key)} else ""
+      val tfidf_path = if (config.hasPath("tfidf_path")) config.getString("tfidf_path") else ""
       val weighted = if (tfidf_path != "") true else false
       val tfidf_bcst = if (weighted) {
         val tfidf_array = TFIDF.loadTfidf(tfidf_path, dates)
-        sc.broadcast(tfidf_array)
-      } else null // TODO None
+        Some(sc.broadcast(tfidf_array))
+      } else { None }
 
-      Some(TopicModellingParams(rdd, dates, stopwords_bcst, iterN, k, alpha, eta, outdir, weighted, tfidf_bcst)
+      TopicModellingParams(rdd, dates, stopwords_bcst, iterN, k, alpha, eta, outdir, weighted, tfidf_bcst)
 
     } catch {
       case e: ConfigException =>
         error(s"Failure parsing arguments from Topic Modelling configuration file", e)
-        None
+        sys.exit(-1) // FIXME Move someplace else?
     }
   }
 }

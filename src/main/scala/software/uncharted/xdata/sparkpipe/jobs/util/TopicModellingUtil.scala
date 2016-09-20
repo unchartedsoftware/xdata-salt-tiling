@@ -17,19 +17,20 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SQLContext}
 import software.uncharted.xdata.ops.io.{writeBytesToFile, writeBytesToS3, writeToFile, writeToS3}
+import software.uncharted.xdata.ops.topics.BTMUtil
 import software.uncharted.xdata.sparkpipe.config.{FileOutputConfig, S3OutputConfig}
 
 /**
   * Functions for executing topic modelling jobs
   */
-object ModellingJobUtil {
+object TopicModellingJobUtil {
 
   /**
     * TODO
     * @param parts
     */
   def castResults(parts: Array[Array[Any]]) = {
-    val cparts = parts.map { p =>
+    parts.map { p =>
       val date = p(0).toString
       val topic_dist = p(1).asInstanceOf[Array[(Double, Seq[String])]]
       val theta = p(2).asInstanceOf[Array[Double]]
@@ -39,7 +40,6 @@ object ModellingJobUtil {
       val duration = p(6).asInstanceOf[Double]
       (date, topic_dist, theta, phi, nzMap, m, duration)
     }
-    cparts
   }
 
   /**
@@ -131,7 +131,7 @@ object ModellingJobUtil {
     caIdx: Int = 0,
     idIdx: Int = 1,
     textIdx: Int = 2
-  ) = {
+  ) : RDD[Array[String]] = {
     sc.textFile(path)
       .map(_.split("\t"))
       .filter(x => x.length > textIdx)
@@ -152,7 +152,7 @@ object ModellingJobUtil {
     */
     def loadDates(
       path: String,
-      dates: Array[String],
+      dates: List[String],
       caIdx: Int,
       idIdx: Int,
       textIdx: Int

@@ -239,7 +239,7 @@ object BTMUtil extends Serializable {
     }
     val topic_distribution = Iterator.range(0, k).toArray.map { z =>
       val ws = (0 until m).sortBy(w => -phi(w*k+z)).take(20)
-      (theta(z), ws.map(words).toSeq)
+      (theta(z), ws.map(words).asInstanceOf[Seq[String]]) // XXX was .toSeq
     }
     topic_distribution
   }

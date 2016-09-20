@@ -14,15 +14,14 @@ package software.uncharted.xdata.sparkpipe.jobs
 
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
-import org.apache.spark.sql.DataFrame
-import software.uncharted.sparkpipe.Pipe
-import software.uncharted.sparkpipe.ops.core.dataframe.temporal.parseDate
-import software.uncharted.xdata.ops.io.serializeBinArray
-import software.uncharted.xdata.ops.salt.{CartesianTimeHeatmap, MercatorTimeHeatmap}
-import software.uncharted.xdata.sparkpipe.config.{Schema, SparkConfig, TilingConfig, XYTimeHeatmapConfig}
-import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOperation, createTileOutputOperation, dataframeFromSparkCsv}
+import org.apache.spark.rdd.RDD
+import org.apache.spark.broadcast.Broadcast
+import software.uncharted.xdata.ops.topics.{WordDict, BTMUtil, BDP}
+import software.uncharted.xdata.sparkpipe.jobs.util.TopicModellingJobUtil
+import software.uncharted.xdata.ops.topics.Coherence
+import software.uncharted.xdata.sparkpipe.config.{TopicModellingConfigParser, TopicModellingParams}
 
-// scalastyle:off method.length
+// scalastyle:off method.length parameter.number
 object TopicModellingJob extends Logging {
 
   def run(
@@ -35,8 +34,8 @@ object TopicModellingJob extends Logging {
     eta: Double,
     outdir: String,
     weighted: Boolean = false,
-    tfidf_bcst: Broadcast[Array[(String, String, Double)]] = null // TODO Option
-  ) = {
+    tfidf_bcst: Option[Broadcast[Array[(String, String, Double)]]] = None
+  ) : Unit = {
 
     val topT = 10
 
@@ -46,26 +45,30 @@ object TopicModellingJob extends Logging {
       val stopwords = stopwords_bcst.value
       val minCount = 0
       val (word_dict, words) = WordDict.createWordDictLocal(texts, stopwords, minCount)
-      val m = words.size
+      val m = words.length
       val bdp = new BDP(k)
       val biterms = texts.map(text => BTMUtil.extractBitermsFromTextRandomK(text, word_dict, stopwords.toSet, k)).flatMap(x => x)
 
-      if (weighted) bdp.initTfidf(tfidf_bcst, date, word_dict)
+      if (weighted) bdp.initTfidf(tfidf_bcst.get, date, word_dict) // weighted redundant, use tfidf_bcst.getOrElse
 
       val (topic_dist, theta, phi, nzMap, duration) = bdp.fit(biterms, words, iterN, k, alpha, eta, weighted)
-      val result = List(Array(date, topic_dist, theta, phi, nzMap, m, duration)).iterator
+//      val result = List(Array(date, topic_dist, theta, phi, nzMap, m, duration)).iterator
 
       val topic_terms = topic_dist.map(x => x._2.toArray)
       val (cs, avg_cs) = Coherence.computeCoherence(textrdd, topic_terms, topT)
-      JobUtil.output_results(topic_dist, nzMap, theta, phi, date, iterN, m, alpha, eta, duration, outdir, cs.toArray, avg_cs)
+      TopicModellingJobUtil.output_results(topic_dist, nzMap, theta, phi, date, iterN, m, alpha, eta, duration, outdir, cs.toArray, avg_cs)
     }
   }
 
+  /**
+    * Entrypoint
+    *
+    * @param args Array of commandline arguments
+    */
+  def main(args: Array[String]): Unit = { // TODO remove args?
 
-  def main(args: Array[String]): Unit = {
-
-    val config = ConfigFactory.parseReader(scala.io.Source.fromFile(args(0)).bufferedReader()).resolve()
-    val params = TopicModellingConfigParser.parse(config)
+    val config : Config = ConfigFactory.parseReader(scala.io.Source.fromFile(args(0)).bufferedReader()).resolve()
+    val params : TopicModellingParams = TopicModellingConfigParser.parse(config)
 
     run(
       params.rdd,

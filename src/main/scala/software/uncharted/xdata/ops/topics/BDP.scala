@@ -35,7 +35,7 @@ import org.apache.spark.broadcast.Broadcast
 import scala.collection._ // wildcard nono FIXME
 import java.io._
 
-
+// scalastyle:off public.methods.have.type
 class BDP(kK: Int) extends Serializable {
 
   var k = kK
@@ -60,10 +60,10 @@ class BDP(kK: Int) extends Serializable {
   def estimateMCMC(biterms:Array[Biterm], iterN: Int, model: SampleRecorder, m: Int, alpha: Double, eta: Double): (Int, Double) = {
     val start = System.nanoTime
     Iterator.range(0, iterN).foreach { iteration =>
-      print(s"iteration: ${iteration+1}\tk = ${k}")
+      print(s"iteration: ${iteration + 1}\tk = ${k}")
       val bstart = System.nanoTime
       biterms.foreach { case b =>
-        update_biterm(b, model, m, alpha, eta)
+        updateBiterm(b, model, m, alpha, eta)
 
       }
       // removeEmptyClusters & defrag
@@ -77,7 +77,7 @@ class BDP(kK: Int) extends Serializable {
     (k, duration)
   }
 
-  def update_biterm(b: Biterm, model: SampleRecorder, m: Int, alpha: Double, eta: Double) = {
+  def updateBiterm(b: Biterm, model: SampleRecorder, m: Int, alpha: Double, eta: Double) = {
     unsetTopic(model, b)
     val z = drawTopicIndex(model, b, m, alpha, eta)
 
@@ -183,7 +183,7 @@ class BDP(kK: Int) extends Serializable {
     val (theta, phi) = estimate_theta_phi(SR, n_biterms, m, newK, alpha, eta )
     println("Calculating topic distribution...")
     val topic_dist = BTMUtil.report_topics(theta, phi, words, m, newK, topT)     // take top words for a topic (default is top 100 words)
-    val nzMap = SR.getNzMap
+    val nzMap = SR.getNzMap.toMap[Int, Int]
     (topic_dist, theta, phi, nzMap, duration)
   }
 }

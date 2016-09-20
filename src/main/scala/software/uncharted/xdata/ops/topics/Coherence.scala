@@ -149,12 +149,12 @@ object Coherence extends Serializable {
   }
 
 
-  /**
-   * @param rdd          RDD containing JUST the cleaned text
-   * @param topic_terms  the top words (just the words, not theta) returned by running topic modeling (output as topic_dist)
-   * topT         the top T words which to consider in computing coherence scores
-   * RETURN       (Array of coherence scores (one per topic), average coherence score for input data)
-   */
+//  /**
+//   * @param rdd          RDD containing JUST the cleaned text
+//   * @param topic_terms  the top words (just the words, not theta) returned by running topic modeling (output as topic_dist)
+//   * topT         the top T words which to consider in computing coherence scores
+//   * RETURN       (Array of coherence scores (one per topic), average coherence score for input data)
+//   */
 //  def computeCoherenceLocal(texts: Array[String], topic_terms: Array[Array[String]], topT: Int) = {
 //    val topT_topics = topic_terms.map(x => x.take(topT)).toSeq
 //    val vocabulary = topTwordsFromTopics(topic_terms, topT)

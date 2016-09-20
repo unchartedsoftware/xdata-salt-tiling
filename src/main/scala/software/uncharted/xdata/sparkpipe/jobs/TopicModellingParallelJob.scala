@@ -14,17 +14,14 @@ package software.uncharted.xdata.sparkpipe.jobs
 
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
-import org.apache.spark.sql.DataFrame
-import software.uncharted.sparkpipe.Pipe
-import software.uncharted.sparkpipe.ops.core.dataframe.temporal.parseDate
+import org.apache.spark.broadcast.Broadcast
+import software.uncharted.xdata.sparkpipe.jobs.util.TopicModellingJobUtil
 import org.apache.spark.rdd.RDD
-import software.uncharted.xdata.ops.topics.{BDPParallel}
-import software.uncharted.xdata.ops.salt.{CartesianTimeHeatmap, MercatorTimeHeatmap}
-import software.uncharted.xdata.sparkpipe.config.{Schema, SparkConfig, TilingConfig, XYTimeHeatmapConfig}
-import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOperation, createTileOutputOperation, dataframeFromSparkCsv}
+import software.uncharted.xdata.ops.topics.{BDPParallel, DatePartitioner}
+import software.uncharted.xdata.sparkpipe.config.TopicModellingConfigParser
 
 // scalastyle:off method.length
-object TopicModellingJob extends Logging {
+object TopicModellingParallelJob extends Logging {
 
   /*
   val path = "/xdata/data/twitter/isil-keywords/2016-09/isil_keywords.2016090 "
@@ -33,8 +30,9 @@ object TopicModellingJob extends Logging {
   val rdd = bdp.loadTSVTweets(path, dates, 1, 0, 6)
    */
 
+//  TODO remove run alltogether? just have main. but nice to have param list here foor documentation
   def run(
-    rdd: RDD[Array[String]],
+    rdd: RDD[Array[String]], // XXX was RDD[Array[String]]
     dates: Array[String],
     stopwords_bcst: Broadcast[Set[String]],
     iterN: Int,
@@ -43,11 +41,12 @@ object TopicModellingJob extends Logging {
     eta: Double,
     outdir: String,
     weighted: Boolean = false,
-    tfidf_bcst: Broadcast[Array[(String, String, Double)]] = null
+    tfidf_bcst: Option[Broadcast[Array[(String, String, Double)]]] = None
   ) = {
     // group records by date
     val kvrdd = BDPParallel.keyvalueRDD(rdd)
     // partition data by date
+
     val partitions = kvrdd.partitionBy(new DatePartitioner(dates))
     // run BTM on each partition
     val parts = partitions.mapPartitions { iter => BDPParallel.partitionBDP(iter, stopwords_bcst, iterN, k, alpha, eta, weighted, tfidf_bcst) }.collect
@@ -55,7 +54,7 @@ object TopicModellingJob extends Logging {
     // Compute Coherence Scores for each of the topic distibutions
     // define number of top words to use to compute coherence score
     val topT = 10
-    val cparts = JobUtil.castResults(parts)
+    val cparts = TopicModellingJobUtil.castResults(parts)
     cparts.foreach { cp =>
       val (date, topic_dist, theta, phi, nzMap, m, duration) = cp
       val topic_terms = topic_dist.map(x => x._2.toArray)
@@ -63,10 +62,15 @@ object TopicModellingJob extends Logging {
       // takes a long time to calculate Coherence. Uncomment to enable // TODO make configurable
       // val (cs, avg_cs) = Coherence.computeCoherence(textrdd, topic_terms, topT)
       // output_results(topic_dist, nzMap, theta, phi, date, iterN, m, alpha, eta, duration, outdir, cs.toArray, avg_cs)         // n.b. outputing coherence scores as well
-      JobUtil.output_results(topic_dist, nzMap, theta, phi, date, iterN, m, alpha, eta, duration, outdir)
+      TopicModellingJobUtil.output_results(topic_dist, nzMap, theta, phi, date, iterN, m, alpha, eta, duration, outdir)
     }
   }
 
+  /**
+    * Entrypoint
+    *
+    * @param args Array of commandline arguments
+    */
   def main(args: Array[String]): Unit = {
     // get the properties file path
     if (args.length != 1) {
@@ -75,7 +79,7 @@ object TopicModellingJob extends Logging {
     }
 
     // load properties file from supplied URI
-    val config = ConfigFactory.parseReader(scala.io.Source.fromFile(args(0)).bufferedReader()).resolve()
+    val config : Config = ConfigFactory.parseReader(scala.io.Source.fromFile(args(0)).bufferedReader()).resolve()
     val params = TopicModellingConfigParser.parse(config)
 
     run(
