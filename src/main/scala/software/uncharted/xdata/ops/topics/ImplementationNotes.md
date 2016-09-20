@@ -17,7 +17,7 @@ An array of dates
 
 Path to Twitter data on HDFS
 	- data must be preprocessed in two steps:
-		(1) map to schema (date, id, text
+		(1) map to schema (date, id, text)
 		(2) clean & normalize text
 
 
@@ -25,7 +25,7 @@ Path to Twitter data on HDFS
 -------------------
 val lang = "en"
 	- this actually isn't used in the example script
-	- this allows you to possibly filter the input data by language 
+	- this allows you to possibly filter the input data by language
 
 Stopwords
 	- these are pretty much hard-coded. (stopwords don't change)
@@ -41,7 +41,7 @@ TFIDF scores
 --------------------
 topic_dist
 	For annotating data you need to output the top N terms from topic_dist for
-	each topic cluster. 
+	each topic cluster.
 
 (I write the results to a _local_ file for my own convenience.)
 
@@ -50,11 +50,11 @@ topic_dist
 ------
 theta:	global topic distribution
 phi:	topic-word distribution
-	- these are the parameters learned by MCMC inference. 
+	- these are the parameters learned by MCMC inference.
 	- It can be a good idea to keep them around (but not needed for annotation)
-Note that once you have learned theta/phi you can subsequently use them to quickly 
+Note that once you have learned theta/phi you can subsequently use them to quickly
 re-compute topic_dist, and/or quickly compute topic labels for a document
-in the original set. 
+in the original set.
 
-nzMap:	the number of documents in each cluster 
+nzMap:	the number of documents in each cluster
 	- probably not useful for annotation

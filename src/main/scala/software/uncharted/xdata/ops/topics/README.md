@@ -25,18 +25,10 @@ BDP input:
     words: Array[String]
     iterN: Int, k: Int, alpha: Double, eta: Double
 
-
-
-------------------------------------------------------------------------------------------
-#   BUILD
-------------------------------------------------------------------------------------------
+##   BUILD
 $ mvn clean package
 
-
-
-------------------------------------------------------------------------------------------
-#   RUN
-------------------------------------------------------------------------------------------
+##   RUN
 Set the number of cores and executor memory as you see fit. If running pseudo-parallel the
 number of cores should be equal to the number of dates to process or a multiple thereof.
 
