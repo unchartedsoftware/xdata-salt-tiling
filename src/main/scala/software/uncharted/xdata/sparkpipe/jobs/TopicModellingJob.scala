@@ -57,7 +57,7 @@ object TopicModellingJob extends Logging {
 
       val topic_terms = topic_dist.map(x => x._2.toArray)
       val (cs, avg_cs) = Coherence.computeCoherence(textrdd, topic_terms, topT)
-      TopicModellingJobUtil.output_results(topic_dist, nzMap, theta, phi, date, iterN, m, alpha, eta, duration, outdir, cs.toArray, avg_cs)
+      TopicModellingJobUtil.outputResults(topic_dist, nzMap, theta, phi, date, iterN, m, alpha, eta, duration, outdir, cs.toArray, avg_cs)
     }
   }
 

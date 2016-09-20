@@ -31,19 +31,19 @@ object TopicModellingParallelJob extends Logging {
   val rdd = bdp.loadTSVTweets(path, dates, 1, 0, 6)
    */
 
-//  TODO remove run alltogether? just have main. but nice to have param list here foor documentation
+  //  TODO remove run alltogether? just have main. but nice to have param list here foor documentation
   def run(
-    rdd: RDD[Array[String]], // XXX was RDD[Array[String]]
-    dates: Array[String],
-    stopwords_bcst: Broadcast[Set[String]],
-    iterN: Int,
-    k: Int,
-    alpha: Double,
-    eta: Double,
-    outdir: String,
-    weighted: Boolean = false,
-    tfidf_bcst: Option[Broadcast[Array[(String, String, Double)]]] = None
-  ) = {
+           rdd: RDD[Array[String]], // XXX was RDD[Array[String]]
+           dates: Array[String],
+           stopwords_bcst: Broadcast[Set[String]],
+           iterN: Int,
+           k: Int,
+           alpha: Double,
+           eta: Double,
+           outdir: String,
+           weighted: Boolean = false,
+           tfidf_bcst: Option[Broadcast[Array[(String, String, Double)]]] = None
+         ) = {
     // group records by date
     val kvrdd = BDPParallel.keyvalueRDD(rdd)
     // partition data by date
@@ -63,7 +63,7 @@ object TopicModellingParallelJob extends Logging {
       // takes a long time to calculate Coherence. Uncomment to enable // TODO make configurable
       // val (cs, avg_cs) = Coherence.computeCoherence(textrdd, topic_terms, topT)
       // output_results(topic_dist, nzMap, theta, phi, date, iterN, m, alpha, eta, duration, outdir, cs.toArray, avg_cs)         // n.b. outputing coherence scores as well
-      TopicModellingJobUtil.output_results(topic_dist, nzMap, theta, phi, date, iterN, m, alpha, eta, duration, outdir)
+      TopicModellingJobUtil.outputResults(topic_dist, nzMap, theta, phi, date, iterN, m, alpha, eta, duration, outdir)
     }
   }
 
@@ -80,9 +80,9 @@ object TopicModellingParallelJob extends Logging {
     }
 
     // load properties file from supplied URI
-    val config : Config = ConfigFactory.parseReader(scala.io.Source.fromFile(args(0)).bufferedReader()).resolve()
-    val params : TopicModellingParams = TopicModellingConfigParser.parse(config)
-    val sparkContext : SparkContext = SparkConfig(config).sparkContext
+    val config: Config = ConfigFactory.parseReader(scala.io.Source.fromFile(args(0)).bufferedReader()).resolve()
+    val sparkContext: SparkContext = SparkConfig(config).sparkContext
+    val params: TopicModellingParams = TopicModellingConfigParser.parse(config, sparkContext)
 
     run(
       params.rdd,
@@ -97,3 +97,4 @@ object TopicModellingParallelJob extends Logging {
       params.tfidf_bcst
     )
   }
+}

@@ -36,7 +36,7 @@ object TopicModellingConfigParser extends Logging {
   def parse(config: Config, sc: SparkContext): TopicModellingParams = {
     try {
       // Load Data
-      val loadConfig = config.getConfig("loadTSVTweets")
+      val loadConfig = config.getConfig("load") // XXX Split into two config option? one for loadTweets, one fo loadDates?
       val hdfspath = loadConfig.getString("hdfspath")
       val dates = loadConfig.getStringList("dates").asInstanceOf[Array[String]] // FIXME avoid cast. typesafe have a fix?
       val caIdx = loadConfig.getInt("createdAtIndex")

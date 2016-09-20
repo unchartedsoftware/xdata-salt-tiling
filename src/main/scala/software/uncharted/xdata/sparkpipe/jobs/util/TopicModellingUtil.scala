@@ -12,16 +12,12 @@
  */
 package software.uncharted.xdata.sparkpipe.jobs.util
 
-import java.io.{PrintWriter, File}
-
-import com.typesafe.config.Config
+import java.io.{File, PrintWriter}
+import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, SQLContext}
-import software.uncharted.xdata.ops.io.{writeBytesToFile, writeBytesToS3, writeToFile, writeToS3}
 import software.uncharted.xdata.ops.topics.BTMUtil
-import software.uncharted.xdata.sparkpipe.config.{FileOutputConfig, S3OutputConfig}
 
+// scalastyle:off public.methods.have.type parameter.number
 /**
   * Functions for executing topic modelling jobs
   */
@@ -60,7 +56,7 @@ object TopicModellingJobUtil {
   /**
   * Refactored version on output_results TODO
   */
-  def output_results(
+  def outputResults(
     topic_dist: Array[(Double, Seq[String])],
     nzMap: scala.collection.immutable.Map[Int, Int],
     theta: Array[Double],
@@ -76,17 +72,17 @@ object TopicModellingJobUtil {
     avg_cs: Double = Double.NaN // TODO Option
   ) = {
     println(s"Writing results to directory ${outdir}")
-    val k = topic_dist.size
+//    val k = topic_dist.size // commented out because it was overridden by klen (which used to be 'k')
     val labeled_topic_dist = topic_dist.map{ // append 'labels' to each row
       case (theta, tpcs) => (theta, find_labels(tpcs), tpcs)
     }
-    val duration = "%.4f".format(duration)
+    val dur = "%.4f".format(duration)
     val outfile = outdir + s"topics_${date}.txt"
     val out = new PrintWriter(new File(outfile))
-    val k = labeled_topic_dist.size
-    out.println(s"# Date: ${date}\talpha: ${alpha}\tbeta: ${beta}\titerN: ${iterN}\tM: ${m}\tK: ${k}")
-    out.println(s"# Running time:\t${duration} min.")
-    out.println(s"Average Coherence Score: ${avg_cs}")
+    val klen = labeled_topic_dist.length
+    out.println(s"# Date: $date\talpha: $alpha\tbeta: $beta\titerN: $iterN\tM: $m\tK: $klen")
+    out.println(s"# Running time:\t$dur min.")
+    out.println(s"Average Coherence Score: $avg_cs")
     out.println(s"Coherence scores: " + cs.mkString(", "))
     out.println("#" + "-" * 80)
     out.println("#Z\tCount\tp(z)\t\t\tTop terms descending")
