@@ -61,7 +61,7 @@ object XYSegmentJob extends Logging {
         segmentConfig.y1Col,
         segmentConfig.x2Col,
         segmentConfig.y2Col,
-        Some(new String("time")), // TODO: Retrieve valueColumn from configuration??
+        None,
         segmentConfig.xyBounds,
         segmentConfig.zBounds,
         segmentConfig.tileSize)(_)

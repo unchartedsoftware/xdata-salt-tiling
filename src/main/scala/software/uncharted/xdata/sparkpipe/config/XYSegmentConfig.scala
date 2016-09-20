@@ -32,6 +32,9 @@ case class XYSegmentConfig(arcType: ArcTypes.Value,
 object XYSegmentConfig extends Logging {
   val xySegmentKey = "xySegment"
   val arcTypeKey = "arcType"
+  val projectionKey = "projection"
+  val minSegLenKey = "minSegLen"
+  val maxSegLenKey = "maxSegLen"
   val x1ColKey = "x1Column"
   val y1ColKey = "y1Column"
   val x2ColKey = "x2Column"
@@ -39,9 +42,6 @@ object XYSegmentConfig extends Logging {
   val xyBoundsKey = "xyBounds"
   val zBoundsKey = "zBounds"
   val tileSizeKey = "tileSize"
-  val minSegLenKey = "minSegLen"
-  val maxSegLenKey = "maxSegLen"
-  val projectionKey = "projection"
 
   def apply(config: Config): Option[XYSegmentConfig] = {
     try {
@@ -52,6 +52,8 @@ object XYSegmentConfig extends Logging {
         case "fullarc" => ArcTypes.FullArc
         case "leaderarc" => ArcTypes.LeaderArc
       }
+      val xyBounds = segmentConfig.getDoubleList(xyBoundsKey).toArray(new Array[Double](0))
+      var zBounds = segmentConfig.getDoubleList(zBoundsKey).toArray(new Array[Int](0))
       Some(XYSegmentConfig(
         arcType,
         if (segmentConfig.hasPath(projectionKey)) Some(segmentConfig.getString(projectionKey)) else None,
@@ -61,8 +63,8 @@ object XYSegmentConfig extends Logging {
         segmentConfig.getString(y1ColKey),
         segmentConfig.getString(x2ColKey),
         segmentConfig.getString(y2ColKey),
-        (2.0, 2.0, 2.0, 2.0), // TODO: Parse tuple
-        (1, 1), // TODO: Parse tuple
+        (xyBounds(0), xyBounds(1), xyBounds(2), xyBounds(3)),
+        (zBounds(0), zBounds(1)),
         segmentConfig.getInt(tileSizeKey)
       ))
     } catch {
