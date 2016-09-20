@@ -102,7 +102,7 @@ object BasicSaltOperations {
                      minSegLen: Option[Int] = None,
                      maxSegLen: Option[Int] = None,
                      boundsOpt: Option[(Double, Double, Double, Double)] = None,
-                     tileSize: Int = ZXYOp.TILE_SIZE_DEFAULT)(input: DataFrame): RDD[SeriesData[(Int, Int, Int), (Int, Int), Double, Double]] = {
+                     tileSize: Int = ZXYOp.TILE_SIZE_DEFAULT)(input: DataFrame): RDD[SeriesData[(Int, Int, Int), (Int, Int), Double, (Double, Double)]] = {
     val bounds = boundsOpt.getOrElse {
       val columnBounds = getBounds(x1Col, x2Col, y1Col, y2Col)(input)
       val (minX1, maxX1) = columnBounds(0)
@@ -126,12 +126,16 @@ object BasicSaltOperations {
     val tileAggregation: Option[Aggregator[Double, Double, Double]] = None
 
     CartesianSegmentOp(
-      arcType, minSegLen, maxSegLen,
-      x1Col, y1Col, x2Col, y2Col,
-      bounds, (levels.min, levels.max),
-      row => Some(1),
-      CountAggregator,
-      tileAggregation,
+      arcType,
+      minSegLen,
+      maxSegLen,
+      x1Col,
+      y1Col,
+      x2Col,
+      y2Col,
+      None,
+      bounds,
+      (levels.min, levels.max),
       tileSize
     )(
       new TileLevelRequest[(Int, Int, Int)](levels, getLevel)
