@@ -14,11 +14,12 @@ package software.uncharted.xdata.sparkpipe.jobs
 
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
+import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast
 import software.uncharted.xdata.sparkpipe.jobs.util.TopicModellingJobUtil
 import org.apache.spark.rdd.RDD
 import software.uncharted.xdata.ops.topics.{BDPParallel, DatePartitioner}
-import software.uncharted.xdata.sparkpipe.config.TopicModellingConfigParser
+import software.uncharted.xdata.sparkpipe.config.{SparkConfig, TopicModellingConfigParser, TopicModellingParams}
 
 // scalastyle:off method.length
 object TopicModellingParallelJob extends Logging {
@@ -80,7 +81,8 @@ object TopicModellingParallelJob extends Logging {
 
     // load properties file from supplied URI
     val config : Config = ConfigFactory.parseReader(scala.io.Source.fromFile(args(0)).bufferedReader()).resolve()
-    val params = TopicModellingConfigParser.parse(config)
+    val params : TopicModellingParams = TopicModellingConfigParser.parse(config)
+    val sparkContext : SparkContext = SparkConfig(config).sparkContext
 
     run(
       params.rdd,

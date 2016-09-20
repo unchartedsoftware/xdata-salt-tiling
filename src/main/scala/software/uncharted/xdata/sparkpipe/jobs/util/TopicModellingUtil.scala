@@ -12,6 +12,8 @@
  */
 package software.uncharted.xdata.sparkpipe.jobs.util
 
+import java.io.{PrintWriter, File}
+
 import com.typesafe.config.Config
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.StructType
@@ -103,6 +105,7 @@ object TopicModellingJobUtil {
     * Load a sample of tweets I previously preprocessed for experiments. Schema => (YMD, id, text)
     */
   def loadCleanTweets(
+    sc : SparkContext,
     path: String,
     dates: Array[String],
     caIdx: Int = 0,
@@ -126,6 +129,7 @@ object TopicModellingJobUtil {
     * @return an rdd of the source data
     */
   def loadTweets(
+    sc : SparkContext,
     path: String,
     dates: Array[String],
     caIdx: Int = 0,
@@ -151,6 +155,7 @@ object TopicModellingJobUtil {
     * @return an rdd of the source data
     */
     def loadDates(
+      sc : SparkContext,
       path: String,
       dates: List[String],
       caIdx: Int,

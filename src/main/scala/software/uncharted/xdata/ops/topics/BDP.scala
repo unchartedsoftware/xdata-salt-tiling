@@ -1,21 +1,3 @@
-
-/*
-    NOTE:
-    This is essentially the same as the code in the standard BTM algorithm. The changes are:
-        Sample Recorders
-            the nonparametric Bayesian approach allows for unbounded values of K. This means
-            that the sample recorders can expand (and contract!) to hold different numbers
-            of 'topics'. As a first effort I have kept as much of the BTM code logic the same
-            as possible but changed the sample recorders to using MutableArrays rather than Arrays
-        MCMC sampling
-            n.b. we use an MCMC to estimate the conditional posterior for an unbounded K
-            draw topic index z using CRP + stick breaking
-            if z = k_new, increment the number of topics (tables), add to sample recorders
-            if nz(z) == 0 (i.e. if there are no samples assigned to topic z) remove the topic (table), remove from sample recorders
-            returns K, theta, phi (standard BTM returns theta, phi)
-
- */
-
 /**
   * Copyright (c) 2014-2015 Uncharted Software Inc. All rights reserved.
   *
@@ -28,6 +10,7 @@
   * accordance with the terms of the license agreement you entered into
   * with Uncharted Software Inc.
   */
+
 package software.uncharted.xdata.ops.topics
 
 import org.apache.spark.broadcast.Broadcast
@@ -36,6 +19,21 @@ import scala.collection._ // wildcard nono FIXME
 import java.io._
 
 // scalastyle:off public.methods.have.type
+/**
+  * NOTE:
+  * This is essentially the same as the code in the standard BTM algorithm. The changes are:
+  *     Sample Recorders
+  *         the nonparametric Bayesian approach allows for unbounded values of K. This means
+  *         that the sample recorders can expand (and contract!) to hold different numbers
+  *         of 'topics'. As a first effort I have kept as much of the BTM code logic the same
+  *         as possible but changed the sample recorders to using MutableArrays rather than Arrays
+  *     MCMC sampling
+  *         n.b. we use an MCMC to estimate the conditional posterior for an unbounded K
+  *         draw topic index z using CRP + stick breaking
+  *         if z = k_new, increment the number of topics (tables), add to sample recorders
+  *         if nz(z) == 0 (i.e. if there are no samples assigned to topic z) remove the topic (table), remove from sample recorders
+  *         returns K, theta, phi (standard BTM returns theta, phi)
+  **/
 class BDP(kK: Int) extends Serializable {
 
   var k = kK

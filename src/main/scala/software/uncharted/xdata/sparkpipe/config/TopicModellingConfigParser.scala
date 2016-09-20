@@ -14,8 +14,9 @@ package software.uncharted.xdata.sparkpipe.config
 
 import com.typesafe.config.{Config, ConfigException}
 import grizzled.slf4j.Logging
+import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast
-import software.uncharted.xdata.ops.topics.{WordDict, TFIDF}
+import software.uncharted.xdata.ops.topics.{TFIDF, WordDict}
 import software.uncharted.xdata.sparkpipe.jobs.util.TopicModellingJobUtil
 
 case class TopicModellingParams (
@@ -32,7 +33,7 @@ case class TopicModellingParams (
 )
 
 object TopicModellingConfigParser extends Logging {
-  def parse(config: Config): TopicModellingParams = {
+  def parse(config: Config, sc: SparkContext): TopicModellingParams = {
     try {
       // Load Data
       val loadConfig = config.getConfig("loadTSVTweets")
@@ -41,7 +42,7 @@ object TopicModellingConfigParser extends Logging {
       val caIdx = loadConfig.getInt("createdAtIndex")
       val idIdx = loadConfig.getInt("twitterIdIndex")
       val textIdx = loadConfig.getInt("textIndex")
-      val rdd = TopicModellingJobUtil.loadTweets(hdfspath, dates, caIdx, idIdx, textIdx)
+      val rdd = TopicModellingJobUtil.loadTweets(sc, hdfspath, dates, caIdx, idIdx, textIdx)
 
       val topicsConfig = config.getConfig("topics")
       val lang = topicsConfig.getString("lang")

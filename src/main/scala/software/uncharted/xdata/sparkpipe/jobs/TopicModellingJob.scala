@@ -14,12 +14,13 @@ package software.uncharted.xdata.sparkpipe.jobs
 
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
+import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.broadcast.Broadcast
-import software.uncharted.xdata.ops.topics.{WordDict, BTMUtil, BDP}
+import software.uncharted.xdata.ops.topics.{BDP, BTMUtil, WordDict}
 import software.uncharted.xdata.sparkpipe.jobs.util.TopicModellingJobUtil
 import software.uncharted.xdata.ops.topics.Coherence
-import software.uncharted.xdata.sparkpipe.config.{TopicModellingConfigParser, TopicModellingParams}
+import software.uncharted.xdata.sparkpipe.config.{SparkConfig, TopicModellingConfigParser, TopicModellingParams}
 
 // scalastyle:off method.length parameter.number
 object TopicModellingJob extends Logging {
@@ -68,7 +69,8 @@ object TopicModellingJob extends Logging {
   def main(args: Array[String]): Unit = { // TODO remove args?
 
     val config : Config = ConfigFactory.parseReader(scala.io.Source.fromFile(args(0)).bufferedReader()).resolve()
-    val params : TopicModellingParams = TopicModellingConfigParser.parse(config)
+    val sparkContext : SparkContext = SparkConfig(config).sparkContext
+    val params : TopicModellingParams = TopicModellingConfigParser.parse(config, sparkContext) // TODO remove sparkContext as param
 
     run(
       params.rdd,
