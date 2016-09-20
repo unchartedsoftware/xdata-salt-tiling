@@ -18,15 +18,12 @@ import software.uncharted.sparkpipe.Pipe
 import software.uncharted.xdata.ops.salt.{CartesianSegmentOp}
 import software.uncharted.xdata.sparkpipe.config.{Schema, SparkConfig, TilingConfig, XYSegmentConfig}
 import software.uncharted.xdata.ops.io.serializeBinArray
-import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createTileOutputOperation, dataframeFromSparkCsv}
+import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOperation, createTileOutputOperation, dataframeFromSparkCsv}
 
 // scalastyle:off method.length
 object XYSegmentJob extends Logging {
 
-  private val convertedTime: String = "convertedTime" // XXX what's this?
-
   def execute(config: Config): Unit = {
-
      // parse the schema, and exit on any errors
      val schema = Schema(config).getOrElse {
        error("Couldn't create schema - exiting")
@@ -98,23 +95,21 @@ object XYSegmentJob extends Logging {
     import net.liftweb.json.JsonDSL._ // scalastyle:ignore
     import net.liftweb.json.JsonAST._ // scalastyle:ignore
 
-    // TODO
-//    val binCount = tilingConfig.bins.getOrElse(MercatorTimeHeatmap.defaultTileSize)
-//    val levelMetadata =
-//      ("bins" -> binCount) ~
-//      ("range" ->
-//        (("start" -> segmentConfig.timeRange.min) ~
-//          ("count" -> segmentConfig.timeRange.count) ~
-//          ("step" -> segmentConfig.timeRange.step)))
+    // TODO: Verify these is the metadata we want
+    val binCount = tilingConfig.bins.getOrElse(CartesianSegmentOp.defaultTileSize)
+    val levelMetadata =
+      ("bins" -> binCount) ~
+      ("range" ->
+          (("x1" -> segmentConfig.x1Col) ~
+          ("y1" -> segmentConfig.y1Col) ~
+          ("x2" -> segmentConfig.x2Col) ~
+          ("y2" -> segmentConfig.y2Col)))
 
-    // TODO
-
-    // val jsonBytes = compactRender(levelMetadata).getBytes.toSeq
-    // createMetadataOutputOperation(baseConfig).foreach(_("metadata.json", jsonBytes))
+    val jsonBytes = compactRender(levelMetadata).getBytes.toSeq
+    createMetadataOutputOperation(baseConfig).foreach(_("metadata.json", jsonBytes))
   }
 
-  // TODO only have one execute
-  def execute(args: Array[String]): Unit = {
+  def main (args: Array[String]): Unit = {
     // get the properties file path
     if (args.length < 1) {
       logger.error("Path to conf file required")
@@ -124,9 +119,5 @@ object XYSegmentJob extends Logging {
     // load properties file from supplied URI
     val config = ConfigFactory.parseReader(scala.io.Source.fromFile(args(0)).bufferedReader()).resolve()
     execute(config)
-  }
-
-  def main (args: Array[String]): Unit = {
-    XYSegmentJob.execute(args)
   }
 }
