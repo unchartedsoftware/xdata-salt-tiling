@@ -15,8 +15,9 @@ package software.uncharted.xdata.sparkpipe.jobs
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
 import software.uncharted.sparkpipe.Pipe
-import software.uncharted.xdata.ops.salt.MercatorTimeHeatmap
+import software.uncharted.xdata.ops.salt.{CartesianSegmentOp}
 import software.uncharted.xdata.sparkpipe.config.{Schema, SparkConfig, TilingConfig, XYSegmentConfig}
+import software.uncharted.xdata.ops.io.serializeBinArray
 import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createTileOutputOperation, dataframeFromSparkCsv}
 
 // scalastyle:off method.length
@@ -50,22 +51,20 @@ object XYSegmentJob extends Logging {
        sys.exit(-1)
      }
 
-    // create the heatmap operation based on the projection
-    val heatmapOperation = segmentConfig.projection match {
-      case Some("cartesian") => CartesianSegment(
-        // TODO
-        // arcType: ArcTypes.Value,
-        // minSegLen: Option[Int],
-        // maxSegLen: Option[Int],
-        // x1Col: String,
-        // y1Col: String,
-        // x2Col: String,
-        // y2Col: String,
-        // xyBounds: (Double, Double, Double, Double),
-        // zBounds: (Int, Int),
-        // tileSize: Int) // ??? tilingConfig.bins.getOrElse(CartesianTimeHeatmap.defaultTileSize)
-        // (request: TileRequest[(Int, Int, Int)])
-      )(_)
+    // create the segment operation based on the projection
+    val segmentOperation = segmentConfig.projection match {
+      case Some("cartesian") => CartesianSegmentOp(
+        segmentConfig.arcType,
+        segmentConfig.minSegLen,
+        segmentConfig.maxSegLen,
+        segmentConfig.x1Col,
+        segmentConfig.y1Col,
+        segmentConfig.x2Col,
+        segmentConfig.y2Col,
+        Some(new String("time")), // TODO: Retrieve valueColumn from configuration??
+        segmentConfig.xyBounds,
+        segmentConfig.zBounds,
+        segmentConfig.tileSize)(_)
       case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
     }
 
@@ -78,13 +77,13 @@ object XYSegmentJob extends Logging {
 
       // Pipe the dataframe
       // TODO figure out all the correct stages
-      Pipe(df)
-        // .to(_.select(segmentConfig.xCol, segmentConfig.yCol, segmentConfig.timeCol))
-        // .to(_.cache())
-        // .to(heatmapOperation)
-        // .to(serializeBinArray)
-        // .to(outputOperation)
-        // .run()
+//      Pipe(df)
+//         .to(_.select(segmentConfig.x1Col, segmentConfig.y1Col, segmentConfig.x2Col))
+//         .to(_.cache())
+//         .to(segmentOperation)
+//         .to(serializeBinArray)
+//         .to(outputOperation)
+//         .run()
 
       // Create and save extra level metadata - the tile x,y,z dimensions in this case
       // Can we make writeMetadata take only one config?
@@ -99,13 +98,14 @@ object XYSegmentJob extends Logging {
     import net.liftweb.json.JsonDSL._ // scalastyle:ignore
     import net.liftweb.json.JsonAST._ // scalastyle:ignore
 
-    val binCount = tilingConfig.bins.getOrElse(MercatorTimeHeatmap.defaultTileSize)
-    val levelMetadata =
-      ("bins" -> binCount) ~
-      ("range" ->
-        (("start" -> segmentConfig.timeRange.min) ~
-          ("count" -> segmentConfig.timeRange.count) ~
-          ("step" -> segmentConfig.timeRange.step)))
+    // TODO
+//    val binCount = tilingConfig.bins.getOrElse(MercatorTimeHeatmap.defaultTileSize)
+//    val levelMetadata =
+//      ("bins" -> binCount) ~
+//      ("range" ->
+//        (("start" -> segmentConfig.timeRange.min) ~
+//          ("count" -> segmentConfig.timeRange.count) ~
+//          ("step" -> segmentConfig.timeRange.step)))
 
     // TODO
 

@@ -14,16 +14,15 @@ package software.uncharted.xdata.ops.salt
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row}
-import software.uncharted.salt.core.analytic.Aggregator
+import software.uncharted.salt.core.analytic.numeric.{MinMaxAggregator, SumAggregator}
 import software.uncharted.salt.core.generation.Series
 import software.uncharted.salt.core.generation.output.SeriesData
-import software.uncharted.salt.core.generation.rdd.RDDTileGenerator
-import software.uncharted.salt.core.generation.request.TileRequest
+import software.uncharted.salt.core.generation.request.{TileLevelRequest, TileRequest}
 
 import scala.util.Try
 
 
-trait CartesianSegmentOp {
+object CartesianSegmentOp {
 
   val defaultTileSize = 256
 
@@ -34,12 +33,22 @@ trait CartesianSegmentOp {
                             y1Col: String,
                             x2Col: String,
                             y2Col: String,
+                            valueCol: Option[String],
                             xyBounds: (Double, Double, Double, Double),
                             zBounds: (Int, Int),
-                            valueExtractor: Row => Option[T],
-                            binAggregator: Aggregator[T, U, V],
-                            tileAggregator: Option[Aggregator[V, W, X]],
-                            tileSize: Int)(request: TileRequest[(Int, Int, Int)])(input: DataFrame): RDD[SeriesData[(Int, Int, Int), (Int, Int), V, X]] = {
+                            tileSize: Int)(request: TileRequest[(Int, Int, Int)])(input: DataFrame): RDD[SeriesData[(Int, Int, Int), (Int, Int), Double, (Double, Double)]] = {
+
+    // TODO This is a copy from CartesianTimeHeatmap. Is it what we need?
+    val valueExtractor: (Row) => Option[Double] = valueCol match {
+      case Some(colName: String) => (r: Row) => {
+        val rowIndex = r.schema.fieldIndex(colName)
+        if (!r.isNullAt(rowIndex)) Some(r.getDouble(rowIndex)) else None
+      }
+      case _ => (r: Row) => {
+        Some(1.0)
+      }
+    }
+
     // A coordinate extractor to pull out our endpoint coordinates
     val x1Pos = input.schema.zipWithIndex.find(_._1.name == x1Col).map(_._2).getOrElse(-1)
     val y1Pos = input.schema.zipWithIndex.find(_._1.name == y1Col).map(_._2).getOrElse(-1)
@@ -60,28 +69,25 @@ trait CartesianSegmentOp {
       case ArcTypes.LeaderLine =>
         new SimpleLeaderLineProjection(zoomLevels, minBounds, maxBounds, leaderLineLength,
           minLengthOpt = minSegLen, maxLengthOpt = maxSegLen, tms = true)
-        new SimpleArcProjection(zoomLevels, minBounds, maxBounds,
       case ArcTypes.FullArc =>
+        new SimpleArcProjection(zoomLevels, minBounds, maxBounds,
           minLengthOpt = minSegLen, maxLengthOpt = maxSegLen, tms = true)
       case ArcTypes.LeaderArc =>
         new SimpleLeaderArcProjection(zoomLevels, minBounds, maxBounds, leaderLineLength,
           minLengthOpt = minSegLen, maxLengthOpt = maxSegLen, tms = true)
     }
 
+    val request = new TileLevelRequest(zoomLevels, (tc: (Int, Int, Int)) => tc._1)
+
     // Put together a series object to encapsulate our tiling job
-    val series: Series[Row,                              // RT
-                       (Double, Double, Double, Double), // DC
-                       (Int, Int, Int),                  // TC
-                       (Int, Int),                       // BC
-                       T, U, V, W, X] = new Series(
+    val series = new Series(
       // Maximum bin indices
       (tileSize - 1, tileSize - 1),
       coordinateExtractor,
       projection,
       valueExtractor,
-      binAggregator,
-      tileAggregator,
-      None
+      SumAggregator, // TODO This is a copy from CartesianTimeHeatmap, as advised by Nathan. Does it work?
+      Some(MinMaxAggregator) // TODO This is a copy from CartesianTimeHeatmap, as advised by Nathan. Does it work?
     )
 
     BasicSaltOperations.genericTiling(series)(request)(input.rdd)

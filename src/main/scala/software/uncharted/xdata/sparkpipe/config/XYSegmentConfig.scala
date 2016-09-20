@@ -14,65 +14,60 @@ package software.uncharted.xdata.sparkpipe.config
 
 import com.typesafe.config.{Config, ConfigException}
 import grizzled.slf4j.Logging
-import software.uncharted.xdata.ops.salt.{ArcTypes, RangeDescription}
-import software.uncharted.xdata.sparkpipe.config
+import software.uncharted.xdata.ops.salt.ArcTypes
 
-// TODO
-
-// Parse config for geoheatmap sparkpipe op
- case class XYSegmentConfig()
+// Parse config for segment sparkpipe op
+case class XYSegmentConfig(arcType: ArcTypes.Value,
+                           projection: Option[String] = None,
+                           minSegLen: Option[Int] = None,
+                           maxSegLen: Option[Int] = None,
+                           x1Col: String,
+                           y1Col: String,
+                           x2Col: String,
+                           y2Col: String,
+                           xyBounds: (Double, Double, Double, Double),
+                           zBounds: (Int, Int),
+                           tileSize: Int)
 
 object XYSegmentConfig extends Logging {
-
+  val xySegmentKey = "xySegment"
   val arcTypeKey = "arcType"
-  val minSegLenKey = "minSegLen" // Option[Int],
-  val maxSegLenKey = "maxSegLen" // Option[Int],
-  val x1ColKey = "x1Col" // String,
-  val y1ColKey = "y1Col" // String,
-  val x2ColKey = "x2Col" // String,
-  val y2ColKey = "y2Col" // String,
-  val xyBoundsKey = "xyBounds" // (Double, Double, Double, Double),
-  val zBoundsKey = "zBounds" // (Int, Int),
-  val valueExtractorKey = "valueExtractor" // Row => Option[T],
-  val binAggregatorKey = "binAggregator" // Aggregator[T, U, V],
-  val tileAggregatorKey = "tileAggregator" // Option[Aggregator[V, W, X]],
-  val tileSizeKey = "tileSize" // Int)
-
+  val x1ColKey = "x1Column"
+  val y1ColKey = "y1Column"
+  val x2ColKey = "x2Column"
+  val y2ColKey = "y2Column"
+  val xyBoundsKey = "xyBounds"
+  val zBoundsKey = "zBounds"
+  val tileSizeKey = "tileSize"
+  val minSegLenKey = "minSegLen"
+  val maxSegLenKey = "maxSegLen"
+  val projectionKey = "projection"
 
   def apply(config: Config): Option[XYSegmentConfig] = {
     try {
-      // ArcTypes: string => FullLine, LeaderLine, FullArc, LeaderArc
-      val arcType: ArcTypes = config.getString(arcTypeKey).toLower match {
+      val segmentConfig = config.getConfig(xySegmentKey)
+      val arcType: ArcTypes.Value = segmentConfig.getString(arcTypeKey).toLowerCase match {
         case "fullline" => ArcTypes.FullLine
         case "leaderline" => ArcTypes.LeaderLine
         case "fullarc" => ArcTypes.FullArc
         case "leaderarc" => ArcTypes.LeaderArc
       }
-
-      val minSegLen = if config.hasPath(minSegLenKey) Some(config.getInt(minSegLenKey)) else None
-      val maxSegLen = if config.hasPath(maxSegLenKey) Some(config.getInt(maxSegLenKey)) else None
-      val x1Col = config.getString(x1ColKey)
-      val y1Col = config.getString(y1ColKey)
-      val x2Col = config.getString(x2ColKey)
-      val y2Col = config.getString(y2ColKey)
-      val xyBounds = config.getDoubleList(xyBoundsKey)
-      val zBounds = config.getConfig(zBoundsKey)
-      // val valueExtractor = config.getConfig(valueExtractorKey)
-      // val binAggregator = config.getConfig(binAggregatorKey)
-      // val tileAggregator = config.getConfig(tileAggregatorKey)
-      val tileSize = config.getInt(tileSizeKey)
-
-      // Some(XYSegmentConfig(
-      //   heatmapConfig.getString(xColumnKey),
-      //   heatmapConfig.getString(yColumnKey),
-      //   heatmapConfig.getString(timeColumnKey),
-      //   RangeDescription.fromMin(heatmapConfig.getLong(timeMinKey), heatmapConfig.getLong(timeStepKey), heatmapConfig.getInt(timeCountKey)),
-      //   if (heatmapConfig.hasPath(projectionKey)) Some(heatmapConfig.getString(projectionKey)) else None)
-      // )
-      Some XYSegmentConfig()
+      Some(XYSegmentConfig(
+        arcType,
+        if (segmentConfig.hasPath(projectionKey)) Some(segmentConfig.getString(projectionKey)) else None,
+        if (segmentConfig.hasPath(minSegLenKey)) Some(segmentConfig.getInt(minSegLenKey)) else None,
+        if (segmentConfig.hasPath(maxSegLenKey)) Some(segmentConfig.getInt(maxSegLenKey)) else None,
+        segmentConfig.getString(x1ColKey),
+        segmentConfig.getString(y1ColKey),
+        segmentConfig.getString(x2ColKey),
+        segmentConfig.getString(y2ColKey),
+        (2.0, 2.0, 2.0, 2.0), // TODO: Parse tuple
+        (1, 1), // TODO: Parse tuple
+        segmentConfig.getInt(tileSizeKey)
+      ))
     } catch {
       case e: ConfigException =>
-        // error("Failure parsing arguments from [" + xyTimeHeatmapKey + "]", e)
+        error("Failure parsing arguments from [" + xySegmentKey + "]", e)
         None
     }
   }
