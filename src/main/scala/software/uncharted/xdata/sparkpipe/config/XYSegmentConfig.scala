@@ -52,8 +52,8 @@ object XYSegmentConfig extends Logging {
         case "fullarc" => ArcTypes.FullArc
         case "leaderarc" => ArcTypes.LeaderArc
       }
-      val xyBounds = segmentConfig.getDoubleList(xyBoundsKey).toArray(new Array[Double](0))
-      var zBounds = segmentConfig.getDoubleList(zBoundsKey).toArray(new Array[Int](0))
+      val xyBounds = segmentConfig.getDoubleList(xyBoundsKey).toArray(Array(Double.box(0.0)))
+      var zBounds = segmentConfig.getIntList(zBoundsKey).toArray(Array(Int.box(0)))
       Some(XYSegmentConfig(
         arcType,
         if (segmentConfig.hasPath(projectionKey)) Some(segmentConfig.getString(projectionKey)) else None,
