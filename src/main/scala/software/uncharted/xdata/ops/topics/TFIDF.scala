@@ -1,33 +1,17 @@
-/*
- * Copyright © 2013-2015 Uncharted Software Inc.
- *
- * Property of Uncharted™, formerly Oculus Info Inc.
- * http://uncharted.software/
- *
- * Released under the MIT License.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of
- * this software and associated documentation files (the "Software"), to deal in
- * the Software without restriction, including without limitation the rights to
- * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
- * of the Software, and to permit persons to whom the Software is furnished to do
- * so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- *
- * Created by chagerman on 2016-04-27.
- */
+/**
+  * Copyright (c) 2014-2015 Uncharted Software Inc. All rights reserved.
+  *
+  * Property of Uncharted(tm), formerly Oculus Info Inc.
+  * http://uncharted.software/
+  *
+  * This software is the confidential and proprietary information of
+  * Uncharted Software Inc. ("Confidential Information"). You shall not
+  * disclose such Confidential Information and shall use it only in
+  * accordance with the terms of the license agreement you entered into
+  * with Uncharted Software Inc.
+  */
 
-package com.uncharted.btm
+package software.uncharted.xdata.ops.topics
 
 import scala.io.Source
 
@@ -46,7 +30,6 @@ object TFIDF extends Serializable {
 //      .toMap
 //    tfidf_dict
 //  }
-
 
   def getTfidf_local(path: String, date: String, word_dict: scala.collection.immutable.Map[String, Int]): scala.collection.immutable.Map[Int,Double] = {
     val lines = Source.fromFile(path).getLines.map(_.split("\t"))
@@ -67,17 +50,10 @@ object TFIDF extends Serializable {
     tfidf_array
   }
 
-
   def filterTfidf(tfidf: Array[(String, String, Double)], date: String, word_dict: scala.collection.immutable.Map[String, Int]): scala.collection.immutable.Map[Int,Double] = {
     val filtered = tfidf.filter{case (d, w, s) => d == date}
       .filter{case (d, w, s) => word_dict contains w }
       .map{case (d, w, s) => (word_dict.get(w).get, s) }
     filtered.toMap
   }
-
-
 }
-
-
-
-

@@ -1,29 +1,35 @@
+/**
+  * Copyright (c) 2014-2015 Uncharted Software Inc. All rights reserved.
+  *
+  * Property of Uncharted(tm), formerly Oculus Info Inc.
+  * http://uncharted.software/
+  *
+  * This software is the confidential and proprietary information of
+  * Uncharted Software Inc. ("Confidential Information"). You shall not
+  * disclose such Confidential Information and shall use it only in
+  * accordance with the terms of the license agreement you entered into
+  * with Uncharted Software Inc.
+  */
 
-
-
-/*
- data structure to keep track of which topic z is assigned to each biterm:
- n.b. a map like nwz isn't good since there are so many biterms.
-
-Things this class does:
-    create & initialize sample recorders
-    increment counts in sample recorders
-    decrement counts in sample recorders
-    add new cluster
-    remove cluster
-    defragment clusters
-    draw sample from distribution
-
- */
-
-package com.uncharted.btm
+package software.uncharted.xdata.ops.topics
 
 import scala.util.Random
-import scala.io.Source
 
 
-
-// ----------------------------------------------------------------------------------------------------------------------------------
+/**
+  * data structure to keep track of which topic z is assigned to each biterm:
+  * n.b. a map like nwz isn't good since there are so many biterms.
+  *
+  * Things this class does:
+  *   - create & initialize sample recorders
+  *   - increment counts in sample recorders
+  *   - decrement counts in sample recorders
+  *   - add new cluster
+  *   - remove cluster
+  *   - defragment clusters
+  *   - draw sample from distribution
+  *
+  */
 object Records extends Serializable {
   // def wordCountArray(m: Int) = Array.fill[Long](m)(0)
   def wordCountArray(m: Int) = Array.fill[Double](m)(0)
@@ -38,7 +44,6 @@ object Records extends Serializable {
 }
 
 
-// ----------------------------------------------------------------------------------------------------------------------------------
 // class SampleRecorder (m: Int, kK:Int) {
 class SampleRecorder (m: Int, kK:Int, weighted: Boolean = false) extends Serializable {
   if (weighted) println("Using term weights rather than +/- 1. Input TFIDF dictionary")
@@ -83,7 +88,7 @@ class SampleRecorder (m: Int, kK:Int, weighted: Boolean = false) extends Seriali
   }
 
   def decrement(biterm: (Int, Int), z: Int, k: Int ) = {
-    val (w1, w2) = biter/ if z > k there will be nothing to decrement since that cluster has been deleted for being empty
+    val (w1, w2) = biterm // if z > k there will be nothing to decrement since that cluster has been deleted for being empty
      if ((z < k) & (k >0)) {
 //    if (z < k) {
       // don't decrement below 0
@@ -152,5 +157,4 @@ class SampleRecorder (m: Int, kK:Int, weighted: Boolean = false) extends Seriali
     }
     k
   }
-
 }

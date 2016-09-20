@@ -1,10 +1,19 @@
+/**
+  * Copyright (c) 2014-2015 Uncharted Software Inc. All rights reserved.
+  *
+  * Property of Uncharted(tm), formerly Oculus Info Inc.
+  * http://uncharted.software/
+  *
+  * This software is the confidential and proprietary information of
+  * Uncharted Software Inc. ("Confidential Information"). You shall not
+  * disclose such Confidential Information and shall use it only in
+  * accordance with the terms of the license agreement you entered into
+  * with Uncharted Software Inc.
+  */
 
-package com.uncharted.btm
+package software.uncharted.xdata.ops.topics
 
 import java.io._
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.TimeZone
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 import scala.util.Random
@@ -13,8 +22,11 @@ import scala.util.Random
 
 case class Biterm(biterm: (Int, Int), var z: Int) extends Serializable
 
-object BTMUtil  extends Serializable {
-  // =============================  load biterms  ====================================================================
+object BTMUtil extends Serializable {
+
+  /**
+    * load biterms
+    */
   def generateBitermsLocal(path: String, word_dict: Map[String, Int], stopwords: Set[String], k: Int, textIdx: Int = 0) = {
     // val biterms = Source.fromFile(path).getLines.map(text => BTMUtil.extractBitermsFromTextRandomK(text, word_dict, stopwords, k)).flatMap(x => x)
     val biterms = Source.fromFile(path).getLines.map(_.split("\t")).map(x => x(textIdx)).map(text => BTMUtil.extractBitermsFromTextRandomK(text, word_dict, stopwords, k)).flatMap(x => x)
@@ -26,14 +38,13 @@ object BTMUtil  extends Serializable {
    * Return an array of word-ids corresponding to each word
    */
   def getWordIds(tokens: Array[String], word_dict: Map[String, Int], stopwords: Set[String]) = {
-    val wids = tokens.filter(w => !(stopwords contains w))              // ignore words in stopwords
+    tokens.filter(w => !(stopwords contains w))              // ignore words in stopwords
                         .map(word => word_dict.getOrElse(word, -1))         // get the word_id associated with word
                         .filter(x => x > -1)                                // ignore out-of-vocabulary words           // ToDo: should handled OOV words - save & output a list with counts?
-    wids
   }
 
 
-
+  // TODO split below sections into diff files: load, save model topics, etc
   // =============================  load data  ====================================================================
   def load_stopwordsLocal(spath: String) = {
     val swords = Source.fromFile(spath).getLines.map(w => TextUtil.cleanText(w.toLowerCase.trim) ).filter(_ != "").toSet

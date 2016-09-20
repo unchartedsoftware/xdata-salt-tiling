@@ -16,19 +16,24 @@
 
  */
 
-
-package com.uncharted.btm
+/**
+  * Copyright (c) 2014-2015 Uncharted Software Inc. All rights reserved.
+  *
+  * Property of Uncharted(tm), formerly Oculus Info Inc.
+  * http://uncharted.software/
+  *
+  * This software is the confidential and proprietary information of
+  * Uncharted Software Inc. ("Confidential Information"). You shall not
+  * disclose such Confidential Information and shall use it only in
+  * accordance with the terms of the license agreement you entered into
+  * with Uncharted Software Inc.
+  */
+package software.uncharted.xdata.ops.topics
 
 import org.apache.spark.broadcast.Broadcast
 
-import scala.collection._
-import scala.io.Source
-import scala.util.Random
+import scala.collection._ // wildcard nono FIXME
 import java.io._
-import scala.collection.mutable.ArrayBuffer
-import scala.collection.immutable.Seq
-import scala.util.Try
-import org.apache.spark.rdd.RDD
 
 
 class BDP(kK: Int) extends Serializable {
@@ -40,13 +45,15 @@ class BDP(kK: Int) extends Serializable {
 //    tfidf_dict = TFIDF.getTfidf_local(path, date, word_dict)
 //  }
 
-  def initTfidf(tfidf_bcst: Broadcast[Array[(String, String, Double)]], date: String, word_dict: scala.collection.immutable.Map[String, Int])= {
+//  TODO explicit types
+//  TODO Docstrings
+  def initTfidf(tfidf_bcst: Broadcast[Array[(String, String, Double)]],
+                date: String, word_dict: scala.collection.immutable.Map[String, Int]
+               )= {
     val tfidf = tfidf_bcst.value
     tfidf_dict = TFIDF.filterTfidf(tfidf, date, word_dict)
     tfidf_dict
   }
-
-
 
 
   // ============================= MCMC sampling  ============================================
@@ -139,7 +146,6 @@ class BDP(kK: Int) extends Serializable {
     sys.error(f"this should never happen")  // needed so it will compile
   }
 
-
   // ============================= Estimate parameters  =============================
   def calcTheta(model: SampleRecorder, n_biterms: Int, k: Int, alpha: Double) = {
     val theta = Iterator.range(0, k).map { z =>
@@ -163,9 +169,6 @@ class BDP(kK: Int) extends Serializable {
     (theta, phi)
   }
 
-
-
-
   def fit(biterms: Array[Biterm], words: Array[String], iterN: Int, k: Int, alpha: Double, eta: Double, weighted: Boolean = false, topT: Int = 100 ) = {
     val m = words.size
 //    val weighted: Boolean = false
@@ -182,20 +185,5 @@ class BDP(kK: Int) extends Serializable {
     val topic_dist = BTMUtil.report_topics(theta, phi, words, m, newK, topT)     // take top words for a topic (default is top 100 words)
     val nzMap = SR.getNzMap
     (topic_dist, theta, phi, nzMap, duration)
-
   }
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

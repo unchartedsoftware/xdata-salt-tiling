@@ -1,20 +1,29 @@
-/*
-spark-shell --master yarn-client  --executor-cores 2  --num-executors 4  --executor-memory 5G
- */
+/**
+  * Copyright (c) 2014-2015 Uncharted Software Inc. All rights reserved.
+  *
+  * Property of Uncharted(tm), formerly Oculus Info Inc.
+  * http://uncharted.software/
+  *
+  * This software is the confidential and proprietary information of
+  * Uncharted Software Inc. ("Confidential Information"). You shall not
+  * disclose such Confidential Information and shall use it only in
+  * accordance with the terms of the license agreement you entered into
+  * with Uncharted Software Inc.
+  */
 
-package com.uncharted.btm
+package software.uncharted.xdata.ops.topics
 
 import scala.math._
-import scala.util.Try
 import scala.io.Source
 import org.apache.spark.rdd.RDD
-import java.io.File
 import java.io._
 
 // :load cleanText_BTM.scala
 // :load BTMUtil.scala
 
-
+/*
+spark-shell --master yarn-client  --executor-cores 2  --num-executors 4  --executor-memory 5G
+ */
 object Coherence extends Serializable {
 //  def getTokens(arr: Array[String]) = {
 //    val tokens = arr.map(text => TextUtil.cleanText(text)).map(_.split("\\s+"))
@@ -81,7 +90,6 @@ object Coherence extends Serializable {
     bi_df
   }
 
-
   def topic_coherence(topic: Array[String], unigram_df: Map[String,Int], biterm_df: Map[(String, String),Int], epsilon: Double = 1 ) = {
     val cowords = topic.toSeq.combinations(2).toArray
     val score = cowords.map { case Seq(w1, w2) =>
@@ -116,10 +124,10 @@ object Coherence extends Serializable {
 
 
   /**
-   * rdd          RDD containing JUST the cleaned text
-   * topic_terms  the top words (just the words, not theta) returned by running topic modeling (output as topic_dist)
-   * topT         the top T words which to consider in computing coherence scores
-   * RETURN       (Array of coherence scores (one per topic), average coherence score for input data)
+   * @param rdd          RDD containing JUST the cleaned text
+   * @param topic_terms  the top words (just the words, not theta) returned by running topic modeling (output as topic_dist)
+   * @param topT         the top T words which to consider in computing coherence scores
+   * @return       (Array of coherence scores (one per topic), average coherence score for input data)
    */
   def computeCoherence(rdd: RDD[String], topic_terms: Array[Array[String]], topT: Int) = {
     val topT_topics = topic_terms.map(x => x.take(topT)).toSeq
@@ -142,8 +150,8 @@ object Coherence extends Serializable {
 
 
   /**
-   * rdd          RDD containing JUST the cleaned text
-   * topic_terms  the top words (just the words, not theta) returned by running topic modeling (output as topic_dist)
+   * @param rdd          RDD containing JUST the cleaned text
+   * @param topic_terms  the top words (just the words, not theta) returned by running topic modeling (output as topic_dist)
    * topT         the top T words which to consider in computing coherence scores
    * RETURN       (Array of coherence scores (one per topic), average coherence score for input data)
    */
@@ -166,14 +174,4 @@ object Coherence extends Serializable {
 //    val avg_cs = cs.sum / cs.size
 //    (cs, avg_cs)
 //  }
-//
-
-
-
-
-
-
 }
-
-
-

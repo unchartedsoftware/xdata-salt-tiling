@@ -1,7 +1,23 @@
+/**
+  * Copyright (c) 2014-2015 Uncharted Software Inc. All rights reserved.
+  *
+  * Property of Uncharted(tm), formerly Oculus Info Inc.
+  * http://uncharted.software/
+  *
+  * This software is the confidential and proprietary information of
+  * Uncharted Software Inc. ("Confidential Information"). You shall not
+  * disclose such Confidential Information and shall use it only in
+  * accordance with the terms of the license agreement you entered into
+  * with Uncharted Software Inc.
+  */
 
-package com.uncharted.btm
+package software.uncharted.xdata.ops.topics
 
 
+// TODO:
+// Have to remove ALL punctuation, symbols EXCEPT for {#_-} - used in hashtags
+// Have to remove all {#_} which are NOT in hashtags? ... better hashtag detection?
+// Have to confirm that this all white space is being replaced with a single white space (i.e. including non-English white space)
 object TextUtil extends Serializable {
   private val mt = "@[\\w_]+\\b".r   // twitter user mentions
   private val url = "\\b(http[:\\.\\/\\w]+)\\b".r  // valid URLs
@@ -46,11 +62,3 @@ object TextUtil extends Serializable {
     cleaned.split("\\s+").toSeq
   }
 }
-
-
-
-// ToDo:
-//    Have to remove ALL punctuation, symbols EXCEPT for {#_-} - used in hashtags
-//    Have to remove all {#_} which are NOT in hashtags? ... better hashtag detection?
-//    Have to confirm that this all white space is being replaced with a single white space (i.e. including non-English white space)
-
