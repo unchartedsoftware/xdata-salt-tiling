@@ -1,17 +1,12 @@
-Biterm Topic Models
-
+# Biterm Topic Models
 
 This project represents just the latest in a series of variations and extensions of Biterm Topic Models (Yan et al. 2013)
 Variations implemented here include:
-    a Dirichlet Process for nonparametric Bayesian inference so the model can grow in complexity
-    option of using weights (TFIDF scores) on words rather than +/- 1 for sample recorder counts
-    the word dictionary can be inferred for each day separately from the input text.
+  - A Dirichlet Process for nonparametric Bayesian inference so the model can grow in complexity
+  - Option of using weights (TFIDF scores) on words rather than +/- 1 for sample recorder counts
+  - The word dictionary can be inferred for each day separately from the input text.
 
-
-
-
-
-General inputs:
+ General inputs:
     rdd                             - key-value RDD partitoned by date (date, (tweet_id, tweet_text))
 
 BDPParallel input:
@@ -64,7 +59,3 @@ The running time is a function of:
     number of iterations of MCMC estimation
 If run in the shell partitioned by date there will be no console output and it might
 incorrectly appear to be hung
-
-
-
-
