@@ -24,18 +24,18 @@ class TopicModellingJobTest extends FunSpec {
 
   describe("TopicModellingJobTest") {
     describe("#execute") {
-      it("should create tiles from source csv data with time filter applied", FileIOTest) {
+      it("should do topic modelling", FileIOTest) {
         // When test are run from another project that includes this project, the current working directory is set such
         // that the data files referenced in tiling-file-io.conf can't be found.  To fix this we reset the CWD to the
         // xdata-pipeline-ops directory, and reset it afterwards.
         val oldDir = System.getProperty("user.dir")
         try {
-          val path = classOf[TopicModellingJobTest].getResource("/topic-modelling-parallel.conf").toURI.getPath
+          val path = classOf[TopicModellingJobTest].getResource("/topic-modelling/topic-modelling-parallel.conf").toURI.getPath
           // Run the test from path/to/xdata-pipeline-ops/
           val newDir = path.substring(0, path.indexOf("xdata-pipeline-ops") + 18)
           System.setProperty("user.dir", newDir)
 
-          XYTimeHeatmapJob.execute(Array(path))
+          TopicModellingJob.main(Array(path))
 
           val files = JobTestUtils.collectFiles(testOutputDir, suffix)
           val expected = Set(
@@ -58,7 +58,7 @@ class TopicModellingJobTest extends FunSpec {
 
         } finally {
           System.setProperty("user.dir", oldDir)
-          FileUtils.deleteDirectory(new File(testOutputDir))
+//          FileUtils.deleteDirectory(new File(testOutputDir))
         }
       }
     }
