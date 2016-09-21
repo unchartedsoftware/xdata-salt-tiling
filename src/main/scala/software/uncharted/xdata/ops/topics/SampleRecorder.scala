@@ -13,6 +13,7 @@
 
 package software.uncharted.xdata.ops.topics
 
+import grizzled.slf4j.Logging
 import scala.util.Random
 
 
@@ -45,9 +46,10 @@ object Records extends Serializable {
 
 
 // class SampleRecorder (m: Int, kK:Int) {
-class SampleRecorder (m: Int, kK:Int, weighted: Boolean = false) extends Serializable {
-  if (weighted) println("Using term weights rather than +/- 1. Input TFIDF dictionary")
-
+class SampleRecorder (m: Int, kK:Int, weighted: Boolean = false) extends Serializable with Logging {
+  if (weighted) {
+    info("Using term weights rather than +/- 1. Input TFIDF dictionary")
+  }
   // Initialize class variables
   var tfidf_dict: Map[Int,Double] = Map[Int,Double]()             // empty placeholder for tfidf_dict
 

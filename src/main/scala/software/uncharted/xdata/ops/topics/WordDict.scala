@@ -15,11 +15,12 @@ package software.uncharted.xdata.ops.topics
 
 import scala.io.Source
 import org.apache.spark.rdd.RDD
+import grizzled.slf4j.Logging
 
 /**
   * A library of functions to manipulate text files
   */
-object WordDict extends Serializable {
+object WordDict extends Serializable with Logging {
 
   def createDictFromArray(words: Array[String]) : Map[String, Int] = {
     Array.tabulate(words.length)(i => words(i) -> i).toMap
@@ -77,8 +78,8 @@ object WordDict extends Serializable {
     minCount: Int
   ) : (Map[String, Int], Array[String]) = {
     val wc = computeWordCount(rdd, minCount)
-    println(s"wc contains ${wc.size} words")
-    println("computing word dictionary...")
+    info(s"wc contains ${wc.size} words")
+    info("computing word dictionary...")
     wordcount2WordDict(wc, stopwords, minCount)
   }
 
@@ -88,8 +89,8 @@ object WordDict extends Serializable {
     minCount: Int
   ) : (Map[String, Int], Array[String]) = {
     val wc = computeWordCountLocal(arr, minCount)
-    println(s"wc contains ${wc.size} words")
-    println("computing word dictionary...")
+    info(s"wc contains ${wc.size} words")
+    info("computing word dictionary...")
     wordcount2WordDict(wc, stopwords, minCount)
   }
 }

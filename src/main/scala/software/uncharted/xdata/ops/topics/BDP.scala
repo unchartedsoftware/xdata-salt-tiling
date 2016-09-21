@@ -17,6 +17,7 @@ import org.apache.spark.broadcast.Broadcast
 
 import scala.collection._ // wildcard nono FIXME
 import java.io._
+import grizzled.slf4j.Logging
 
 // scalastyle:off public.methods.have.type
 /**
@@ -34,8 +35,14 @@ import java.io._
   *         if nz(z) == 0 (i.e. if there are no samples assigned to topic z) remove the topic (table), remove from sample recorders
   *         returns K, theta, phi (standard BTM returns theta, phi)
   **/
-class BDP(kK: Int) extends Serializable {
-
+class BDP(kK: Int) extends Serializable with Logging {
+  def setLoggingLevel(ch.qos.logback.classic.Level level) {
+    ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
+    root.setLevel(level);
+  }
+  setLoggingLevel(ch.qos.logback.classic.Level.DEBUG)
+  println(logger.isInfoEnabled)
+  
   var k = kK
   var tfidf_dict: scala.collection.immutable.Map[Int,Double] = scala.collection.immutable.Map[Int,Double]()
 
@@ -58,20 +65,19 @@ class BDP(kK: Int) extends Serializable {
   def estimateMCMC(biterms:Array[Biterm], iterN: Int, model: SampleRecorder, m: Int, alpha: Double, eta: Double): (Int, Double) = {
     val start = System.nanoTime
     Iterator.range(0, iterN).foreach { iteration =>
-      print(s"iteration: ${iteration + 1}\tk = ${k}") // TODO implement togglable logging
+      info(s"iteration: ${iteration + 1}\tk = ${k}")
       val bstart = System.nanoTime
       biterms.foreach { case b =>
         updateBiterm(b, model, m, alpha, eta)
-
       }
       // removeEmptyClusters & defrag
       k = model.defrag
       val bend = System.nanoTime
       val runningtime = (bend - bstart) / 1E9
-      println("\t time: %.3f sec.".format(runningtime))
+      info("\t time: %.3f sec.".format(runningtime))
     }
     val duration = (System.nanoTime - start) / 1E9 / 60.0
-    println(s"Elapsed time: %.4f min".format(duration))
+    info(s"Elapsed time: %.4f min".format(duration))
     (k, duration)
   }
 
@@ -81,11 +87,11 @@ class BDP(kK: Int) extends Serializable {
 
     // increment value of K if z > k
     if (z == k) {
-      print("\t+1\t")
+      info("\t+1\t")
       k = model.addCluster()
     }
-    if (z >= k) println(s"\n\n WHY IS Z > K ? \nz is ${z} and k is ${k}\n")
-    if (z > k) println("\n\n********\n z should not be greater than k !!!\n\n")
+    if (z >= k) info(s"\n\n WHY IS Z > K ? \nz is ${z} and k is ${k}\n")
+    if (z > k) info("\n\n********\n z should not be greater than k !!!\n\n")
     setTopic(model, b, z)
   }
 
@@ -174,12 +180,12 @@ class BDP(kK: Int) extends Serializable {
     if (weighted) { SR.setTfidf(tfidf_dict) }
     SR.initRecorders(biterms)
     val btmDp = new BDP(k)
-    println("Running MCMC sampling...")
+    info("Running MCMC sampling...")
     val (newK, duration) = estimateMCMC(biterms, iterN, SR, m, alpha, eta)
     val n_biterms = biterms.size
-    print("Calculating phi, theta...")
+    info("Calculating phi, theta...")
     val (theta, phi) = estimate_theta_phi(SR, n_biterms, m, newK, alpha, eta )
-    println("Calculating topic distribution...")
+    info("Calculating topic distribution...")
     val topic_dist = BTMUtil.report_topics(theta, phi, words, m, newK, topT)     // take top words for a topic (default is top 100 words)
     val nzMap = SR.getNzMap.toMap[Int, Int]
     (topic_dist, theta, phi, nzMap, duration)

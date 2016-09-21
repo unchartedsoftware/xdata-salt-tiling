@@ -17,6 +17,7 @@ import scala.math._
 import scala.io.Source
 import org.apache.spark.rdd.RDD
 import java.io._
+import grizzled.slf4j.Logging
 
 // :load cleanText_BTM.scala
 // :load BTMUtil.scala
@@ -24,7 +25,7 @@ import java.io._
 /*
 spark-shell --master yarn-client  --executor-cores 2  --num-executors 4  --executor-memory 5G
  */
-object Coherence extends Serializable {
+object Coherence extends Serializable with Logging {
 //  def getTokens(arr: Array[String]) = {
 //    val tokens = arr.map(text => TextUtil.cleanText(text)).map(_.split("\\s+"))
 //    sc.parallelize(tokens)
@@ -82,11 +83,11 @@ object Coherence extends Serializable {
       bt
     }
     val biterms = tokens.map(x => x.filter(vocabulary contains _)).filter(x => x.size > 1).map(x => getWordBiterms(x))
-    println(s"\n biterms.size = ${biterms.count}\n")
+    info(s"\n biterms.size = ${biterms.count}\n")
     val bi_wc = biterms.flatMap(x => x).map(x => (x, 1)).reduceByKey(_ + _).filter(x => x._2 > 1)
-    println(s"bi_wc ... bi_df ...")
+    info(s"bi_wc ... bi_df ...")
     val bi_df = bi_wc.collect.toMap
-    println(s"bi_df.size = ${bi_df.size}")
+    info(s"bi_df.size = ${bi_df.size}")
     bi_df
   }
 
@@ -135,11 +136,11 @@ object Coherence extends Serializable {
     // convert documents into token arrays
     val tokens = getTokensRdd(rdd).map(x => x.filter(vocabulary contains _)).cache
     // compute D(v) and D(V, v'), return a Map of each
-    println("calculating unigram doc freq...")
+    info("calculating unigram doc freq...")
     val unigram_df = unigramDocFreq(tokens, vocabulary)
-    println("calculating biterm doc freq...")
+    info("calculating biterm doc freq...")
     val biterm_df = bitermDocFreq(tokens, vocabulary)
-    println("calculating topic coherence...")
+    info("calculating topic coherence...")
     val cs = topT_topics.map{tpcs  =>
       val coh = topic_coherence(tpcs, unigram_df, biterm_df)
       coh
@@ -162,11 +163,11 @@ object Coherence extends Serializable {
 //    val tokens = texts.map(text => TextUtil.cleanText(text)).map(_.split("\\s+")).map(x => x.filter(vocabulary contains _))
 //
 //    // compute D(v) and D(V, v'), return a Map of each
-//    println("calculating unigram doc freq...")
+//    info("calculating unigram doc freq...")
 //    val unigram_df = unigramDocFreq(tokens, vocabulary)
-//    println("calculating biterm doc freq...")
+//    info("calculating biterm doc freq...")
 //    val biterm_df = bitermDocFreq(tokens, vocabulary)
-//    println("calculating topic coherence...")
+//    info("calculating topic coherence...")
 //    val cs = topT_topics.map{tpcs  =>
 //      val coh = topic_coherence(tpcs, unigram_df, biterm_df)
 //      coh

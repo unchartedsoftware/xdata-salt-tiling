@@ -13,6 +13,7 @@
 package software.uncharted.xdata.sparkpipe.jobs.util
 
 import java.io.{File, PrintWriter}
+import grizzled.slf4j.Logging
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import software.uncharted.xdata.ops.topics.BTMUtil
@@ -21,7 +22,7 @@ import software.uncharted.xdata.ops.topics.BTMUtil
 /**
   * Functions for executing topic modelling jobs
   */
-object TopicModellingUtil {
+object TopicModellingUtil extends Logging {
 
   /**
     * TODO
@@ -73,7 +74,7 @@ object TopicModellingUtil {
     cs: Array[Double] = Array(Double.NaN), // TODO Option
     avg_cs: Double = Double.NaN // TODO Option
   ) = {
-    println(s"Writing results to directory ${outdir}") // TODO make sure directory exists. Error otherwise
+    info(s"Writing results to directory ${outdir}") // TODO make sure directory exists. Error otherwise
 //    val k = topic_dist.size // commented out because it was overridden by klen (which used to be 'k')
     val labeled_topic_dist = topic_dist.map{ // append 'labels' to each row
       case (theta, tpcs) => (theta, findLabels(tpcs), tpcs)

@@ -14,15 +14,17 @@
 package software.uncharted.xdata.ops.topics
 
 import java.io._
+
+import grizzled.slf4j.{Logger, Logging}
+
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 import scala.util.Random
 
 
+case class Biterm(biterm: (Int, Int), var z: Int) extends Serializable with Logging
 
-case class Biterm(biterm: (Int, Int), var z: Int) extends Serializable
-
-object BTMUtil extends Serializable {
+object BTMUtil extends Serializable with Logging {
 
   /**
     * load biterms
@@ -52,14 +54,12 @@ object BTMUtil extends Serializable {
   }
 
   def loadWords(wordPath: String, wordDictPath: String, stopwordPath: String) = {
-    println("Loading stopwords, vocab, word dictionary...\n")
+    info("Loading stopwords, vocab, word dictionary...\n")
     val words = Source.fromFile(wordPath).getLines.toArray
     val word_dict = Source.fromFile(wordDictPath).getLines.map(_.split("\t")).toArray.map(x => (x(0), x(1).toInt)).toMap
     val stopwords = Source.fromFile(stopwordPath).getLines.map(_.toLowerCase).toSet
     (words, word_dict, stopwords)
   }
-
-
 
   // def loadRDD(hdfspath: String, lang: String, inclusive: Boolean, langIdx: Int = 7 ) = {
   //     val rdd0 = sc.textFile(hdfspath).map(_.split("\t")).filter(x => x.length > 7)
@@ -130,7 +130,7 @@ object BTMUtil extends Serializable {
   // ===================  save model, topics ====================================================================
 
   def save_result(theta: Array[Double], phi: Array[Double], path: String, k: Int) = {
-    println(s"Saving theta and phi to ${path}...")
+    info(s"Saving theta and phi to ${path}...")
     val outpath_pz = s"${path}_pz_theta.txt"
     val outpath_pwz = s"${path}_pw|z_phi.txt"
     val out_pz = new PrintWriter(new File(outpath_pz))
@@ -172,7 +172,7 @@ object BTMUtil extends Serializable {
   }
 
   def save_topics(topic_dist: Array[(Double, scala.collection.immutable.Seq[String])], path: String, k: Int) = {
-    println(s"Saving k=${k} topics to ${path}...")
+    info(s"Saving k=${k} topics to ${path}...")
     // val out_topic = s"${path}_topics.${k}.k.txt"
     val out_topic = s"${path}_topics.txt"
     val out = new PrintWriter(new File(out_topic))
@@ -182,7 +182,7 @@ object BTMUtil extends Serializable {
 
   def save_topics_counts(topic_dist: Array[(Double, scala.collection.immutable.Seq[String])], nz: Array[Long], date: String, iterN: Int, m: Int, duration: String, path: String) = {
     val k = topic_dist.size
-    println(s"Saving k=${k} topics to ${path}...")
+    info(s"Saving k=${k} topics to ${path}...")
     val out_topic = s"${path}_topicCounts.txt"
     val out = new PrintWriter(new File(out_topic))
     out.println(s"# Date: ${date}\titerN: ${iterN}\tM: ${m}\tRunning time: ${duration}")
@@ -244,6 +244,7 @@ object BTMUtil extends Serializable {
     topic_distribution
   }
 
+//  XXX Remove?
   def printTopicDist(topic_dist: Array[(Double, scala.collection.immutable.Seq[String])]) = {
     println("\n\n")
     for (td <- topic_dist) println(td._1 + "\t" +  td._2.mkString(", "))
