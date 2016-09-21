@@ -37,23 +37,22 @@ object TopicModellingConfigParser extends Logging {
     try {
       // Load Data
       val loadConfig = config.getConfig("load") // XXX Split into two config option? one for loadTweets, one fo loadDates?
-      val hdfspath = loadConfig.getString("hdfspath")
-      val dates = loadConfig.getStringList("dates").asInstanceOf[Array[String]] // FIXME avoid cast. typesafe have a fix?
+      val hdfspath = loadConfig.getString("hdfspath") // TODO rename path - is not specific to hdfs
+      val dates = loadConfig.getStringList("dates").toArray[String](Array()) // FIXME avoid cast. typesafe have a fix?
       val caIdx = loadConfig.getInt("createdAtIndex")
       val idIdx = loadConfig.getInt("twitterIdIndex")
       val textIdx = loadConfig.getInt("textIndex")
       val rdd = TopicModellingJobUtil.loadTweets(sc, hdfspath, dates, caIdx, idIdx, textIdx)
 
       val topicsConfig = config.getConfig("topics")
-      val lang = topicsConfig.getString("lang")
       val iterN = topicsConfig.getInt("iterN")
-      val alpha = topicsConfig.getDouble("alpha")
+      val alpha = 1 / Math.E // topicsConfig.getDouble("alpha")
       val eta = topicsConfig.getDouble("eta")
       val k = topicsConfig.getInt("k")
       val outdir = topicsConfig.getString("outdir")
 
       // LM INPUT DATA
-      val swfiles : List[String] = topicsConfig.getStringList("stopWordFiles").asInstanceOf[List[String]]
+      val swfiles : List[String] = topicsConfig.getStringList("stopWordFiles").toArray[String](Array()).toList // FIXME avoid cast. typesafe have a fix?
       val stopwords = WordDict.loadStopwords(swfiles) ++ Set("#isis", "isis", "#isil", "isil")
       val stopwords_bcst = sc.broadcast(stopwords)
 

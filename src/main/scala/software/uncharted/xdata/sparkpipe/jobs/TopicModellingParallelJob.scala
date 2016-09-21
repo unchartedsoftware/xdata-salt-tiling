@@ -21,7 +21,7 @@ import org.apache.spark.rdd.RDD
 import software.uncharted.xdata.ops.topics.{BDPParallel, DatePartitioner}
 import software.uncharted.xdata.sparkpipe.config.{SparkConfig, TopicModellingConfigParser, TopicModellingParams}
 
-// scalastyle:off method.length
+// scalastyle:off method.length parameter.number
 object TopicModellingParallelJob extends Logging {
 
   /*
@@ -33,7 +33,7 @@ object TopicModellingParallelJob extends Logging {
 
   //  TODO remove run alltogether? just have main. but nice to have param list here foor documentation
   def run(
-           rdd: RDD[Array[String]], // XXX was RDD[Array[String]]
+           rdd: RDD[Array[String]],
            dates: Array[String],
            stopwords_bcst: Broadcast[Set[String]],
            iterN: Int,
@@ -43,7 +43,7 @@ object TopicModellingParallelJob extends Logging {
            outdir: String,
            weighted: Boolean = false,
            tfidf_bcst: Option[Broadcast[Array[(String, String, Double)]]] = None
-         ) = {
+         ) : Unit = {
     // group records by date
     val kvrdd = BDPParallel.keyvalueRDD(rdd)
     // partition data by date

@@ -13,7 +13,7 @@
 
 package software.uncharted.xdata.ops.topics
 
-import java.io.InputStream
+import scala.io.Source
 import org.apache.spark.rdd.RDD
 
 
@@ -51,15 +51,19 @@ object WordDict extends Serializable {
     wc
   }
 
+//  Deprecated due to NullPointerException
+//  def loadStopwords(swfiles: List[String]) = {
+//    def loadFile(fname: String) = {
+//      val stream: InputStream = getClass.getResourceAsStream(fname)
+//      val lines = scala.io.Source.fromInputStream(stream).getLines
+//      lines.toArray
+//    }
+//    val stopwords = swfiles.map (path => loadFile(path)).flatMap( w => w).toSet
+//    stopwords
+//  }
+
   def loadStopwords(swfiles: List[String]) = {
-    def loadFile(fname: String) = {
-      val stream: InputStream = getClass.getResourceAsStream(fname)
-      val lines = scala.io.Source.fromInputStream(stream).getLines
-      lines.toArray
-    }
-//    val stopwords = swfiles.map (path => Source.fromFile(path).getLines.toArray).flatMap( w => w).toSet
-    val stopwords = swfiles.map (path => loadFile(path)).flatMap( w => w).toSet
-    stopwords
+    swfiles.map(path => Source.fromFile(path).getLines.toArray).flatten.toSet
   }
 
   def createWordDict(rdd: RDD[String], stopwords: Set[String], minCount: Int) = {
