@@ -16,7 +16,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
 import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast
-import software.uncharted.xdata.sparkpipe.jobs.util.TopicModellingJobUtil
+import software.uncharted.xdata.sparkpipe.jobs.util.TopicModellingUtil
 import org.apache.spark.rdd.RDD
 import software.uncharted.xdata.ops.topics.{BDPParallel, DatePartitioner}
 import software.uncharted.xdata.sparkpipe.config.{SparkConfig, TopicModellingConfigParser, TopicModellingParams}
@@ -55,7 +55,7 @@ object TopicModellingParallelJob extends Logging {
     // Compute Coherence Scores for each of the topic distibutions
     // define number of top words to use to compute coherence score
     val topT = 10
-    val cparts = TopicModellingJobUtil.castResults(parts)
+    val cparts = TopicModellingUtil.castResults(parts)
     cparts.foreach { cp =>
       val (date, topic_dist, theta, phi, nzMap, m, duration) = cp
       val topic_terms = topic_dist.map(x => x._2.toArray)
@@ -63,7 +63,7 @@ object TopicModellingParallelJob extends Logging {
       // takes a long time to calculate Coherence. Uncomment to enable // TODO make configurable
       // val (cs, avg_cs) = Coherence.computeCoherence(textrdd, topic_terms, topT)
       // output_results(topic_dist, nzMap, theta, phi, date, iterN, m, alpha, eta, duration, outdir, cs.toArray, avg_cs)         // n.b. outputing coherence scores as well
-      TopicModellingJobUtil.outputResults(topic_dist, nzMap, theta, phi, date, iterN, m, alpha, eta, duration, outdir)
+      TopicModellingUtil.outputResults(topic_dist, nzMap, theta, phi, date, iterN, m, alpha, eta, duration, outdir)
     }
   }
 
@@ -96,5 +96,6 @@ object TopicModellingParallelJob extends Logging {
       params.weighted,
       params.tfidf_bcst
     )
+    sparkContext.stop()
   }
 }

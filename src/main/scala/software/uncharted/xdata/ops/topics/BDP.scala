@@ -58,7 +58,7 @@ class BDP(kK: Int) extends Serializable {
   def estimateMCMC(biterms:Array[Biterm], iterN: Int, model: SampleRecorder, m: Int, alpha: Double, eta: Double): (Int, Double) = {
     val start = System.nanoTime
     Iterator.range(0, iterN).foreach { iteration =>
-      print(s"iteration: ${iteration + 1}\tk = ${k}")
+      print(s"iteration: ${iteration + 1}\tk = ${k}") // TODO implement togglable logging
       val bstart = System.nanoTime
       biterms.foreach { case b =>
         updateBiterm(b, model, m, alpha, eta)

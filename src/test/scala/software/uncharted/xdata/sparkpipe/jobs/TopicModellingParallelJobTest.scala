@@ -12,30 +12,28 @@
  */
 package software.uncharted.xdata.sparkpipe.jobs
 
-import java.io.File
-import org.apache.commons.io.FileUtils
 import org.scalatest.FunSpec
 
 // scalastyle:off multiple.string.literals
-class TopicModellingJobTest extends FunSpec {
+class TopicModellingParallelJobTest extends FunSpec {
 
   private val testOutputDir: String = "build/tmp/test_file_output/test_topic_modelling"
   private val suffix: String = "txt"
 
-  describe("TopicModellingJobTest") {
+  describe("TopicModellingParallelJobTest") {
     describe("#execute") {
-      ignore("should do topic modelling", FileIOTest) {
+      it("should do topic modelling", FileIOTest) {
         // When test are run from another project that includes this project, the current working directory is set such
         // that the data files referenced in tiling-file-io.conf can't be found.  To fix this we reset the CWD to the
         // xdata-pipeline-ops directory, and reset it afterwards.
         val oldDir = System.getProperty("user.dir")
         try {
-          val path = classOf[TopicModellingJobTest].getResource("/topic-modelling/topic-modelling.conf").toURI.getPath
+          val path = classOf[TopicModellingParallelJobTest].getResource("/topic-modelling/topic-modelling-parallel.conf").toURI.getPath
           // Run the test from path/to/xdata-pipeline-ops/
           val newDir = path.substring(0, path.indexOf("xdata-pipeline-ops") + 18)
           System.setProperty("user.dir", newDir)
 
-          TopicModellingJob.main(Array(path))
+          TopicModellingParallelJob.main(Array(path))
 
           val files = JobTestUtils.collectFiles(testOutputDir, suffix)
           val expected = Set(

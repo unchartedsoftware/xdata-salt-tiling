@@ -18,7 +18,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.broadcast.Broadcast
 import software.uncharted.xdata.ops.topics.{BDP, BTMUtil, WordDict}
-import software.uncharted.xdata.sparkpipe.jobs.util.TopicModellingJobUtil
+import software.uncharted.xdata.sparkpipe.jobs.util.TopicModellingUtil
 import software.uncharted.xdata.ops.topics.Coherence
 import software.uncharted.xdata.sparkpipe.config.{SparkConfig, TopicModellingConfigParser, TopicModellingParams}
 
@@ -57,7 +57,7 @@ object TopicModellingJob extends Logging {
 
       val topic_terms = topic_dist.map(x => x._2.toArray)
       val (cs, avg_cs) = Coherence.computeCoherence(textrdd, topic_terms, topT)
-      TopicModellingJobUtil.outputResults(topic_dist, nzMap, theta, phi, date, iterN, m, alpha, eta, duration, outdir, cs.toArray, avg_cs)
+      TopicModellingUtil.outputResults(topic_dist, nzMap, theta, phi, date, iterN, m, alpha, eta, duration, outdir, cs.toArray, avg_cs)
     }
   }
 
@@ -84,5 +84,6 @@ object TopicModellingJob extends Logging {
       params.weighted,
       params.tfidf_bcst
     )
+    sparkContext.stop()
   }
 }

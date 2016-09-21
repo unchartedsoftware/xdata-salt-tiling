@@ -21,19 +21,20 @@ import software.uncharted.xdata.ops.topics.BTMUtil
 /**
   * Functions for executing topic modelling jobs
   */
-object TopicModellingJobUtil {
+object TopicModellingUtil {
 
   /**
     * TODO
+ *
     * @param parts
     */
-  def castResults(parts: Array[Array[Any]]) = {
+  def castResults(parts: Array[Array[Any]]) : Array[(String, Array[(Double, Seq[String])], Array[Double], Array[Double], Map[Int,Int], Int, Double)] = {
     parts.map { p =>
       val date = p(0).toString
       val topic_dist = p(1).asInstanceOf[Array[(Double, Seq[String])]]
       val theta = p(2).asInstanceOf[Array[Double]]
       val phi = p(3).asInstanceOf[Array[Double]]
-      val nzMap = p(4).asInstanceOf[scala.collection.mutable.HashMap[Int, Int]].toMap
+      val nzMap = p(4).asInstanceOf[collection.immutable.Map[Int,Int]]
       val m = p(5).asInstanceOf[Int]
       val duration = p(6).asInstanceOf[Double]
       (date, topic_dist, theta, phi, nzMap, m, duration)
@@ -46,7 +47,7 @@ object TopicModellingJobUtil {
     * @param tp a Row of topics
     *
     */
-  def find_labels(tp: Seq[String]): Seq[String] = {
+  def findLabels(tp: Seq[String]): Seq[String] = {
     val hashtags = tp.filter(_.startsWith("#")).take(3)
     val terms = tp.filterNot(_.startsWith("#")).take(3)
     val labels = if (hashtags.size >= 3) hashtags else hashtags ++ terms take (3)
@@ -71,10 +72,10 @@ object TopicModellingJobUtil {
     cs: Array[Double] = Array(Double.NaN), // TODO Option
     avg_cs: Double = Double.NaN // TODO Option
   ) = {
-    println(s"Writing results to directory ${outdir}")
+    println(s"Writing results to directory ${outdir}") // TODO make sure directory exists. Error otherwise
 //    val k = topic_dist.size // commented out because it was overridden by klen (which used to be 'k')
     val labeled_topic_dist = topic_dist.map{ // append 'labels' to each row
-      case (theta, tpcs) => (theta, find_labels(tpcs), tpcs)
+      case (theta, tpcs) => (theta, findLabels(tpcs), tpcs)
     }
     val dur = "%.4f".format(duration)
     val outfile = outdir + s"topics_${date}.txt"
@@ -104,11 +105,11 @@ object TopicModellingJobUtil {
     sc : SparkContext,
     path: String,
     dates: Array[String],
-    caIdx: Int = 0,
+    caIdx: Int = 0, // TODO remove DEfaults
     idIdx: Int = 1,
     textIdx: Int = 2
   ) = {
-    sc.textFile(path) // TODO inject sparkcontext
+    sc.textFile(path)
       .map(_.split("\t"))
       .filter(x => x.length > textIdx)
       .filter(x => dates contains x(caIdx))
@@ -150,17 +151,17 @@ object TopicModellingJobUtil {
     * @param textIdx text index
     * @return an rdd of the source data
     */
-    def loadDates(
-      sc : SparkContext,
-      path: String,
-      dates: List[String],
-      caIdx: Int,
-      idIdx: Int,
-      textIdx: Int
-    ) = {
-      sc.textFile(path)
-        .map(_.split("\t"))
-        .filter(x => x.length > textIdx)
-        .filter(x => dates contains x(caIdx))
-    }
+  def loadDates(
+    sc : SparkContext,
+    path: String,
+    dates: List[String],
+    caIdx: Int,
+    idIdx: Int,
+    textIdx: Int
+  ) = {
+    sc.textFile(path)
+      .map(_.split("\t"))
+      .filter(x => x.length > textIdx)
+      .filter(x => dates contains x(caIdx))
+  }
 }

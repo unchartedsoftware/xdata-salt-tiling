@@ -17,7 +17,7 @@ import grizzled.slf4j.Logging
 import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast
 import software.uncharted.xdata.ops.topics.{TFIDF, WordDict}
-import software.uncharted.xdata.sparkpipe.jobs.util.TopicModellingJobUtil
+import software.uncharted.xdata.sparkpipe.jobs.util.TopicModellingUtil
 
 case class TopicModellingParams (
   rdd: org.apache.spark.rdd.RDD[Array[String]],
@@ -42,7 +42,7 @@ object TopicModellingConfigParser extends Logging {
       val caIdx = loadConfig.getInt("createdAtIndex")
       val idIdx = loadConfig.getInt("twitterIdIndex")
       val textIdx = loadConfig.getInt("textIndex")
-      val rdd = TopicModellingJobUtil.loadTweets(sc, hdfspath, dates, caIdx, idIdx, textIdx)
+      val rdd = TopicModellingUtil.loadTweets(sc, hdfspath, dates, caIdx, idIdx, textIdx)
 
       val topicsConfig = config.getConfig("topics")
       val iterN = topicsConfig.getInt("iterN")
