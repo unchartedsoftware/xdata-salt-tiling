@@ -122,7 +122,6 @@ object BasicSaltOperations {
       (minX, minY, maxX + rangeX * epsilon, maxY + rangeY * epsilon)
     }
 
-    val getLevel: ((Int, Int, Int)) => Int = tileIndex => tileIndex._1
     val tileAggregation: Option[Aggregator[Double, Double, Double]] = None
 
     CartesianSegmentOp(
@@ -137,8 +136,6 @@ object BasicSaltOperations {
       bounds,
       (levels.min, levels.max),
       tileSize
-    )(
-      new TileLevelRequest[(Int, Int, Int)](levels, getLevel)
     )(input)
   }
 }

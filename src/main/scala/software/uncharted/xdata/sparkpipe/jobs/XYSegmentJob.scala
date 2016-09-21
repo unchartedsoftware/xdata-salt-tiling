@@ -74,13 +74,13 @@ object XYSegmentJob extends Logging {
 
       // Pipe the dataframe
       // TODO figure out all the correct stages
-//      Pipe(df)
-//         .to(_.select(segmentConfig.x1Col, segmentConfig.y1Col, segmentConfig.x2Col))
-//         .to(_.cache())
-//         .to(segmentOperation)
-//         .to(serializeBinArray)
-//         .to(outputOperation)
-//         .run()
+      Pipe(df)
+         .to(_.select(segmentConfig.x1Col, segmentConfig.y1Col, segmentConfig.x2Col, segmentConfig.y2Col))
+         .to(_.cache())
+         .to(segmentOperation)
+         .to(serializeBinArray)
+         .to(outputOperation)
+         .run()
 
       // Create and save extra level metadata - the tile x,y,z dimensions in this case
       // Can we make writeMetadata take only one config?

@@ -36,7 +36,8 @@ object CartesianSegmentOp {
                             valueCol: Option[String],
                             xyBounds: (Double, Double, Double, Double),
                             zBounds: (Int, Int),
-                            tileSize: Int)(request: TileRequest[(Int, Int, Int)])(input: DataFrame): RDD[SeriesData[(Int, Int, Int), (Int, Int), Double, (Double, Double)]] = {
+                            tileSize: Int)
+                           (input: DataFrame): RDD[SeriesData[(Int, Int, Int), (Int, Int), Double, (Double, Double)]] = {
 
     // TODO This is a copy from CartesianTimeHeatmap. Is it what we need?
     val valueExtractor: (Row) => Option[Double] = valueCol match {
