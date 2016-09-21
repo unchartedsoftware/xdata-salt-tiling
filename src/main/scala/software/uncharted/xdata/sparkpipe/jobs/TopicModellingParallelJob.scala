@@ -96,6 +96,8 @@ object TopicModellingParallelJob extends Logging {
       params.weighted,
       params.tfidf_bcst
     )
+    System.clearProperty("spark.driver.port")
+    System.clearProperty("spark.hostPort")
     sparkContext.stop()
   }
 }

@@ -58,6 +58,7 @@ object TopicModellingJob extends Logging {
       val topic_terms = topic_dist.map(x => x._2.toArray)
       val (cs, avg_cs) = Coherence.computeCoherence(textrdd, topic_terms, topT)
       TopicModellingUtil.outputResults(topic_dist, nzMap, theta, phi, date, iterN, m, alpha, eta, duration, outdir, cs.toArray, avg_cs)
+
     }
   }
 
@@ -84,6 +85,8 @@ object TopicModellingJob extends Logging {
       params.weighted,
       params.tfidf_bcst
     )
+    System.clearProperty("spark.driver.port")
+    System.clearProperty("spark.hostPort")
     sparkContext.stop()
   }
 }
