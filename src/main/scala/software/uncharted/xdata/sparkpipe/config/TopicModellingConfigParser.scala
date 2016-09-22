@@ -17,21 +17,26 @@ import grizzled.slf4j.Logging
 import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast
 import software.uncharted.xdata.ops.topics.{TFIDF, WordDict}
-import software.uncharted.xdata.sparkpipe.jobs.util.TopicModellingUtil
 
 case class TopicModellingParams (
-  rdd: org.apache.spark.rdd.RDD[Array[String]],
   dates: Array[String],
   stopwords_bcst: Broadcast[Set[String]],
   iterN: Int,
   k: Int,
   alpha: Double,
-  eta: Double ,
+  eta: Double,
   outdir: String,
   weighted: Boolean,
-  tfidf_bcst: Option[Broadcast[Array[(String, String, Double)]]]
+  tfidf_bcst: Option[Broadcast[Array[(String, String, Double)]]],
+  hdfspath : String, // either break off into seperate or nested config. depend if read function is generic or topics specific
+  caIdx : Int,
+  idIdx : Int,
+  textIdx : Int
 )
 
+/**
+  * Parse the config object into arguments for the topic modelling pipeline operations
+  */
 object TopicModellingConfigParser extends Logging {
   def parse(config: Config, sc: SparkContext): TopicModellingParams = {
     try {
@@ -42,13 +47,12 @@ object TopicModellingConfigParser extends Logging {
       val caIdx = loadConfig.getInt("createdAtIndex")
       val idIdx = loadConfig.getInt("twitterIdIndex")
       val textIdx = loadConfig.getInt("textIndex")
-      val rdd = TopicModellingUtil.loadTweets(sc, hdfspath, dates, caIdx, idIdx, textIdx)
 
       val topicsConfig = config.getConfig("topics")
-      val iterN = topicsConfig.getInt("iterN")
-      val alpha = 1 / Math.E // topicsConfig.getDouble("alpha")
-      val eta = topicsConfig.getDouble("eta")
-      val k = topicsConfig.getInt("k")
+      val iterN = if (topicsConfig.hasPath("iterN")) topicsConfig.getInt("iterN") else 150
+      val alpha = 1 / Math.E // topicsConfig.getDouble("alpha") // Interpreted by ConfigFactory as String, not Double
+      val eta = if (topicsConfig.hasPath("eta")) topicsConfig.getDouble("eta") else 0.01
+      val k = if (topicsConfig.hasPath("k")) topicsConfig.getInt("k") else 2
       val outdir = topicsConfig.getString("outdir")
 
       // LM INPUT DATA
@@ -63,7 +67,7 @@ object TopicModellingConfigParser extends Logging {
         Some(sc.broadcast(tfidf_array))
       } else { None }
 
-      TopicModellingParams(rdd, dates, stopwords_bcst, iterN, k, alpha, eta, outdir, weighted, tfidf_bcst)
+      TopicModellingParams(dates, stopwords_bcst, iterN, k, alpha, eta, outdir, weighted, tfidf_bcst, hdfspath, caIdx, idIdx, textIdx)
 
     } catch {
       case e: ConfigException =>

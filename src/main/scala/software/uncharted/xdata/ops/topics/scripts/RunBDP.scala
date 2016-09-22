@@ -1,6 +1,6 @@
 //// spark-shell --master yarn-client  --executor-cores 4  --num-executors 3  --executor-memory 5G  --driver-memory 3g --conf spark.kryoserializer.buffer=256 --conf spark.kryoserializer.buffer.max=512 --jars /home/chagerman/target/btm-1.0-SNAPSHOT.jar
 //
-//
+//  TODO Remove these scripts
 //import java.io._
 //
 //import org.apache.spark.rdd.RDD

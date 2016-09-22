@@ -10,19 +10,91 @@
  * accordance with the terms of the license agreement you entered into
  * with Uncharted Software Inc.
  */
-package software.uncharted.xdata.sparkpipe.jobs.util
+package software.uncharted.xdata.ops.topics
 
 import java.io.{File, PrintWriter}
+import java.text.SimpleDateFormat
+import java.util.Calendar
+
 import grizzled.slf4j.Logging
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
-import software.uncharted.xdata.ops.topics.BTMUtil
 
 // scalastyle:off public.methods.have.type parameter.number
 /**
   * Functions for executing topic modelling jobs
   */
 object TopicModellingUtil extends Logging {
+
+
+    /**
+      * Topic Modelling
+      * TODO diff between this and loadTweets?
+      * Load a sample of tweets I previously preprocessed for experiments. Schema => (YMD, id, text)
+      */
+    def loadCleanTweets(
+      sc : SparkContext,
+      path: String,
+      dates: Array[String],
+      caIdx: Int,
+      idIdx: Int,
+      textIdx: Int
+    ) = {
+      sc.textFile(path)
+        .map(_.split("\t"))
+        .filter(x => x.length > textIdx)
+        .filter(x => dates contains x(caIdx))
+    }
+
+    /**
+      * Reads an RDD of tweets from the given source (tab seperated) data
+      *
+      * @param path path to data in hdfs
+      * @param dates array of dates to run this job on
+      * @param caIdx created_at index
+      * @param idIdx twitter_id index
+      * @param textIdx text index
+      * @return an rdd of the source data
+      */
+    def loadTweets(
+      sc : SparkContext,
+      path: String,
+      dates: Array[String],
+      caIdx: Int,
+      idIdx: Int,
+      textIdx: Int
+    ) : RDD[Array[String]] = {
+      sc.textFile(path)
+        .map(_.split("\t"))
+        .filter(x => x.length > textIdx)
+        .map(x => Array(x(caIdx), x(idIdx), x(textIdx) ))
+        .map{ case Array(d, i, t) => Array(BTMUtil.ca2ymd(d), i, t) }
+        .filter{ case Array( d, i, t) => dates contains d }
+    }
+
+    /**
+      * Reads an RDD of dates from the given source (tab seperated) data
+      *
+      * @param path path to data in hdfs
+      * @param dates array of dates to run this job on
+      * @param caIdx created_at index
+      * @param idIdx twitter_id index
+      * @param textIdx text index
+      * @return an rdd of the source data
+      */
+    def loadDates(
+      sc : SparkContext,
+      path: String,
+      dates: List[String],
+      caIdx: Int,
+      idIdx: Int,
+      textIdx: Int
+    ) = {
+      sc.textFile(path)
+        .map(_.split("\t"))
+        .filter(x => x.length > textIdx)
+        .filter(x => dates contains x(caIdx))
+    }
 
   /**
     * TODO
@@ -59,7 +131,7 @@ object TopicModellingUtil extends Logging {
   /**
   * Refactored version on output_results TODO
   */
-  def outputResults(
+  def writeResultsToFile(
     topic_dist: Array[(Double, Seq[String])],
     nzMap: scala.collection.immutable.Map[Int, Int],
     theta: Array[Double],
@@ -79,8 +151,12 @@ object TopicModellingUtil extends Logging {
     val labeled_topic_dist = topic_dist.map{ // append 'labels' to each row
       case (theta, tpcs) => (theta, findLabels(tpcs), tpcs)
     }
+    val now = Calendar.getInstance().getTime()
+    val minuteFormat = new SimpleDateFormat("mm")
+    val currentMinuteAsString = minuteFormat.format(now)
+
     val dur = "%.4f".format(duration)
-    val outfile = outdir + s"topics_${date}.txt"
+    val outfile = outdir + s"topics_${date}.txt" // TODO add current timestamp
     val out = new PrintWriter(new File(outfile))
     val klen = labeled_topic_dist.length
     out.println(s"# Date: $date\talpha: $alpha\tbeta: $beta\titerN: $iterN\tM: $m\tK: $klen")
@@ -96,74 +172,5 @@ object TopicModellingUtil extends Logging {
       out.println
     }
     out.close
-  }
-
-  /**
-    * Topic Modelling
-    * TODO diff between this and loadTweets?
-    * Load a sample of tweets I previously preprocessed for experiments. Schema => (YMD, id, text)
-    */
-  def loadCleanTweets(
-    sc : SparkContext,
-    path: String,
-    dates: Array[String],
-    caIdx: Int = 0, // TODO remove DEfaults
-    idIdx: Int = 1,
-    textIdx: Int = 2
-  ) = {
-    sc.textFile(path)
-      .map(_.split("\t"))
-      .filter(x => x.length > textIdx)
-      .filter(x => dates contains x(caIdx))
-  }
-
-  /**
-    * Reads an RDD of tweets from the given source (tab seperated) data
-    *
-    * @param path path to data in hdfs
-    * @param dates array of dates to run this job on
-    * @param caIdx created_at index
-    * @param idIdx twitter_id index
-    * @param textIdx text index
-    * @return an rdd of the source data
-    */
-  def loadTweets(
-    sc : SparkContext,
-    path: String,
-    dates: Array[String],
-    caIdx: Int = 0,
-    idIdx: Int = 1,
-    textIdx: Int = 2
-  ) : RDD[Array[String]] = {
-    sc.textFile(path)
-      .map(_.split("\t"))
-      .filter(x => x.length > textIdx)
-      .map(x => Array(x(caIdx), x(idIdx), x(textIdx) ))
-      .map{ case Array(d, i, t) => Array(BTMUtil.ca2ymd(d), i, t) }
-      .filter{ case Array( d, i, t) => dates contains d }
-  }
-
-  /**
-    * Reads an RDD of dates from the given source (tab seperated) data
-    *
-    * @param path path to data in hdfs
-    * @param dates array of dates to run this job on
-    * @param caIdx created_at index
-    * @param idIdx twitter_id index
-    * @param textIdx text index
-    * @return an rdd of the source data
-    */
-  def loadDates(
-    sc : SparkContext,
-    path: String,
-    dates: List[String],
-    caIdx: Int,
-    idIdx: Int,
-    textIdx: Int
-  ) = {
-    sc.textFile(path)
-      .map(_.split("\t"))
-      .filter(x => x.length > textIdx)
-      .filter(x => dates contains x(caIdx))
   }
 }

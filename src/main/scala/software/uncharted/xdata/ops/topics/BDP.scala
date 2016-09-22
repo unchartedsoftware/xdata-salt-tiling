@@ -35,14 +35,7 @@ import grizzled.slf4j.Logging
   *         if nz(z) == 0 (i.e. if there are no samples assigned to topic z) remove the topic (table), remove from sample recorders
   *         returns K, theta, phi (standard BTM returns theta, phi)
   **/
-class BDP(kK: Int) extends Serializable with Logging {
-  def setLoggingLevel(ch.qos.logback.classic.Level level) {
-    ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
-    root.setLevel(level);
-  }
-  setLoggingLevel(ch.qos.logback.classic.Level.DEBUG)
-  println(logger.isInfoEnabled)
-  
+class BDP(kK: Int) extends Serializable with Logging { // TODO enable logging
   var k = kK
   var tfidf_dict: scala.collection.immutable.Map[Int,Double] = scala.collection.immutable.Map[Int,Double]()
 
@@ -65,7 +58,8 @@ class BDP(kK: Int) extends Serializable with Logging {
   def estimateMCMC(biterms:Array[Biterm], iterN: Int, model: SampleRecorder, m: Int, alpha: Double, eta: Double): (Int, Double) = {
     val start = System.nanoTime
     Iterator.range(0, iterN).foreach { iteration =>
-      info(s"iteration: ${iteration + 1}\tk = ${k}")
+      // info(s"iteration: ${iteration + 1}\tk = ${k}")
+      println(s"iteration: ${iteration + 1}\tk = ${k}") // TODO XXX Debugging, Remove
       val bstart = System.nanoTime
       biterms.foreach { case b =>
         updateBiterm(b, model, m, alpha, eta)

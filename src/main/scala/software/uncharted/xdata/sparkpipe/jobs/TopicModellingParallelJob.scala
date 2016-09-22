@@ -15,10 +15,8 @@ package software.uncharted.xdata.sparkpipe.jobs
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
 import org.apache.spark.SparkContext
-import org.apache.spark.broadcast.Broadcast
-import software.uncharted.xdata.sparkpipe.jobs.util.TopicModellingUtil
-import org.apache.spark.rdd.RDD
-import software.uncharted.xdata.ops.topics.{BDPParallel, DatePartitioner}
+import software.uncharted.sparkpipe.Pipe
+import software.uncharted.xdata.ops.topics.TopicModelling
 import software.uncharted.xdata.sparkpipe.config.{SparkConfig, TopicModellingConfigParser, TopicModellingParams}
 
 // scalastyle:off method.length parameter.number
@@ -30,42 +28,6 @@ object TopicModellingParallelJob extends Logging {
   val bdp = RunBDPParallel(sc)
   val rdd = bdp.loadTSVTweets(path, dates, 1, 0, 6)
    */
-
-  //  TODO remove run alltogether? just have main. but nice to have param list here foor documentation
-  def run(
-           rdd: RDD[Array[String]],
-           dates: Array[String],
-           stopwords_bcst: Broadcast[Set[String]],
-           iterN: Int,
-           k: Int,
-           alpha: Double,
-           eta: Double,
-           outdir: String,
-           weighted: Boolean = false,
-           tfidf_bcst: Option[Broadcast[Array[(String, String, Double)]]] = None
-         ) : Unit = {
-    // group records by date
-    val kvrdd = BDPParallel.keyvalueRDD(rdd)
-    // partition data by date
-
-    val partitions = kvrdd.partitionBy(new DatePartitioner(dates))
-    // run BTM on each partition
-    val parts = partitions.mapPartitions { iter => BDPParallel.partitionBDP(iter, stopwords_bcst, iterN, k, alpha, eta, weighted, tfidf_bcst) }.collect
-
-    // Compute Coherence Scores for each of the topic distibutions
-    // define number of top words to use to compute coherence score
-    val topT = 10
-    val cparts = TopicModellingUtil.castResults(parts)
-    cparts.foreach { cp =>
-      val (date, topic_dist, theta, phi, nzMap, m, duration) = cp
-      val topic_terms = topic_dist.map(x => x._2.toArray)
-      val textrdd = rdd.filter(x => x(0) == date).map(x => x(2))
-      // takes a long time to calculate Coherence. Uncomment to enable // TODO make configurable
-      // val (cs, avg_cs) = Coherence.computeCoherence(textrdd, topic_terms, topT)
-      // output_results(topic_dist, nzMap, theta, phi, date, iterN, m, alpha, eta, duration, outdir, cs.toArray, avg_cs)         // n.b. outputing coherence scores as well
-      TopicModellingUtil.outputResults(topic_dist, nzMap, theta, phi, date, iterN, m, alpha, eta, duration, outdir)
-    }
-  }
 
   /**
     * Entrypoint
@@ -84,8 +46,7 @@ object TopicModellingParallelJob extends Logging {
     val sparkContext: SparkContext = SparkConfig(config).sparkContext
     val params: TopicModellingParams = TopicModellingConfigParser.parse(config, sparkContext)
 
-    run(
-      params.rdd,
+    val topicModellingOp = TopicModelling.learnTopicsParallel(
       params.dates,
       params.stopwords_bcst,
       params.iterN,
@@ -94,10 +55,28 @@ object TopicModellingParallelJob extends Logging {
       params.eta,
       params.outdir,
       params.weighted,
-      params.tfidf_bcst
-    )
-    System.clearProperty("spark.driver.port")
-    System.clearProperty("spark.hostPort")
-    sparkContext.stop()
+      params.tfidf_bcst,
+      params.hdfspath, // TODO rename to path
+      params.caIdx,
+      params.idIdx,
+      params.textIdx
+    )(_)
+
+    try {
+      // Create the dataframe from the input config
+//      val df = params.rdd.toDF
+//      val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc)
+
+      // Pipe the dataframe
+      Pipe(sparkContext).to(topicModellingOp).run()
+
+      // create and save extra level metadata - the tile x,y,z dimensions in this case
+      // writeMetadata(config, tilingConfig, heatmapConfig)
+
+    } finally {
+      System.clearProperty("spark.driver.port")
+      System.clearProperty("spark.hostPort")
+      sparkContext.stop()
+    }
   }
 }
