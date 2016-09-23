@@ -12,13 +12,20 @@
  */
 package software.uncharted.xdata.sparkpipe.jobs
 
+import java.io.PrintWriter
+
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
+import org.apache.spark.rdd.RDD
+import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.sparkpipe.Pipe
-import software.uncharted.xdata.ops.salt.{CartesianSegmentOp}
-import software.uncharted.xdata.sparkpipe.config.{Schema, SparkConfig, TilingConfig, XYSegmentConfig}
+import software.uncharted.xdata.ops.salt.CartesianSegmentOp
+import software.uncharted.xdata.sparkpipe.config._
 import software.uncharted.xdata.ops.io.serializeBinArray
 import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOperation, createTileOutputOperation, dataframeFromSparkCsv}
+
+import scala.util.parsing.json.JSONObject
+
 
 // scalastyle:off method.length
 object XYSegmentJob extends Logging {
@@ -60,7 +67,7 @@ object XYSegmentJob extends Logging {
         segmentConfig.y2Col,
         None,
         segmentConfig.xyBounds,
-        segmentConfig.zBounds,
+        tilingConfig.levels,
         segmentConfig.tileSize)(_)
       case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
     }
@@ -75,38 +82,43 @@ object XYSegmentJob extends Logging {
       // Pipe the dataframe
       // TODO figure out all the correct stages
       Pipe(df)
-         .to(_.select(segmentConfig.x1Col, segmentConfig.y1Col, segmentConfig.x2Col, segmentConfig.y2Col))
-         .to(_.cache())
-         .to(segmentOperation)
-         .to(serializeBinArray)
-         .to(outputOperation)
-         .run()
-
-      // Create and save extra level metadata - the tile x,y,z dimensions in this case
-      // Can we make writeMetadata take only one config?
-      writeMetadata(config, tilingConfig, segmentConfig)
+        .to(_.select(segmentConfig.x1Col, segmentConfig.y1Col, segmentConfig.x2Col, segmentConfig.y2Col))
+        .to(_.cache())
+        .to(segmentOperation)
+        .to(writeMetadata(config))
+        .to(serializeBinArray)
+        .to(outputOperation)
+        .run()
 
     } finally {
       sqlc.sparkContext.stop()
     }
   }
 
-  private def writeMetadata(baseConfig: Config, tilingConfig: TilingConfig, segmentConfig: XYSegmentConfig): Unit = {
-    import net.liftweb.json.JsonDSL._ // scalastyle:ignore
-    import net.liftweb.json.JsonAST._ // scalastyle:ignore
+  private def writeMetadata[TC, BC, X](baseConfig: Config)(tiles: RDD[SeriesData[TC, BC, Double, X]]):RDD[SeriesData[TC, BC, Double, X]] = {
+    val metadata = tiles
+      .map(tile => (tile.coords.asInstanceOf[Tuple3[Int, Int, Int]]._1.toString, tile.tileMeta))
+      .mapValues(tileMeta => {
+        tileMeta match {
+          case Some(minMax) => (minMax.asInstanceOf[Tuple2[Double, Double]]._1, minMax.asInstanceOf[Tuple2[Double, Double]]._2)
+          case None => (0.0, 0.0)
+        }
+      })
+      .mapValues(minMax =>
+        JSONObject(Map(
+          "min" -> minMax._1,
+          "max" -> minMax._2
+        ))
+      )
+      .collect()
+      .toMap
 
-    // TODO: Verify these is the metadata we want
-    val binCount = tilingConfig.bins.getOrElse(CartesianSegmentOp.defaultTileSize)
-    val levelMetadata =
-      ("bins" -> binCount) ~
-      ("range" ->
-          (("x1" -> segmentConfig.x1Col) ~
-          ("y1" -> segmentConfig.y1Col) ~
-          ("x2" -> segmentConfig.x2Col) ~
-          ("y2" -> segmentConfig.y2Col)))
-
-    val jsonBytes = compactRender(levelMetadata).getBytes.toSeq
-    createMetadataOutputOperation(baseConfig).foreach(_("metadata.json", jsonBytes))
+    var metadataJSON = JSONObject(metadata).toString()
+    val outputPath = baseConfig.getConfig("fileOutput").getString("dest") + "/" + baseConfig.getConfig("fileOutput").getString("layer")
+    val pw = new PrintWriter(s"$outputPath/meta.json")
+    pw.write(metadataJSON)
+    pw.close()
+    tiles
   }
 
   def main (args: Array[String]): Unit = {

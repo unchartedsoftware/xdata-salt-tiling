@@ -26,7 +26,7 @@ object CartesianSegmentOp {
 
   val defaultTileSize = 256
 
-  def apply[T, U, V, W, X] (arcType: ArcTypes.Value,        // scalastyle:ignore
+  def apply[T, U, V, W, X] (arcType: ArcTypes.Value, // scalastyle:ignore
                             minSegLen: Option[Int],
                             maxSegLen: Option[Int],
                             x1Col: String,
@@ -35,7 +35,7 @@ object CartesianSegmentOp {
                             y2Col: String,
                             valueCol: Option[String],
                             xyBounds: (Double, Double, Double, Double),
-                            zBounds: (Int, Int),
+                            zoomLevels: Seq[Int],
                             tileSize: Int)
                            (input: DataFrame): RDD[SeriesData[(Int, Int, Int), (Int, Int), Double, (Double, Double)]] = {
 
@@ -59,7 +59,6 @@ object CartesianSegmentOp {
         Try((row.getDouble(x1Pos), row.getDouble(y1Pos), row.getDouble(x2Pos), row.getDouble(y2Pos))).toOption
 
     // Figure out our projection
-    val zoomLevels = zBounds._1 to zBounds._2
     val minBounds = (xyBounds._1, xyBounds._2)
     val maxBounds = (xyBounds._3, xyBounds._4)
     val leaderLineLength = 1024

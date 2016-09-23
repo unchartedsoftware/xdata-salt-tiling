@@ -26,7 +26,6 @@ case class XYSegmentConfig(arcType: ArcTypes.Value,
                            x2Col: String,
                            y2Col: String,
                            xyBounds: (Double, Double, Double, Double),
-                           zBounds: (Int, Int),
                            tileSize: Int)
 
 object XYSegmentConfig extends Logging {
@@ -40,7 +39,6 @@ object XYSegmentConfig extends Logging {
   val x2ColKey = "x2Column"
   val y2ColKey = "y2Column"
   val xyBoundsKey = "xyBounds"
-  val zBoundsKey = "zBounds"
   val tileSizeKey = "tileSize"
 
   def apply(config: Config): Option[XYSegmentConfig] = {
@@ -53,7 +51,6 @@ object XYSegmentConfig extends Logging {
         case "leaderarc" => ArcTypes.LeaderArc
       }
       val xyBounds = segmentConfig.getDoubleList(xyBoundsKey).toArray(Array(Double.box(0.0)))
-      var zBounds = segmentConfig.getIntList(zBoundsKey).toArray(Array(Int.box(0)))
       Some(XYSegmentConfig(
         arcType,
         if (segmentConfig.hasPath(projectionKey)) Some(segmentConfig.getString(projectionKey)) else None,
@@ -64,7 +61,6 @@ object XYSegmentConfig extends Logging {
         segmentConfig.getString(x2ColKey),
         segmentConfig.getString(y2ColKey),
         (xyBounds(0), xyBounds(1), xyBounds(2), xyBounds(3)),
-        (zBounds(0), zBounds(1)),
         segmentConfig.getInt(tileSizeKey)
       ))
     } catch {
