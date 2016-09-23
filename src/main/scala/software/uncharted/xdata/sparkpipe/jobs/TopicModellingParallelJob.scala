@@ -15,6 +15,7 @@ package software.uncharted.xdata.sparkpipe.jobs
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
 import org.apache.spark.SparkContext
+import org.apache.spark.sql.SQLContext
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.xdata.ops.topics.TopicModelling
 import software.uncharted.xdata.sparkpipe.config.{SparkConfig, TopicModellingConfigParser, TopicModellingParams}
@@ -43,11 +44,20 @@ object TopicModellingParallelJob extends Logging {
 
     // load properties file from supplied URI
     val config: Config = ConfigFactory.parseReader(scala.io.Source.fromFile(args(0)).bufferedReader()).resolve()
-    val sparkContext: SparkContext = SparkConfig(config).sparkContext
+    val sqlContext: SQLContext = SparkConfig(config)
+    val sparkContext: SparkContext = sqlContext.sparkContext
     val params: TopicModellingParams = TopicModellingConfigParser.parse(config, sparkContext)
 
+    // Parse Errors?
+    val reader = sqlContext.read
+    .format("com.databricks.spark.csv")
+    .option("header", "true")
+    .option("inferSchema", "true")
+    .option("delimiter", "\t")
+
     val topicModellingOp = TopicModelling.learnTopicsParallel(
-      params.dates,
+      params.startDate,
+      params.endDate,
       params.stopwords_bcst,
       params.iterN,
       params.k,
@@ -66,9 +76,9 @@ object TopicModellingParallelJob extends Logging {
       // Create the dataframe from the input config
 //      val df = params.rdd.toDF
 //      val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc)
-
       // Pipe the dataframe
-      Pipe(sparkContext).to(topicModellingOp).run()
+      Pipe(reader.load(params.hdfspath))
+        .to(topicModellingOp).run()
 
       // create and save extra level metadata - the tile x,y,z dimensions in this case
       // writeMetadata(config, tilingConfig, heatmapConfig)

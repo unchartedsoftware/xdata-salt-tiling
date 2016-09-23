@@ -111,13 +111,6 @@ object BTMUtil extends Serializable with Logging {
     Array.tabulate(words.length)(i => (words(i) -> i) ).toMap
   }
 
-//  // ToDo: delete this function - change all references to use createWordDictFromWordcount below
-//  def loadSavedWordDict(path: String, stopwords: Set[String]) = {
-//    val words = Source.fromFile(path).getLines.map(_.split("\t")).map(x => x(0)).filter(w => !(stopwords contains w)).toArray
-//    val dict: Map[String, Int] = Array.tabulate(words.length)(i => (words(i) -> i) ).toMap
-//    (words, dict)
-//  }
-
   def createWordDictFromWordcount(path: String, stopwords: Set[String], minCount: Int = 1) = {
     // val wordcounts = Source.fromFile(wcpath).getLines.map(_.split("\t")).map(x => (x(0), x(1))).toMap
     val word_counts = Source.fromFile(path).getLines.map(_.split("\t")).toArray.map(x => (x(0), x(1).toInt))
@@ -419,6 +412,7 @@ object BTMUtil extends Serializable with Logging {
   import java.util.Date
   import java.util.TimeZone
 
+// TODO, this op is expensive because of 'new'. Depricate
   def getDateObj(tstamp: String) = {
     val tz = TimeZone.getTimeZone("GMT")
     val inFmt = new SimpleDateFormat("EEE MMM dd HH:mm:ss Z yyyy")
@@ -427,6 +421,7 @@ object BTMUtil extends Serializable with Logging {
     parsed
   }
 
+  // TODO, this op is expensive because of 'new'. Depricate
   /*  Convert a Twitter 'created_at' timestamp into year-month-date format
       Receive: Fri Jan 02 19:05:00 +0000 2015
       Return: String = 2015-01-02
@@ -440,6 +435,25 @@ object BTMUtil extends Serializable with Logging {
     ymd
   }
 
+  /**
+    * Convert an input string of format `inFormat` to format `outFormat`
+    */
+  def dateParser(inFormat: SimpleDateFormat, outFormat: SimpleDateFormat)(input_date: String) : String = {
+    outFormat.format(inFormat.parse(input_date))
+  }
+
+  /**
+    *
+    */
+  def makeTwitterDateParser() : String => String = {
+    val inFmt = new SimpleDateFormat("EEE MMM dd HH:mm:ss Z yyyy")
+    val outFmt = new SimpleDateFormat("yyyy-MM-dd")
+    val tz = TimeZone.getTimeZone("GMT")
+    inFmt.setTimeZone(tz)
+    outFmt.setTimeZone(tz)
+    dateParser(inFmt, outFmt) _
+  }
+
   /*
       Example: Receive:    Fri Jan 02 19:05:00 +0000 2015
                Return:     java.util.Date = Fri Jan 02 00:00:00 EST 2015
@@ -451,5 +465,3 @@ object BTMUtil extends Serializable with Logging {
   }
 
 }
-
-

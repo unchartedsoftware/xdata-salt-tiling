@@ -19,7 +19,8 @@ import org.apache.spark.broadcast.Broadcast
 import software.uncharted.xdata.ops.topics.{TFIDF, WordDict}
 
 case class TopicModellingParams (
-  dates: Array[String],
+  startDate: String,
+  endDate: String,
   stopwords_bcst: Broadcast[Set[String]],
   iterN: Int,
   k: Int,
@@ -43,12 +44,13 @@ object TopicModellingConfigParser extends Logging {
       // Load Data
       val loadConfig = config.getConfig("load") // XXX Split into two config option? one for loadTweets, one fo loadDates?
       val hdfspath = loadConfig.getString("hdfspath") // TODO rename path - is not specific to hdfs
-      val dates = loadConfig.getStringList("dates").toArray[String](Array()) // FIXME avoid cast. typesafe have a fix?
       val caIdx = loadConfig.getInt("createdAtIndex")
       val idIdx = loadConfig.getInt("twitterIdIndex")
       val textIdx = loadConfig.getInt("textIndex")
 
       val topicsConfig = config.getConfig("topics")
+      val startDate = topicsConfig.getString("startDate")
+      val endDate = topicsConfig.getString("endDate")
       val iterN = if (topicsConfig.hasPath("iterN")) topicsConfig.getInt("iterN") else 150
       val alpha = 1 / Math.E // topicsConfig.getDouble("alpha") // Interpreted by ConfigFactory as String, not Double
       val eta = if (topicsConfig.hasPath("eta")) topicsConfig.getDouble("eta") else 0.01
@@ -63,11 +65,11 @@ object TopicModellingConfigParser extends Logging {
       val tfidf_path = if (config.hasPath("tfidf_path")) config.getString("tfidf_path") else ""
       val weighted = if (tfidf_path != "") true else false
       val tfidf_bcst = if (weighted) {
-        val tfidf_array = TFIDF.loadTfidf(tfidf_path, dates)
+        val tfidf_array = TFIDF.loadTfidf(tfidf_path, Array("2016-09-01")) // TODO parse start-end date into array of dates
         Some(sc.broadcast(tfidf_array))
       } else { None }
 
-      TopicModellingParams(dates, stopwords_bcst, iterN, k, alpha, eta, outdir, weighted, tfidf_bcst, hdfspath, caIdx, idIdx, textIdx)
+      TopicModellingParams(startDate, endDate, stopwords_bcst, iterN, k, alpha, eta, outdir, weighted, tfidf_bcst, hdfspath, caIdx, idIdx, textIdx)
 
     } catch {
       case e: ConfigException =>
