@@ -20,7 +20,7 @@ import org.scalatest.FunSpec
 
 class XYSegmentJobTest extends FunSpec {
 
-  private val testOutputDir: String = "build/tmp/test_file_output/test_heatmap"
+  private val testOutputDir: String = "build/tmp/test_file_output/segment"
   private val suffix: String = "bin"
 
   describe("XYSegmentJobTest") {
