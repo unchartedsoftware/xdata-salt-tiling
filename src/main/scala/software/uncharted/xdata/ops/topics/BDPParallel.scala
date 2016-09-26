@@ -29,6 +29,7 @@ object BDPParallel extends Serializable {
   /**
     * Main Topic Modeling Function
     */
+  // scalastyle:off parameter.number
   //def partitionBDP(iterator: Iterator[(String, (String, String))],
   // stpbroad: Broadcast[scala.collection.immutable.Set[String]], iterN: Int, k:Int, alpha: Double
   // , eta: Double, weighted: Boolean = false, tfidf_path: String = "") = {
@@ -42,18 +43,14 @@ object BDPParallel extends Serializable {
     weighted: Boolean = false,
     textCol: String,
     tfidf_bcst: Option[Broadcast[Array[(String, String, Double)]]] = None
-  ) : Iterator[Array[Any]] = {
+  ) : Iterator[Option[Array[Any]]] = {
     if (iterator.isEmpty) {
-      println("Empty partition. Revisit your partitioning mechanism to correct this skew error")
-      List(Array("str".asInstanceOf[Any])).iterator // TODO Option
+      println("Empty partition. Revisit your partitioning mechanism to correct this skew warning")
+      Iterator(None)
     } else {
       val datetexts = iterator.toSeq.map(x => (x(x.fieldIndex("_ymd_date")), x(x.fieldIndex(textCol))))
-      println(iterator.isEmpty)
-      println(datetexts)
-      // val date = datetexts.map(x => x._1).toSet.toArray.head.asInstanceOf[String]
-      val date : String = datetexts.head._1.asInstanceOf[String]
+      val date = datetexts.head._1.asInstanceOf[String]
       println(date)
-      // val texts = datetexts.map(x => x._2) // all tweets
       val texts : Array[String] = datetexts.map(x => x._2.asInstanceOf[String]).distinct.toArray // no retweets
 
       val stopwords = stpbroad.value
@@ -69,8 +66,7 @@ object BDPParallel extends Serializable {
       //    if (weighted) bdp.initTfidf(tfidf_path, date, word_dict)
       //    if (weighted) bdp.initTfidf(tfidf_bcst.get, date, word_dict) // TODO weighted is redundant? // XXX should only check if tfidf_brcst is Some()
       val (topic_dist, theta, phi, nzMap, duration) = bdp.fit(biterms, words, iterN, k, alpha, eta, weighted)
-      List(Array(date, topic_dist, theta, phi, nzMap, m, duration)).iterator
-      // TODO interator.next?
+      Iterator(Some(Array(date, topic_dist, theta, phi, nzMap, m, duration)))
     }
   }
 
