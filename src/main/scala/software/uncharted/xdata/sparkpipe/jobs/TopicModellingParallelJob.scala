@@ -67,9 +67,9 @@ object TopicModellingParallelJob extends Logging {
       params.weighted,
       params.tfidf_bcst,
       params.hdfspath, // TODO rename to path
-      params.caIdx,
-      params.idIdx,
-      params.textIdx
+      params.dateCol,
+      params.idCol,
+      params.textCol
     )(_)
 
     try {

@@ -19,6 +19,9 @@ import java.util.Calendar
 import grizzled.slf4j.Logging
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
+//import org.joda.time.Days
+//import org.joda.time.DateTime
+//import org.joda.time.Period
 
 // scalastyle:off public.methods.have.type parameter.number
 /**
@@ -26,7 +29,32 @@ import org.apache.spark.rdd.RDD
   */
 object TopicModellingUtil extends Logging {
 
+  /**
+    * Create a sequence of dates between the given endpoints with one day intervals
+    *
+    * @param from The date to start the range from
+    * @param to The date to end the range on
+    * @return A seqence of dates (of the format yyyy-MM-dd) between the given endpoints with one day intervals
+    */
+//  def dateRange(from: Date, to: Date): Seq[String] = {
+//    val s = Iterator.iterate(new DateTime(from))(_.plus(new Period().withDays(1))).takeWhile(!_.isAfter(new DateTime(to))).toSeq
+//    s.map(datetime => datetime.toString.slice(0, 10))
+//  }
 
+  /**
+  * Create a sequence of dates between the given endpoints with one day intervals
+  *
+  * @param from The date to start the range from (yyyy-MM-dd)
+  * @param to The date to end the range on (yyyy-MM-dd)
+  * @return A seqence of dates (of the format yyyy-MM-dd) between the given endpoints with one day intervals
+  */
+//  def dateRange(from: String, to: String): Seq[String] = {
+//    val format = new SimpleDateFormat("yyyy-MM-dd") // if we add the ymd date cal first we dont need the formatter TODO can use other signature of this function
+//    dateRange(format.parse(from), format.parse(to))
+//  }
+
+
+// XXX Depricated. replaced by learnTopicsParallel
     /**
       * Topic Modelling
       * TODO diff between this and loadTweets?
@@ -45,7 +73,7 @@ object TopicModellingUtil extends Logging {
         .filter(x => x.length > textIdx)
         .filter(x => dates contains x(caIdx))
     }
-
+// XXX Depricated. replaced by learnTopicsParallel
     /**
       * Reads an RDD of tweets from the given source (tab seperated) data
       *
@@ -103,6 +131,7 @@ object TopicModellingUtil extends Logging {
     */
   def castResults(parts: Array[Array[Any]]) : Array[(String, Array[(Double, Seq[String])], Array[Double], Array[Double], Map[Int,Int], Int, Double)] = {
     parts.map { p =>
+      // TODO handle empty partitions. when p.length == 0
       val date = p(0).toString
       val topic_dist = p(1).asInstanceOf[Array[(Double, Seq[String])]]
       val theta = p(2).asInstanceOf[Array[Double]]

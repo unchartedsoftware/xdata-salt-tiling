@@ -40,31 +40,38 @@ object BDPParallel extends Serializable {
     alpha: Double,
     eta: Double,
     weighted: Boolean = false,
+    textCol: String,
     tfidf_bcst: Option[Broadcast[Array[(String, String, Double)]]] = None
   ) : Iterator[Array[Any]] = {
-    val datetexts = iterator.toSeq.map(x => (x(0), x(2)))
-    println(datetexts.isEmpty)
-    println(datetexts)
-    // val date = datetexts.map(x => x._1).toSet.toArray.head.asInstanceOf[String]
-    val date : String = datetexts.head._1.asInstanceOf[String]
+    if (iterator.isEmpty) {
+      println("Empty partition. Revisit your partitioning mechanism to correct this skew error")
+      List(Array("str".asInstanceOf[Any])).iterator // TODO Option
+    } else {
+      val datetexts = iterator.toSeq.map(x => (x(x.fieldIndex("_ymd_date")), x(x.fieldIndex(textCol))))
+      println(iterator.isEmpty)
+      println(datetexts)
+      // val date = datetexts.map(x => x._1).toSet.toArray.head.asInstanceOf[String]
+      val date : String = datetexts.head._1.asInstanceOf[String]
+      println(date)
+      // val texts = datetexts.map(x => x._2) // all tweets
+      val texts : Array[String] = datetexts.map(x => x._2.asInstanceOf[String]).distinct.toArray // no retweets
 
-    // val texts = datetexts.map(x => x._2) // all tweets
-    val texts : Array[String] = datetexts.map(x => x._2.asInstanceOf[String]).distinct.toArray // no retweets
+      val stopwords = stpbroad.value
+      val minCount = 0
+      val (word_dict, words) = WordDict.createWordDictLocal(texts, stopwords, minCount)
+      val m = words.length
 
-    val stopwords = stpbroad.value
-    val minCount = 0
-    val (word_dict, words) = WordDict.createWordDictLocal(texts, stopwords, minCount)
-    val m = words.length
+      val bdp = new BDP(k)
 
-    val bdp = new BDP(k)
+      val biterms0 = texts.map(text => BTMUtil.extractBitermsFromTextRandomK(text, word_dict, stopwords.toSet, k)).flatMap(x => x)
+      val biterms = biterms0.toArray
 
-    val biterms0 = texts.map(text => BTMUtil.extractBitermsFromTextRandomK(text, word_dict, stopwords.toSet, k)).flatMap(x => x)
-    val biterms = biterms0.toArray
-
-//    if (weighted) bdp.initTfidf(tfidf_path, date, word_dict)
-//    if (weighted) bdp.initTfidf(tfidf_bcst.get, date, word_dict) // TODO weighted is redundant? // XXX should only check if tfidf_brcst is Some()
-    val (topic_dist, theta, phi, nzMap, duration) = bdp.fit(biterms, words, iterN, k, alpha, eta, weighted)
-    List(Array(date, topic_dist, theta, phi, nzMap, m, duration)).iterator
+      //    if (weighted) bdp.initTfidf(tfidf_path, date, word_dict)
+      //    if (weighted) bdp.initTfidf(tfidf_bcst.get, date, word_dict) // TODO weighted is redundant? // XXX should only check if tfidf_brcst is Some()
+      val (topic_dist, theta, phi, nzMap, duration) = bdp.fit(biterms, words, iterN, k, alpha, eta, weighted)
+      List(Array(date, topic_dist, theta, phi, nzMap, m, duration)).iterator
+      // TODO interator.next?
+    }
   }
 
   def keyvalueRDD(rdd: RDD[Array[String]]) = {

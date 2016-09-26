@@ -29,10 +29,10 @@ case class TopicModellingParams (
   outdir: String,
   weighted: Boolean,
   tfidf_bcst: Option[Broadcast[Array[(String, String, Double)]]],
-  hdfspath : String, // either break off into seperate or nested config. depend if read function is generic or topics specific
-  caIdx : Int,
-  idIdx : Int,
-  textIdx : Int
+  hdfspath : String, // TODO done? either break off into seperate or nested config. depend if read function is generic or topics specific
+  dateCol : String,
+  idCol : String,
+  textCol : String
 )
 
 /**
@@ -44,9 +44,9 @@ object TopicModellingConfigParser extends Logging {
       // Load Data
       val loadConfig = config.getConfig("load") // XXX Split into two config option? one for loadTweets, one fo loadDates?
       val hdfspath = loadConfig.getString("hdfspath") // TODO rename path - is not specific to hdfs
-      val caIdx = loadConfig.getInt("createdAtIndex")
-      val idIdx = loadConfig.getInt("twitterIdIndex")
-      val textIdx = loadConfig.getInt("textIndex")
+      val dateCol = loadConfig.getString("dateColumn")
+      val idCol = loadConfig.getString("idColumn")
+      val textCol = loadConfig.getString("textColumn")
 
       val topicsConfig = config.getConfig("topics")
       val startDate = topicsConfig.getString("startDate")
@@ -69,7 +69,7 @@ object TopicModellingConfigParser extends Logging {
         Some(sc.broadcast(tfidf_array))
       } else { None }
 
-      TopicModellingParams(startDate, endDate, stopwords_bcst, iterN, k, alpha, eta, outdir, weighted, tfidf_bcst, hdfspath, caIdx, idIdx, textIdx)
+      TopicModellingParams(startDate, endDate, stopwords_bcst, iterN, k, alpha, eta, outdir, weighted, tfidf_bcst, hdfspath, dateCol, idCol, textCol)
 
     } catch {
       case e: ConfigException =>
