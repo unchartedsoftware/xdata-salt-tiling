@@ -146,7 +146,7 @@ object TopicModellingUtil extends Logging {
     cs: Array[Double] = Array(Double.NaN), // TODO Option
     avg_cs: Double = Double.NaN // TODO Option
   ) = {
-    info(s"Writing results to directory ${outdir}") // TODO make sure directory exists. Error otherwise
+    println(s"Writing results to directory ${outdir}") // TODO make sure directory exists. Error otherwise
 //    val k = topic_dist.size // commented out because it was overridden by klen (which used to be 'k')
     val labeled_topic_dist = topic_dist.map{ // append 'labels' to each row
       case (theta, tpcs) => (theta, findLabels(tpcs), tpcs)

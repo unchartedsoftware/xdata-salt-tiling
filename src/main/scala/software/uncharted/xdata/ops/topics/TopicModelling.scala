@@ -57,19 +57,22 @@ object TopicModelling{
     // filter date
     val format = new SimpleDateFormat("yyyy-MM-dd") // if we add the ymd date cal first we dont need the formatter TODO can use other signature of this function
     val input3 = dateFilter(format.parse(startDate), format.parse(endDate), "EEE MMM dd HH:mm:ss Z yyyy", "date")(input2) // if we hardcore date col name, we'll need a schema
+    // TODO Alternative: rdd.filter(x => dates contains x(caIdx))
 
     // add formatted date col
     val datePsr = BTMUtil.makeTwitterDateParser()
     val input4 = addColumn("_ymd_date", (value: String) => {datePsr(value)}, "date")(input3) // dont know date col name TODO
-//    TODO does this get added in the 4th position? Should we swap it with 1st? to be used in the modelling? What did Craig pass in?
+    //    TODO does this get added in the 4th position? Should we swap it with 1st? to be used in the modelling? What did Craig pass in?
 
-    // println(input4.count)
-    // println(input4.explain)
+    println(input4.count)
+     println(input4.explain)
     // partition by date
-    // val input5 = input4.repartition(new Column("_ymd_date"))
+    val input5 = input4.repartition(new Column("_ymd_date"))
 
-    // println(input5.count)
-    // println(input5.explain)
+    println(input5.count)
+    println(input5.groupBy("_ymd_date").count.show)
+
+     println(input5.explain)
     // input5.take(1).foreach(println)
 
     // group records by date

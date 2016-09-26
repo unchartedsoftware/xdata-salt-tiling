@@ -42,12 +42,11 @@ object BDPParallel extends Serializable {
     weighted: Boolean = false,
     tfidf_bcst: Option[Broadcast[Array[(String, String, Double)]]] = None
   ) : Iterator[Array[Any]] = {
-    // val datetexts = iterator.toSeq.map(x => (x._1, x._2._2)) // from when iterator was an rdd
     val datetexts = iterator.toSeq.map(x => (x(0), x(2)))
     println(datetexts.isEmpty)
     println(datetexts)
     // val date = datetexts.map(x => x._1).toSet.toArray.head.asInstanceOf[String]
-    val date = datetexts.head._1
+    val date : String = datetexts.head._1.asInstanceOf[String]
 
     // val texts = datetexts.map(x => x._2) // all tweets
     val texts : Array[String] = datetexts.map(x => x._2.asInstanceOf[String]).distinct.toArray // no retweets
