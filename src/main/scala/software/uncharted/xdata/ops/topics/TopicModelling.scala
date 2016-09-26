@@ -84,7 +84,8 @@ object TopicModelling{
 //      val textrdd = input.filter(x => x(0) == date).map(x => x(2))
       // takes a long time to calculate Coherence. Uncomment to enable // TODO make configurable
       // val (cs, avg_cs) = Coherence.computeCoherence(textrdd, topic_terms, topT)
-      // output_results(topic_dist, nzMap, theta, phi, date, iterN, m, alpha, eta, duration, outdir, cs.toArray, avg_cs)         // n.b. outputing coherence scores as well
+      // output_results(topic_dist, nzMap, theta, phi, date, iterN, m, alpha, eta, duration, outdir, cs.toArray, avg_cs)         // n.b. outputing coherence scores as well // API change cs and avgcs are now options TODO
+      //  TODO write output to different format? as a dataframe?
       TopicModellingUtil.writeResultsToFile(topic_dist, nzMap, theta, phi, date, iterN, m, alpha, eta, duration, outdir)
     }
   }

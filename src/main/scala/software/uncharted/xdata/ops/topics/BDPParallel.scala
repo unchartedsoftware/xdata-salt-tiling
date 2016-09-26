@@ -61,7 +61,7 @@ object BDPParallel extends Serializable {
       val bdp = new BDP(k)
 
       val biterms0 = texts.map(text => BTMUtil.extractBitermsFromTextRandomK(text, word_dict, stopwords.toSet, k)).flatMap(x => x)
-      val biterms = biterms0.toArray
+      val biterms = biterms0
 
       //    if (weighted) bdp.initTfidf(tfidf_path, date, word_dict)
       //    if (weighted) bdp.initTfidf(tfidf_bcst.get, date, word_dict) // TODO weighted is redundant? // XXX should only check if tfidf_brcst is Some()

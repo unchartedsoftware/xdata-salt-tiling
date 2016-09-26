@@ -53,85 +53,13 @@ object TopicModellingUtil extends Logging {
 //    dateRange(format.parse(from), format.parse(to))
 //  }
 
-
-// XXX Depricated. replaced by learnTopicsParallel
-    /**
-      * Topic Modelling
-      * TODO diff between this and loadTweets?
-      * Load a sample of tweets I previously preprocessed for experiments. Schema => (YMD, id, text)
-      */
-    def loadCleanTweets(
-      sc : SparkContext,
-      path: String,
-      dates: Array[String],
-      caIdx: Int,
-      idIdx: Int,
-      textIdx: Int
-    ) = {
-      sc.textFile(path)
-        .map(_.split("\t"))
-        .filter(x => x.length > textIdx)
-        .filter(x => dates contains x(caIdx))
-    }
-// XXX Depricated. replaced by learnTopicsParallel
-    /**
-      * Reads an RDD of tweets from the given source (tab seperated) data
-      *
-      * @param path path to data in hdfs
-      * @param dates array of dates to run this job on
-      * @param caIdx created_at index
-      * @param idIdx twitter_id index
-      * @param textIdx text index
-      * @return an rdd of the source data
-      */
-    def loadTweets(
-      sc : SparkContext,
-      path: String,
-      dates: Array[String],
-      caIdx: Int,
-      idIdx: Int,
-      textIdx: Int
-    ) : RDD[Array[String]] = {
-      sc.textFile(path)
-        .map(_.split("\t"))
-        .filter(x => x.length > textIdx)
-        .map(x => Array(x(caIdx), x(idIdx), x(textIdx) ))
-        .map{ case Array(d, i, t) => Array(BTMUtil.ca2ymd(d), i, t) }
-        .filter{ case Array( d, i, t) => dates contains d }
-    }
-
-    /**
-      * Reads an RDD of dates from the given source (tab seperated) data
-      *
-      * @param path path to data in hdfs
-      * @param dates array of dates to run this job on
-      * @param caIdx created_at index
-      * @param idIdx twitter_id index
-      * @param textIdx text index
-      * @return an rdd of the source data
-      */
-    def loadDates(
-      sc : SparkContext,
-      path: String,
-      dates: List[String],
-      caIdx: Int,
-      idIdx: Int,
-      textIdx: Int
-    ) = {
-      sc.textFile(path)
-        .map(_.split("\t"))
-        .filter(x => x.length > textIdx)
-        .filter(x => dates contains x(caIdx))
-    }
-
   /**
-    * TODO
- *
-    * @param parts
+    * Cast the results of BDP operation and cast them into their appropriate types
+    *
+    * @param parts An array of results, one for each partition/date the operation was run on
     */
   def castResults(parts: Array[Array[Any]]) : Array[(String, Array[(Double, Seq[String])], Array[Double], Array[Double], Map[Int,Int], Int, Double)] = {
     parts.map { p =>
-      // TODO handle empty partitions. when p.length == 0
       val date = p(0).toString
       val topic_dist = p(1).asInstanceOf[Array[(Double, Seq[String])]]
       val theta = p(2).asInstanceOf[Array[Double]]
@@ -156,7 +84,6 @@ object TopicModellingUtil extends Logging {
     labels
   }
 
-//  TODO write output to different format?
   /**
   * Refactored version on output_results TODO
   */
@@ -172,26 +99,25 @@ object TopicModellingUtil extends Logging {
     beta: Double,
     duration: Double,
     outdir: String,
-    cs: Array[Double] = Array(Double.NaN), // TODO Option
-    avg_cs: Double = Double.NaN // TODO Option
+    cs: Option[Array[Double]] = None,
+    avg_cs: Option[Double] = None
   ) = {
-    println(s"Writing results to directory ${outdir}") // TODO make sure directory exists. Error otherwise
+    println(s"Writing results to directory $outdir") // TODO make sure directory exists. Error otherwise
 //    val k = topic_dist.size // commented out because it was overridden by klen (which used to be 'k')
     val labeled_topic_dist = topic_dist.map{ // append 'labels' to each row
       case (theta, tpcs) => (theta, findLabels(tpcs), tpcs)
     }
-    val now = Calendar.getInstance().getTime()
+    val now = Calendar.getInstance().getTime
     val minuteFormat = new SimpleDateFormat("mm")
-    val currentMinuteAsString = minuteFormat.format(now)
 
     val dur = "%.4f".format(duration)
-    val outfile = outdir + s"topics_${date}.txt" // TODO add current timestamp
+    val outfile = outdir + s"topics_$date.txt"
     val out = new PrintWriter(new File(outfile))
     val klen = labeled_topic_dist.length
     out.println(s"# Date: $date\talpha: $alpha\tbeta: $beta\titerN: $iterN\tM: $m\tK: $klen")
     out.println(s"# Running time:\t$dur min.")
-    out.println(s"Average Coherence Score: $avg_cs")
-    out.println(s"Coherence scores: " + cs.mkString(", "))
+    out.println(s"Average Coherence Score: " + avg_cs.getOrElse("N/A"))
+    out.println(s"Coherence scores: " + cs.getOrElse(Array()).mkString(", "))
     out.println("#" + "-" * 80)
     out.println("#Z\tCount\tp(z)\t\t\tTop terms descending")
     out.println("#" + "-" * 80)
@@ -200,6 +126,6 @@ object TopicModellingUtil extends Logging {
     } foreach {
       out.println
     }
-    out.close
+    out.close()
   }
 }

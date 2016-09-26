@@ -180,7 +180,7 @@ class BDP(kK: Int) extends Serializable with Logging { // TODO enable logging
     info("Calculating phi, theta...")
     val (theta, phi) = estimate_theta_phi(SR, n_biterms, m, newK, alpha, eta )
     info("Calculating topic distribution...")
-    val topic_dist = BTMUtil.report_topics(theta, phi, words, m, newK, topT)     // take top words for a topic (default is top 100 words)
+    val topic_dist = BTMUtil.reportTopics(theta, phi, words, m, newK, topT)     // take top words for a topic (default is top 100 words)
     val nzMap = SR.getNzMap.toMap[Int, Int]
     (topic_dist, theta, phi, nzMap, duration)
   }
