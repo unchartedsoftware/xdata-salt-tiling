@@ -1,5 +1,6 @@
-# Original Research Notes.
-##### May be out of date since porting to pipeline op
+# Twitter Topic Modelling
+This operation is an implementation of the xdata [topic modelling](https://stash.uncharted.software/projects/XDATA/repos/topic-modelling/browse) project. Below are the notes associated with that project (which may be out of date since porting to pipeline op):
+## Original Research Notes:
 
 This project represents just the latest in a series of variations and extensions of Biterm Topic Models (Yan et al. 2013)
 Variations implemented here include:
@@ -27,13 +28,13 @@ BDP input:
     iterN: Int, k: Int, alpha: Double, eta: Double
 
 
-## (SEMI) FIXED PARAMETERS
+#### (SEMI) FIXED PARAMETERS
 val alpha = 1 / Math.E
 val eta = 0.01
 var k = 2
 
 
-## INPUT PARAMETERS
+#### INPUT PARAMETERS
 iterN:	the number of iterations of MCMC sampling to run
 	- the given/default (150) is fine (empirically derived)
 
@@ -47,7 +48,7 @@ Path to Twitter data on HDFS
 		(2) clean & normalize text
 
 
-## OTHER PARAMETERS
+#### OTHER PARAMETERS
 val lang = "en"
 	- this actually isn't used in the example script
 	- this allows you to possibly filter the input data by language
@@ -62,7 +63,7 @@ TFIDF scores
 	- A separate stage would have to compute TFIDF scores for a given corpus
 
 
-## OUTPUTTING RESULTS
+#### OUTPUTTING RESULTS
 topic_dist
 	For annotating data you need to output the top N terms from topic_dist for
 	each topic cluster.
@@ -70,8 +71,7 @@ topic_dist
 (I write the results to a _local_ file for my own convenience.)
 
 
-# n.b.
-------
+#### N.B.
 theta:	global topic distribution
 phi:	topic-word distribution
 	- these are the parameters learned by MCMC inference.

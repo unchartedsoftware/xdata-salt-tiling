@@ -16,7 +16,7 @@ import com.typesafe.config.{Config, ConfigException}
 import grizzled.slf4j.Logging
 import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast
-import software.uncharted.xdata.ops.topics.{TFIDF, WordDict, TopicModellingUtil}
+import software.uncharted.xdata.ops.topics.util.{TFIDF, TopicModellingUtil, WordDict}
 
 case class TopicModellingParams (
   startDate: String,
@@ -67,7 +67,7 @@ object TopicModellingConfigParser extends Logging {
 
       val tfidf_path = if (config.hasPath("tfidf_path")) config.getString("tfidf_path") else ""
       val tfidf_bcst = if (!tfidf_path.isEmpty) {
-        val tfidf_array = TFIDF.loadTfidf(tfidf_path, TopicModellingUtil.dateRange(startDateStr, endDateStr)) // TODO parse start-end date into array of dates
+        val tfidf_array = TFIDF.loadTfidf(tfidf_path, TopicModellingUtil.dateRange(startDate, endDate)) // TODO parse start-end date into array of dates
         Some(sc.broadcast(tfidf_array))
       } else {
         None

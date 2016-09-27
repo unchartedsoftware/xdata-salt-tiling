@@ -12,21 +12,21 @@
   */
 package software.uncharted.xdata.ops.topics
 
-import org.joda.time.{DateTime, Period, Days}
-import org.apache.spark.SparkContext
+import org.joda.time.{DateTime, Days, Period}
 import software.uncharted.sparkpipe.Pipe
 import org.apache.spark.broadcast.Broadcast
 import software.uncharted.sparkpipe.ops.core.dataframe.addColumn
 import software.uncharted.sparkpipe.ops.core.dataframe.temporal.dateFilter
-import org.apache.spark.sql.{Column, DataFrame, Row}
+import org.apache.spark.sql.{Column, DataFrame}
+import software.uncharted.xdata.ops.topics.util.{BDPParallel, BTMUtil, TopicModellingUtil}
 
 /**
   * TODO rename file package.scala?
   */
-object TopicModelling{
+package object topicModelling{
   // scalastyle:off parameter.number method.length
   // TODO combine learnTopics and learnTopicsParallel into one op and have parallel be a boolean parameter that you can turn on and off
-  def learnTopicsParallel(
+  def doTopicModelling(
     startDateStr: String,
     endDateStr: String,
     stopwords_bcst: Broadcast[Set[String]],
@@ -47,7 +47,7 @@ object TopicModelling{
   ) : DataFrame = {
 
     val datePsr = BTMUtil.makeTwitterDateParser()
-    var numPartitions : Int = org.joda.time.Days.daysBetween(new DateTime(startDateStr).toLocalDate(), new DateTime(endDateStr).toLocalDate()).getDays()
+    var numPartitions : Int = Days.daysBetween(new DateTime(startDateStr).toLocalDate(), new DateTime(endDateStr).toLocalDate()).getDays()
     if (numPartitions.equals(2)) numPartitions += 1 // For some reason one partition is empty when partitioning a date range of length 2. Add a 3rd
 
     val data = Pipe(input)

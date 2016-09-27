@@ -11,11 +11,11 @@
   * with Uncharted Software Inc.
   */
 
-package software.uncharted.xdata.ops.topics
+package software.uncharted.xdata.ops.topics.util
 
-import scala.io.Source
-import org.apache.spark.rdd.RDD
 import grizzled.slf4j.Logging
+import org.apache.spark.rdd.RDD
+import scala.io.Source
 
 /**
   * A library of functions to manipulate text files
@@ -41,16 +41,6 @@ object WordDict extends Serializable with Logging {
     (word_dict, words)
   }
 
-  def computeWordCount(
-    rdd: RDD[String],
-    minCount: Int = 5
-  ) : Array[(String,Int)]= {
-    // extract text only, clean text of punctuation & lowercase
-    val cleanRdd = rdd.map(x => TextUtil.cleanText(x) ).cache
-    // find out which words we REALLY need in the word_dict (to make it smaller)
-    cleanRdd.map(x => x.split("\\s+")).flatMap(x => x).map(x => (x, 1)).reduceByKey(_ + _).collect.filter(x => x._2 > minCount)
-  }
-
   def computeWordCountLocal(
     arr: Array[String],
     minCount: Int = 5
@@ -63,7 +53,7 @@ object WordDict extends Serializable with Logging {
   }
 
   /**
-    * Read in the stopwords
+    * Read in the stopwords (words to be ignored)
     *
     * @param swfiles The list of stopword files
     * @return A set of all stopwords
@@ -72,24 +62,20 @@ object WordDict extends Serializable with Logging {
     swfiles.flatMap(path => Source.fromFile(path).getLines).toSet
   }
 
-  def createWordDict(
-    rdd: RDD[String],
-    stopwords: Set[String],
-    minCount: Int
-  ) : (Map[String, Int], Array[String]) = {
-    val wc = computeWordCount(rdd, minCount)
-    println(s"wc contains ${wc.size} words")
-    println("computing word dictionary...")
-    wordcount2WordDict(wc, stopwords, minCount)
-  }
-
+  /**
+    * Create a dictionary/map of words and their counts
+    * @param arr source of words to aggregate
+    * @param stopwords Words to ignore
+    * @param minCount The theshold number of occurances of a word to be permitted in the final dictionary
+    * @return
+    */
   def createWordDictLocal(
     arr: Array[String],
     stopwords: Set[String],
     minCount: Int
   ) : (Map[String, Int], Array[String]) = {
     val wc = computeWordCountLocal(arr, minCount)
-    println(s"wc contains ${wc.size} words")
+    println(s"wc contains ${wc.length} words")
     println("computing word dictionary...")
     wordcount2WordDict(wc, stopwords, minCount)
   }

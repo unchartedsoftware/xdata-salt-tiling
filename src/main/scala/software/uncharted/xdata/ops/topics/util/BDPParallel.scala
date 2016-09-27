@@ -11,12 +11,13 @@
   * with Uncharted Software Inc.
   */
 
-package software.uncharted.xdata.ops.topics
+package software.uncharted.xdata.ops.topics.util
 
-import org.apache.spark.rdd.RDD
 import java.io.Serializable
+
 import org.apache.spark.broadcast.Broadcast
-import org.apache.spark.sql.{Row}
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.Row
 
 /**
   * Difference between BDP_parallel and BDP:

@@ -11,13 +11,8 @@
   * with Uncharted Software Inc.
   */
 
-package software.uncharted.xdata.ops.topics
+package software.uncharted.xdata.ops.topics.util
 
-
-// TODO:
-// Have to remove ALL punctuation, symbols EXCEPT for {#_-} - used in hashtags
-// Have to remove all {#_} which are NOT in hashtags? ... better hashtag detection?
-// Have to confirm that this all white space is being replaced with a single white space (i.e. including non-English white space)
 object TextUtil extends Serializable {
   private val mt = "@[\\w_]+\\b".r   // twitter user mentions
   private val url = "\\b(http[:\\.\\/\\w]+)\\b".r  // valid URLs
@@ -33,12 +28,11 @@ object TextUtil extends Serializable {
   private val dots = "[\\u00B7\\u2024\\u2219\\u25D8\\u25E6\\u30FB\\uFF65]".r  // elipsis
 
 
-  def cleanStopwords(text: String, stopwords: Set[String]) = {
-    val cleaned = cleanText(text).split("\\s+").filter(w => !(stopwords contains w))
-    cleaned.mkString(" ")
+  def cleanStopwords(text: String, stopwords: Set[String]) : String = {
+    cleanText(text).split("\\s+").filter(w => !(stopwords contains w)).mkString(" ")
   }
 
-  def cleanText(text: String) = {
+  def cleanText(text: String) : String = {
     val no_emoji = unicodeOutliers.replaceAllIn(text, " ")
     val norm_hashtags = "[\\#]+".r.replaceAllIn(no_emoji, "#")
     val no_nl = nl.replaceAllIn(norm_hashtags, " ")
@@ -57,7 +51,7 @@ object TextUtil extends Serializable {
   }
 
 
-  def prep(text: String) = {
+  def prep(text: String) : Seq[String] = {
     val cleaned = cleanText(text)
     cleaned.split("\\s+").toSeq
   }

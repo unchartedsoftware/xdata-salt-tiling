@@ -10,7 +10,7 @@
  * accordance with the terms of the license agreement you entered into
  * with Uncharted Software Inc.
  */
-package software.uncharted.xdata.ops.topics
+package software.uncharted.xdata.ops.topics.util
 
 import java.io.{File, PrintWriter}
 import java.text.SimpleDateFormat
@@ -18,7 +18,7 @@ import java.util.Calendar
 
 import grizzled.slf4j.Logging
 import org.apache.spark.sql.DataFrame
-import org.joda.time.{Days, DateTime, Period}
+import org.joda.time.{DateTime, Days, Period}
 import java.util.Date
 
 // scalastyle:off public.methods.have.type parameter.number
@@ -34,8 +34,8 @@ object TopicModellingUtil extends Logging {
     * @param to The date to end the range on
     * @return A seqence of dates (of the format yyyy-MM-dd) between the given endpoints with one day intervals
     */
- def dateRange(from: Date, to: Date): Seq[String] = {
-   val s = Iterator.iterate(new DateTime(from))(_.plus(new Period().withDays(1))).takeWhile(!_.isAfter(new DateTime(to))).toSeq
+ def dateRange(from: Date, to: Date): Array[String] = {
+   val s = Iterator.iterate(new DateTime(from))(_.plus(new Period().withDays(1))).takeWhile(!_.isAfter(new DateTime(to))).toArray
    s.map(datetime => datetime.toString.slice(0, 10))
  }
 
@@ -46,7 +46,7 @@ object TopicModellingUtil extends Logging {
   * @param to The date to end the range on (yyyy-MM-dd)
   * @return A seqence of dates (of the format yyyy-MM-dd) between the given endpoints with one day intervals
   */
- def dateRange(from: String, to: String): Seq[String] = {
+ def dateRange(from: String, to: String): Array[String] = {
    val format = new SimpleDateFormat("yyyy-MM-dd")
    dateRange(format.parse(from), format.parse(to))
  }
@@ -78,10 +78,23 @@ object TopicModellingUtil extends Logging {
   def findLabels(tp: Seq[String]): Seq[String] = {
     val hashtags = tp.filter(_.startsWith("#")).take(3)
     val terms = tp.filterNot(_.startsWith("#")).take(3)
-    val labels = if (hashtags.size >= 3) hashtags else hashtags ++ terms take (3)
+    val labels = if (hashtags.size >= 3) hashtags else hashtags ++ terms take 3
     labels
   }
 
+  /**
+    * Write the results of topic modelling to file. Writes one result file per day in the date range given as input
+    *
+    * @param cparts
+    * @param data
+    * @param textCol
+    * @param alpha
+    * @param beta
+    * @param outdir
+    * @param iterN
+    * @param computeCoherence
+    * @param numTopTopics
+    */
   def writeResultsToFile(
     cparts : Array[(String, Array[(Double, Seq[String])], Array[Double], Array[Double], Map[Int,Int], Int, Double)],
     data: DataFrame,
@@ -92,7 +105,7 @@ object TopicModellingUtil extends Logging {
     iterN : Int,
     computeCoherence : Boolean,
     numTopTopics : Int
-  ) = {
+  ) : Unit = {
     cparts.foreach { cp =>
       val (date, topic_dist, theta, phi, nzMap, m, duration) = cp
       var cs : Option[Array[Double]] = None

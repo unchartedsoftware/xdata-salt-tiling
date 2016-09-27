@@ -11,7 +11,7 @@
   * with Uncharted Software Inc.
   */
 
-package software.uncharted.xdata.ops.topics
+package software.uncharted.xdata.ops.topics.util
 
 import grizzled.slf4j.Logging
 import scala.util.Random
