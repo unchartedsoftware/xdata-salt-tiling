@@ -34,9 +34,6 @@ object BTMUtil extends Serializable with Logging {
                         .filter(x => x > -1)                                // ignore out-of-vocabulary words           // ToDo: should handled OOV words - save & output a list with counts?
   }
 
-  // =============================  load data  ====================================================================
-
-
   def getBiterms(d:Array[Int]):Iterator[(Int, Int)] = {
     d.toSeq.combinations(2).map { case Seq(w1, w2) =>
       if (w1 < w2) (w1, w2) else (w2, w1)
@@ -50,8 +47,6 @@ object BTMUtil extends Serializable with Logging {
     b.map(x => Biterm(x, Random.nextInt(k))).toSeq
   }
 
-
-  // ===================  reports ====================================================================
   /**
     * Generate a report of the given topics
     *

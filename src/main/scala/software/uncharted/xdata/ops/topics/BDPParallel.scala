@@ -40,7 +40,6 @@ object BDPParallel extends Serializable {
     k:Int,
     alpha: Double,
     eta: Double,
-    weighted: Boolean = false,
     textCol: String,
     tfidf_bcst: Option[Broadcast[Array[(String, String, Double)]]] = None
   ) : Iterator[Option[Array[Any]]] = {
@@ -63,8 +62,12 @@ object BDPParallel extends Serializable {
       val biterms0 = texts.map(text => BTMUtil.extractBitermsFromTextRandomK(text, word_dict, stopwords.toSet, k)).flatMap(x => x)
       val biterms = biterms0
 
-      //    if (weighted) bdp.initTfidf(tfidf_path, date, word_dict)
-      //    if (weighted) bdp.initTfidf(tfidf_bcst.get, date, word_dict) // TODO weighted is redundant? // XXX should only check if tfidf_brcst is Some()
+      var weighted = false
+      if (tfidf_bcst.isDefined) {
+        bdp.initTfidf(tfidf_bcst.get, date, word_dict) // TODO weighted is redundant? // XXX should only check if tfidf_brcst is Some()
+        weighted = true
+      }
+
       val (topic_dist, theta, phi, nzMap, duration) = bdp.fit(biterms, words, iterN, k, alpha, eta, weighted)
       Iterator(Some(Array(date, topic_dist, theta, phi, nzMap, m, duration)))
     }

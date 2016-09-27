@@ -19,6 +19,7 @@ import java.util.Calendar
 import grizzled.slf4j.Logging
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.DataFrame
 //import org.joda.time.Days
 //import org.joda.time.DateTime
 //import org.joda.time.Period
@@ -84,48 +85,52 @@ object TopicModellingUtil extends Logging {
     labels
   }
 
-  /**
-  * Refactored version on output_results TODO
-  */
   def writeResultsToFile(
-    topic_dist: Array[(Double, Seq[String])],
-    nzMap: scala.collection.immutable.Map[Int, Int],
-    theta: Array[Double],
-    phi: Array[Double],
-    date: String = "---",
-    iterN: Int,
-    m: Int,
+    cparts : Array[(String, Array[(Double, Seq[String])], Array[Double], Array[Double], Map[Int,Int], Int, Double)],
+    data: DataFrame,
+    textCol : String,
     alpha: Double,
     beta: Double,
-    duration: Double,
     outdir: String,
-    cs: Option[Array[Double]] = None,
-    avg_cs: Option[Double] = None
+    iterN : Int,
+    computeCoherence : Boolean,
+    numTopTopics : Int
   ) = {
-    println(s"Writing results to directory $outdir") // TODO make sure directory exists. Error otherwise
-//    val k = topic_dist.size // commented out because it was overridden by klen (which used to be 'k')
-    val labeled_topic_dist = topic_dist.map{ // append 'labels' to each row
-      case (theta, tpcs) => (theta, findLabels(tpcs), tpcs)
-    }
-    val now = Calendar.getInstance().getTime
-    val minuteFormat = new SimpleDateFormat("mm")
+    cparts.foreach { cp =>
+      val (date, topic_dist, theta, phi, nzMap, m, duration) = cp
+      var cs : Option[Array[Double]] = None
+      var avg_cs : Option[Double] = None
+      if (computeCoherence) { // n.b. compute and output coherence scores
+        val topic_terms = topic_dist.map(x => x._2.toArray)
+        val textrdd = data.select(textCol).rdd.map(r => r(r.fieldIndex(textCol)).toString)
+        val (_cs, _avg_cs) = Coherence.computeCoherence(textrdd, topic_terms, numTopTopics)
+        cs = Some(_cs.toArray)
+        avg_cs = Some(_avg_cs)
+      }
 
-    val dur = "%.4f".format(duration)
-    val outfile = outdir + s"topics_$date.txt"
-    val out = new PrintWriter(new File(outfile))
-    val klen = labeled_topic_dist.length
-    out.println(s"# Date: $date\talpha: $alpha\tbeta: $beta\titerN: $iterN\tM: $m\tK: $klen")
-    out.println(s"# Running time:\t$dur min.")
-    out.println(s"Average Coherence Score: " + avg_cs.getOrElse("N/A"))
-    out.println(s"Coherence scores: " + cs.getOrElse(Array()).mkString(", "))
-    out.println("#" + "-" * 80)
-    out.println("#Z\tCount\tp(z)\t\t\tTop terms descending")
-    out.println("#" + "-" * 80)
-    labeled_topic_dist.zipWithIndex.map {
-      case (td, i) => i + "\t" + nzMap(i) + "\t" + td._1 + "\t" + td._2.mkString(", ") + "\t->\t" + td._3.take(20).mkString(", ")
-    } foreach {
-      out.println
+      println(s"Writing results to directory $outdir") // TODO make sure directory exists. Error otherwise
+      val labeled_topic_dist = topic_dist.map{ // append 'labels' to each row
+        case (theta, tpcs) => (theta, findLabels(tpcs), tpcs)
+      }
+      val now = Calendar.getInstance().getTime
+      val minuteFormat = new SimpleDateFormat("mm")
+      val dur = "%.4f".format(duration)
+      val outfile = outdir + s"topics_$date.txt"
+      val out = new PrintWriter(new File(outfile))
+      val klen = labeled_topic_dist.length
+      out.println(s"# Date: $date\talpha: $alpha\tbeta: $beta\titerN: $iterN\tM: $m\tK: $klen")
+      out.println(s"# Running time:\t$dur min.")
+      out.println(s"Average Coherence Score: " + avg_cs.getOrElse().toString)
+      out.println(s"Coherence scores: " + cs.getOrElse(Array()).mkString(", "))
+      out.println("#" + "-" * 80)
+      out.println("#Z\tCount\tp(z)\t\t\tTop terms descending")
+      out.println("#" + "-" * 80)
+      labeled_topic_dist.zipWithIndex.map {
+        case (td, i) => i + "\t" + nzMap(i) + "\t" + td._1 + "\t" + td._2.mkString(", ") + "\t->\t" + td._3.take(20).mkString(", ")
+      } foreach {
+        out.println
+      }
+      out.close()
     }
-    out.close()
   }
 }

@@ -53,19 +53,19 @@ class BDP(kK: Int) extends Serializable with Logging { // TODO enable logging
     tfidf_dict
   }
 
-
+//  markov monte carlo TODO add name somewhere
   // ============================= MCMC sampling  ============================================
   def estimateMCMC(biterms:Array[Biterm], iterN: Int, model: SampleRecorder, m: Int, alpha: Double, eta: Double): (Int, Double) = {
     val start = System.nanoTime
     Iterator.range(0, iterN).foreach { iteration =>
       // info(s"iteration: ${iteration + 1}\tk = ${k}")
-      println(s"iteration: ${iteration + 1}\tk = ${k}") // TODO XXX Debugging, Remove
+      println(s"iteration: ${iteration + 1}\tk = $k") // TODO XXX Debugging, Remove
       val bstart = System.nanoTime
       biterms.foreach { case b =>
         updateBiterm(b, model, m, alpha, eta)
       }
       // removeEmptyClusters & defrag
-      k = model.defrag
+      k = model.defrag()
       val bend = System.nanoTime
       val runningtime = (bend - bstart) / 1E9
       info("\t time: %.3f sec.".format(runningtime))
@@ -84,7 +84,7 @@ class BDP(kK: Int) extends Serializable with Logging { // TODO enable logging
       info("\t+1\t")
       k = model.addCluster()
     }
-    if (z >= k) info(s"\n\n WHY IS Z > K ? \nz is ${z} and k is ${k}\n")
+    if (z >= k) info(s"\n\n WHY IS Z > K ? \nz is $z and k is $k\n")
     if (z > k) info("\n\n********\n z should not be greater than k !!!\n\n")
     setTopic(model, b, z)
   }
@@ -113,17 +113,17 @@ class BDP(kK: Int) extends Serializable with Logging { // TODO enable logging
     // calculate f(•), the density of Mult(z) created by CRP
     def density(z: Int) = {
       val numerator = (model.getNwz(z, w1) + eta) * (model.getNwz(z, w1) + eta)
-      val denominator = Math.pow( (2 * model.getNz(z) + m * eta), 2)
+      val denominator = Math.pow( 2 * model.getNz(z) + m * eta, 2)
       val d = numerator.toDouble / denominator.toDouble
       model.getNz(z) * d
     }
-    def density_new() = {
+    def densityNew() = {
       val numerator = ( 0 + eta) * ( 0 + eta)
-      val denominator = Math.pow( ( 0 + (m * eta) ), 2)
+      val denominator = Math.pow(  0 + (m * eta), 2)
       alpha * (numerator / denominator)
     }
     val pd_existing = Iterator.range(0, k).map{ z => density(z) }.toArray
-    val pd_new = density_new()
+    val pd_new = densityNew()
     val dist = pd_existing ++ Array(pd_new)
     val total = dist.sum
     val norm_dist = dist.map(_ * ( 100 / total / 100))
@@ -168,20 +168,19 @@ class BDP(kK: Int) extends Serializable with Logging { // TODO enable logging
   }
 
   def fit(biterms: Array[Biterm], words: Array[String], iterN: Int, k: Int, alpha: Double, eta: Double, weighted: Boolean = false, topT: Int = 100 ) = {
-    val m = words.size
-//    val weighted: Boolean = false
+    val m = words.length
     val SR = new SampleRecorder(m, k, weighted)
     if (weighted) { SR.setTfidf(tfidf_dict) }
     SR.initRecorders(biterms)
     val btmDp = new BDP(k)
     info("Running MCMC sampling...")
     val (newK, duration) = estimateMCMC(biterms, iterN, SR, m, alpha, eta)
-    val n_biterms = biterms.size
+    val n_biterms = biterms.length
     info("Calculating phi, theta...")
     val (theta, phi) = estimate_theta_phi(SR, n_biterms, m, newK, alpha, eta )
     info("Calculating topic distribution...")
     val topic_dist = BTMUtil.reportTopics(theta, phi, words, m, newK, topT)     // take top words for a topic (default is top 100 words)
-    val nzMap = SR.getNzMap.toMap[Int, Int]
+    val nzMap = SR.getNzMap().toMap[Int, Int]
     (topic_dist, theta, phi, nzMap, duration)
   }
 }

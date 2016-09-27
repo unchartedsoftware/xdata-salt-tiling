@@ -62,14 +62,15 @@ object TopicModellingParallelJob extends Logging {
       params.iterN,
       params.k,
       params.alpha,
-      params.eta,
+      params.beta,
       params.outdir,
-      params.weighted,
       params.tfidf_bcst,
-      params.hdfspath, // TODO rename to path
+      params.path, // TODO rename to path
       params.dateCol,
       params.idCol,
-      params.textCol
+      params.textCol,
+      params.computeCoherence,
+      params.numTopTopics
     )(_)
 
     try {
@@ -77,7 +78,7 @@ object TopicModellingParallelJob extends Logging {
 //      val df = params.rdd.toDF
 //      val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc)
       // Pipe the dataframe
-      Pipe(reader.load(params.hdfspath))
+      Pipe(reader.load(params.path))
         .to(topicModellingOp).run()
 
       // create and save extra level metadata - the tile x,y,z dimensions in this case
