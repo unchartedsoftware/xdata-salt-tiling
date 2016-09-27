@@ -20,9 +20,7 @@ import grizzled.slf4j.Logging
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.DataFrame
-//import org.joda.time.Days
-//import org.joda.time.DateTime
-//import org.joda.time.Period
+import org.joda.time.{Days, DateTime, Period}
 
 // scalastyle:off public.methods.have.type parameter.number
 /**
@@ -37,10 +35,10 @@ object TopicModellingUtil extends Logging {
     * @param to The date to end the range on
     * @return A seqence of dates (of the format yyyy-MM-dd) between the given endpoints with one day intervals
     */
-//  def dateRange(from: Date, to: Date): Seq[String] = {
-//    val s = Iterator.iterate(new DateTime(from))(_.plus(new Period().withDays(1))).takeWhile(!_.isAfter(new DateTime(to))).toSeq
-//    s.map(datetime => datetime.toString.slice(0, 10))
-//  }
+ def dateRange(from: Date, to: Date): Seq[String] = {
+   val s = Iterator.iterate(new DateTime(from))(_.plus(new Period().withDays(1))).takeWhile(!_.isAfter(new DateTime(to))).toSeq
+   s.map(datetime => datetime.toString.slice(0, 10))
+ }
 
   /**
   * Create a sequence of dates between the given endpoints with one day intervals
@@ -49,10 +47,10 @@ object TopicModellingUtil extends Logging {
   * @param to The date to end the range on (yyyy-MM-dd)
   * @return A seqence of dates (of the format yyyy-MM-dd) between the given endpoints with one day intervals
   */
-//  def dateRange(from: String, to: String): Seq[String] = {
-//    val format = new SimpleDateFormat("yyyy-MM-dd") // if we add the ymd date cal first we dont need the formatter TODO can use other signature of this function
-//    dateRange(format.parse(from), format.parse(to))
-//  }
+ def dateRange(from: String, to: String): Seq[String] = {
+   val format = new SimpleDateFormat("yyyy-MM-dd") // if we add the ymd date cal first we dont need the formatter TODO can use other signature of this function
+   dateRange(format.parse(from), format.parse(to))
+ }
 
   /**
     * Cast the results of BDP operation and cast them into their appropriate types
