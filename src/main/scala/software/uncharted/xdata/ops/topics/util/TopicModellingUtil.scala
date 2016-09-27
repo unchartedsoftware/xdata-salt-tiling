@@ -17,10 +17,9 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 
 import grizzled.slf4j.Logging
-import org.apache.spark.SparkContext
-import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.DataFrame
 import org.joda.time.{Days, DateTime, Period}
+import java.util.Date
 
 // scalastyle:off public.methods.have.type parameter.number
 /**
@@ -48,7 +47,7 @@ object TopicModellingUtil extends Logging {
   * @return A seqence of dates (of the format yyyy-MM-dd) between the given endpoints with one day intervals
   */
  def dateRange(from: String, to: String): Seq[String] = {
-   val format = new SimpleDateFormat("yyyy-MM-dd") // if we add the ymd date cal first we dont need the formatter TODO can use other signature of this function
+   val format = new SimpleDateFormat("yyyy-MM-dd")
    dateRange(format.parse(from), format.parse(to))
  }
 

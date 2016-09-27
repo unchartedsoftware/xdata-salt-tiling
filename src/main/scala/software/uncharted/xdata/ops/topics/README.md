@@ -1,4 +1,5 @@
-# Biterm Topic Models
+# Original Research Notes.
+##### May be out of date since porting to pipeline op
 
 This project represents just the latest in a series of variations and extensions of Biterm Topic Models (Yan et al. 2013)
 Variations implemented here include:
@@ -25,29 +26,59 @@ BDP input:
     words: Array[String]
     iterN: Int, k: Int, alpha: Double, eta: Double
 
-##   BUILD
-$ mvn clean package
 
-##   RUN
-Set the number of cores and executor memory as you see fit. If running pseudo-parallel the
-number of cores should be equal to the number of dates to process or a multiple thereof.
-
-Note the example driver memory and kryroserizer buffer memory requirements - they are
-larger than usual.
-
-$ spark-shell --master yarn-client
-                --executor-cores 4
-                --num-executors 3
-                --executor-memory 5G
-                --driver-memory 3g
-                --conf spark.kryoserializer.buffer=256
-                --conf spark.kryoserializer.buffer.max=512
-                --jars target/btm-1.0-SNAPSHOT.jar
+## (SEMI) FIXED PARAMETERS
+val alpha = 1 / Math.E
+val eta = 0.01
+var k = 2
 
 
-Note: This algorithm takes a *long* time to run.
-The running time is a function of:
-    sample recorder size (vocabulary size, number of topics discovered)
-    number of iterations of MCMC estimation
-If run in the shell partitioned by date there will be no console output and it might
-incorrectly appear to be hung
+## INPUT PARAMETERS
+iterN:	the number of iterations of MCMC sampling to run
+	- the given/default (150) is fine (empirically derived)
+
+An array of dates
+	- used to partition data by date & run each on a separate core
+	- alternately list of dates could be inferred from the data
+
+Path to Twitter data on HDFS
+	- data must be preprocessed in two steps:
+		(1) map to schema (date, id, text)
+		(2) clean & normalize text
+
+
+## OTHER PARAMETERS
+val lang = "en"
+	- this actually isn't used in the example script
+	- this allows you to possibly filter the input data by language
+
+Stopwords
+	- these are pretty much hard-coded. (stopwords don't change)
+	- I have included stopword in resources. I will add some more to the repo.
+	- if run globally (multilingual) concatenating all stopword files is fine
+
+TFIDF scores
+	- don't worry about this now.
+	- A separate stage would have to compute TFIDF scores for a given corpus
+
+
+## OUTPUTTING RESULTS
+topic_dist
+	For annotating data you need to output the top N terms from topic_dist for
+	each topic cluster.
+
+(I write the results to a _local_ file for my own convenience.)
+
+
+# n.b.
+------
+theta:	global topic distribution
+phi:	topic-word distribution
+	- these are the parameters learned by MCMC inference.
+	- It can be a good idea to keep them around (but not needed for annotation)
+Note that once you have learned theta/phi you can subsequently use them to quickly
+re-compute topic_dist, and/or quickly compute topic labels for a document
+in the original set.
+
+nzMap:	the number of documents in each cluster
+	- probably not useful for annotation
