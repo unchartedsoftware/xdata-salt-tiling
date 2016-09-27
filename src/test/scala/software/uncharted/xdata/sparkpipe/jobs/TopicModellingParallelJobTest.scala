@@ -15,10 +15,7 @@ package software.uncharted.xdata.sparkpipe.jobs
 import org.scalatest.FunSpec
 
 // scalastyle:off multiple.string.literals
-class TopicModellingParallelJobTest extends FunSpec {
-
-  private val testOutputDir: String = "build/tmp/test_file_output/test_topic_modelling"
-  private val suffix: String = "txt"
+class TopicModellingJobTest extends FunSpec {
 
   describe("TopicModellingParallelJobTest") {
     describe("#execute") {
@@ -28,16 +25,15 @@ class TopicModellingParallelJobTest extends FunSpec {
         // xdata-pipeline-ops directory, and reset it afterwards.
         val oldDir = System.getProperty("user.dir")
         try {
-          val path = classOf[TopicModellingParallelJobTest].getResource("/topic-modelling/topic-modelling-parallel.conf").toURI.getPath
+          val path = classOf[TopicModellingJobTest].getResource("/topic-modelling/topic-modelling.conf").toURI.getPath
           // Run the test from path/to/xdata-pipeline-ops/
           val newDir = path.substring(0, path.indexOf("xdata-pipeline-ops") + 18)
           System.setProperty("user.dir", newDir)
 
-          TopicModellingParallelJob.main(Array(path))
+          TopicModellingJob.main(Array(path))
 
         } finally {
           System.setProperty("user.dir", oldDir)
-//          FileUtils.deleteDirectory(new File(testOutputDir))
         }
       }
     }
