@@ -25,7 +25,7 @@ import org.apache.spark.broadcast.Broadcast
   *         that the sample recorders can expand (and contract!) to hold different numbers
   *         of 'topics'. As a first effort I have kept as much of the BTM code logic the same
   *         as possible but changed the sample recorders to using MutableArrays rather than Arrays
-  *     MCMC sampling
+  *     Markov Chain Monte Carlo (MCMC) sampling
   *         n.b. we use an MCMC to estimate the conditional posterior for an unbounded K
   *         draw topic index z using CRP + stick breaking
   *         if z = k_new, increment the number of topics (tables), add to sample recorders
@@ -43,8 +43,7 @@ class BDP(kK: Int) extends Serializable with Logging { // TODO enable logging
     TFIDF.filterTfidf(tfidf, date, word_dict)
   }
 
-//  markov monte carlo TODO add name somewhere
-  // ============================= MCMC sampling  ============================================
+  // ============================= Markov Chain Monte Carlo (MCMC)  ============================================
   def estimateMCMC(biterms:Array[Biterm], iterN: Int, model: SampleRecorder, m: Int, alpha: Double, eta: Double): (Int, Double) = {
     val start = System.nanoTime
     Iterator.range(0, iterN).foreach { iteration =>

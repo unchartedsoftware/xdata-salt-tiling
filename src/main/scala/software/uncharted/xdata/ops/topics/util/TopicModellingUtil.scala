@@ -14,12 +14,11 @@ package software.uncharted.xdata.ops.topics.util
 
 import java.io.{File, PrintWriter}
 import java.text.SimpleDateFormat
-import java.util.Calendar
-
-import grizzled.slf4j.Logging
+import java.util.{Calendar,Date}
+import java.nio.file.{Paths, Files}
+import grizzled.slf4j.{Logging, Logger}
 import org.apache.spark.sql.DataFrame
 import org.joda.time.{DateTime, Days, Period}
-import java.util.Date
 
 // scalastyle:off public.methods.have.type parameter.number
 /**
@@ -82,6 +81,7 @@ object TopicModellingUtil extends Logging {
     labels
   }
 
+  // scalastyle:off method.length
   /**
     * Write the results of topic modelling to file. Writes one result file per day in the date range given as input
     *
@@ -96,15 +96,15 @@ object TopicModellingUtil extends Logging {
     * @param numTopTopics
     */
   def writeResultsToFile(
-    cparts : Array[(String, Array[(Double, Seq[String])], Array[Double], Array[Double], Map[Int,Int], Int, Double)],
-    data: DataFrame,
-    textCol : String,
     alpha: Double,
     beta: Double,
-    outdir: String,
-    iterN : Int,
     computeCoherence : Boolean,
-    numTopTopics : Int
+    cparts : Array[(String, Array[(Double, Seq[String])], Array[Double], Array[Double], Map[Int,Int], Int, Double)],
+    data: DataFrame,
+    iterN : Int,
+    numTopTopics : Int,
+    outdir: String,
+    textCol : String
   ) : Unit = {
     cparts.foreach { cp =>
       val (date, topic_dist, theta, phi, nzMap, m, duration) = cp
@@ -118,7 +118,11 @@ object TopicModellingUtil extends Logging {
         avg_cs = Some(_avg_cs)
       }
 
-      println(s"Writing results to directory $outdir") // TODO make sure directory exists. Error otherwise
+      if (!Files.exists(Paths.get(outdir))) {
+        Files.createDirectory(Paths.get(outdir))
+        info(s"Creating directory $outdir")
+      }
+      info(s"Writing results to directory $outdir")
       val labeled_topic_dist = topic_dist.map{ // append 'labels' to each row
         case (theta, tpcs) => (theta, findLabels(tpcs), tpcs)
       }

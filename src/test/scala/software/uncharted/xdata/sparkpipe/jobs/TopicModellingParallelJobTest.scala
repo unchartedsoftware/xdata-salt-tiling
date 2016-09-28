@@ -18,7 +18,7 @@ import org.scalatest.FunSpec
 class TopicModellingJobTest extends FunSpec {
 
   describe("TopicModellingParallelJobTest") {
-    describe("#execute") {
+    describe("#main()") {
       it("should do topic modelling", FileIOTest) {
         // When test are run from another project that includes this project, the current working directory is set such
         // that the data files referenced in tiling-file-io.conf can't be found.  To fix this we reset the CWD to the

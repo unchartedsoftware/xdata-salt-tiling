@@ -15,9 +15,7 @@ package software.uncharted.xdata.ops.topics.util
 
 import java.text.SimpleDateFormat
 import java.util.TimeZone
-
 import grizzled.slf4j.Logging
-
 import scala.util.Random
 
 
@@ -77,7 +75,7 @@ object BTMUtil extends Serializable with Logging {
     val t0 = System.nanoTime()
     val result = block    // call-by-name
     val t1 = System.nanoTime()
-    println("\n\tRunning time: " + (t1 - t0) / 1000000000  + " sec\n")
+    info("\n\tRunning time: " + (t1 - t0) / 1000000000  + " sec\n")
     result
   }
 

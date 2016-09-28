@@ -75,8 +75,8 @@ object WordDict extends Serializable with Logging {
     minCount: Int
   ) : (Map[String, Int], Array[String]) = {
     val wc = computeWordCountLocal(arr, minCount)
-    println(s"wc contains ${wc.length} words")
-    println("computing word dictionary...")
+    info(s"wc contains ${wc.length} words")
+    info("computing word dictionary...")
     wordcount2WordDict(wc, stopwords, minCount)
   }
 }

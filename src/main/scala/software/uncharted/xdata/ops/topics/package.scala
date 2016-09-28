@@ -21,27 +21,26 @@ import org.apache.spark.sql.{Column, DataFrame}
 import software.uncharted.xdata.ops.topics.util.{BDPParallel, BTMUtil, TopicModellingUtil}
 
 /**
-  * TODO rename file package.scala?
+  *
   */
-package object topicModelling{
+package object topicModelling {
   // scalastyle:off parameter.number method.length
-  // TODO combine learnTopics and learnTopicsParallel into one op and have parallel be a boolean parameter that you can turn on and off
   def doTopicModelling(
-    startDateStr: String,
-    endDateStr: String,
-    stopwords_bcst: Broadcast[Set[String]],
-    iterN: Int,
-    k: Int,
     alpha: Double,
     beta: Double,
-    outdir: String,
-    tfidf_bcst: Option[Broadcast[Array[(String, String, Double)]]] = None,
-    path: String,
-    dateCol: String,
-    idCol: String,
-    textCol: String,
     computeCoherence: Boolean,
-    numTopTopics: Int
+    dateCol: String,
+    endDateStr: String,
+    idCol: String,
+    iterN: Int,
+    k: Int,
+    numTopTopics: Int,
+    outdir: String,
+    path: String,
+    startDateStr: String,
+    stopwords_bcst: Broadcast[Set[String]],
+    textCol: String,
+    tfidf_bcst: Option[Broadcast[Array[(String, String, Double)]]] = None
   )(
     input : DataFrame
   ) : DataFrame = {
@@ -69,7 +68,17 @@ package object topicModelling{
 
     val cparts = TopicModellingUtil.castResults(parts)
 
-    TopicModellingUtil.writeResultsToFile(cparts, data, textCol, alpha, beta, outdir, iterN, computeCoherence, numTopTopics)
+    TopicModellingUtil.writeResultsToFile(
+      alpha,
+      beta,
+      computeCoherence,
+      cparts,
+      data,
+      iterN,
+      numTopTopics,
+      outdir,
+      textCol
+    )
 
     input
   }

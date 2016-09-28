@@ -15,6 +15,7 @@ package software.uncharted.xdata.ops.topics.util
 
 import java.io.Serializable
 
+import grizzled.slf4j.Logging
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
@@ -25,7 +26,7 @@ import org.apache.spark.sql.Row
   *  -convert texts to key value pairs (date, text) or (date, (id, text))
   * Pretty much everything else is the same and runs the sam as BDP, just on separate partiions.
   */
-object BDPParallel extends Serializable {
+object BDPParallel extends Serializable with Logging {
 
   /**
     * Main Topic Modeling Function
@@ -45,12 +46,11 @@ object BDPParallel extends Serializable {
     tfidf_bcst: Option[Broadcast[Array[(String, String, Double)]]] = None
   ) : Iterator[Option[Array[Any]]] = {
     if (iterator.isEmpty) {
-      println("Empty partition. Revisit your partitioning mechanism to correct this skew warning")
+      info("Empty partition. Revisit your partitioning mechanism to correct this skew warning")
       Iterator(None)
     } else {
       val datetexts = iterator.toSeq.map(x => (x(x.fieldIndex("_ymd_date")), x(x.fieldIndex(textCol))))
       val date = datetexts.head._1.asInstanceOf[String]
-      println(date)
       val texts : Array[String] = datetexts.map(x => x._2.asInstanceOf[String]).distinct.toArray // no retweets
 
       val stopwords = stpbroad.value
@@ -65,7 +65,7 @@ object BDPParallel extends Serializable {
 
       var weighted = false
       if (tfidf_bcst.isDefined) {
-        bdp.initTfidf(tfidf_bcst.get, date, word_dict) // TODO weighted is redundant? // XXX should only check if tfidf_brcst is Some()
+        bdp.initTfidf(tfidf_bcst.get, date, word_dict)
         weighted = true
       }
 

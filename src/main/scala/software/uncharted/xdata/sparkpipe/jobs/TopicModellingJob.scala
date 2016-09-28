@@ -31,7 +31,7 @@ object TopicModellingJob extends Logging {
   def main(args: Array[String]): Unit = {
     // get the properties file path
     if (args.length != 1) {
-      logger.error("Usage: ") // TODO
+      logger.error("Usage: <topic-modelling-executable> <config-file>")
       sys.exit(-1)
     }
 
@@ -49,21 +49,21 @@ object TopicModellingJob extends Logging {
     .option("delimiter", "\t")
 
     val topicModellingOp = doTopicModelling(
-      params.startDate,
-      params.endDate,
-      params.stopwords_bcst,
-      params.iterN,
-      params.k,
       params.alpha,
       params.beta,
-      params.outdir,
-      params.tfidf_bcst,
-      params.path,
-      params.dateCol,
-      params.idCol,
-      params.textCol,
       params.computeCoherence,
-      params.numTopTopics
+      params.dateCol,
+      params.endDate,
+      params.idCol,
+      params.iterN,
+      params.k,
+      params.numTopTopics,
+      params.outdir,
+      params.path,
+      params.startDate,
+      params.stopwords_bcst,
+      params.textCol,
+      params.tfidf_bcst
     )(_)
 
     try {
