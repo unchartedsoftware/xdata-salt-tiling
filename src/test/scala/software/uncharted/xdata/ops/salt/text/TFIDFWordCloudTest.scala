@@ -87,11 +87,27 @@ class TFIDFWordCloudTest extends SparkFunSpec {
       assert(tfidf((0, 0, 0)).map(_._2).reduce(_ + _) === 0.0)
       assert(tfidf((1, 0, 0))("aaa") === 0.0)
       assert(tfidf((1, 1, 0))("aaa") === 0.0)
-      assert(tfidf((1, 0, 2))("aaa") === 0.0)
+      assert(tfidf((1, 0, 1))("aaa") === 0.0)
       assert(tfidf((1, 1, 1))("aaa") === 0.0)
+
       assert(tfidf((1, 0, 0))("bbb") === tfidf((1, 0, 0)).map(_._2).max)
+      assert(!tfidf((1, 0, 0)).contains("ccc"))
+      assert(!tfidf((1, 0, 0)).contains("ddd"))
+      assert(!tfidf((1, 0, 0)).contains("eee"))
+
+      assert(!tfidf((1, 1, 0)).contains("bbb"))
       assert(tfidf((1, 1, 0))("ccc") === tfidf((1, 0, 0)).map(_._2).max)
+      assert(!tfidf((1, 1, 0)).contains("ddd"))
+      assert(!tfidf((1, 1, 0)).contains("eee"))
+
+      assert(!tfidf((1, 0, 1)).contains("bbb"))
+      assert(!tfidf((1, 0, 1)).contains("ccc"))
       assert(tfidf((1, 0, 1))("ddd") === tfidf((1, 0, 0)).map(_._2).max)
+      assert(!tfidf((1, 0, 1)).contains("eee"))
+
+      assert(!tfidf((1, 1, 1)).contains("bbb"))
+      assert(!tfidf((1, 1, 1)).contains("ccc"))
+      assert(!tfidf((1, 1, 1)).contains("ddd"))
       assert(tfidf((1, 1, 1))("eee") === tfidf((1, 0, 0)).map(_._2).max)
     }
   }

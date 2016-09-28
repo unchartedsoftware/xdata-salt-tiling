@@ -96,7 +96,7 @@ object TFIDFWordCloud extends CartesianOp {
         val tf = frequencyInDoc
         val idf = math.log(N / termDocCounts(term))
         term -> (tf * idf)
-      }
+      }.toList.sortBy(-_._2).take(numWords).toMap
 
       (tileCoordinate, binCoordinate, termScores)
     }
