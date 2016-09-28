@@ -10,7 +10,7 @@
  * accordance with the terms of the license agreement you entered into
  * with Uncharted Software Inc.
  */
-package software.uncharted.xdata.ops.topics.util
+package software.uncharted.xdata.ops.topics.twitter.util
 
 import java.io.{File, PrintWriter}
 import java.text.SimpleDateFormat

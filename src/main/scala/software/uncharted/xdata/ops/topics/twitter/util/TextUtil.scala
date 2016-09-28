@@ -11,7 +11,7 @@
   * with Uncharted Software Inc.
   */
 
-package software.uncharted.xdata.ops.topics.util
+package software.uncharted.xdata.ops.topics.twitter.util
 
 object TextUtil extends Serializable {
   private val mt = "@[\\w_]+\\b".r   // twitter user mentions

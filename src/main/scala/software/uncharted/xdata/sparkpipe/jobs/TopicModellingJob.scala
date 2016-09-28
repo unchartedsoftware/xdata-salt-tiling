@@ -17,7 +17,7 @@ import grizzled.slf4j.Logging
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.SQLContext
 import software.uncharted.sparkpipe.Pipe
-import software.uncharted.xdata.ops.topics.topicModelling.doTopicModelling
+import software.uncharted.xdata.ops.topics.twitter.doTopicModelling
 import software.uncharted.xdata.sparkpipe.config.{SparkConfig, TopicModellingConfigParser, TopicModellingParams}
 
 // scalastyle:off method.length parameter.number

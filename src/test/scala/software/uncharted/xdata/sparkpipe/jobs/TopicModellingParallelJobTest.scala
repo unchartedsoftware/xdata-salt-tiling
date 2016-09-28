@@ -19,7 +19,7 @@ class TopicModellingJobTest extends FunSpec {
 
   describe("TopicModellingParallelJobTest") {
     describe("#main()") {
-      it("should do topic modelling", FileIOTest) {
+      it("should do topic modelling and write results to file") {
         // When test are run from another project that includes this project, the current working directory is set such
         // that the data files referenced in tiling-file-io.conf can't be found.  To fix this we reset the CWD to the
         // xdata-pipeline-ops directory, and reset it afterwards.

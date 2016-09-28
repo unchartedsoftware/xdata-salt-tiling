@@ -11,7 +11,7 @@
   * with Uncharted Software Inc.
   */
 
-package software.uncharted.xdata.ops.topics.util
+package software.uncharted.xdata.ops.topics.twitter.util
 
 import grizzled.slf4j.Logging
 import org.apache.spark.broadcast.Broadcast

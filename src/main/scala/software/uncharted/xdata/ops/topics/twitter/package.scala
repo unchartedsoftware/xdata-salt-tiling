@@ -12,18 +12,18 @@
   */
 package software.uncharted.xdata.ops.topics
 
-import org.joda.time.{DateTime, Days, Period}
-import software.uncharted.sparkpipe.Pipe
 import org.apache.spark.broadcast.Broadcast
+import org.apache.spark.sql.{Column, DataFrame}
+import org.joda.time.{Days, DateTime}
+import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.addColumn
 import software.uncharted.sparkpipe.ops.core.dataframe.temporal.dateFilter
-import org.apache.spark.sql.{Column, DataFrame}
-import software.uncharted.xdata.ops.topics.util.{BDPParallel, BTMUtil, TopicModellingUtil}
+import software.uncharted.xdata.ops.topics.twitter.util.{BDPParallel, BTMUtil, TopicModellingUtil}
 
 /**
   *
   */
-package object topicModelling {
+package object twitter {
   // scalastyle:off parameter.number method.length
   def doTopicModelling(
     alpha: Double,

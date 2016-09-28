@@ -16,7 +16,7 @@ import com.typesafe.config.{Config, ConfigException}
 import grizzled.slf4j.Logging
 import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast
-import software.uncharted.xdata.ops.topics.util.{TFIDF, TopicModellingUtil, WordDict}
+import software.uncharted.xdata.ops.topics.twitter.util.{TFIDF, TopicModellingUtil, WordDict}
 
 case class TopicModellingParams (
   alpha: Double,
