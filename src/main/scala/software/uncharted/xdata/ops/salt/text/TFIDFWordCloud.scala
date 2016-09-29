@@ -15,29 +15,47 @@ package software.uncharted.xdata.ops.salt.text
 
 
 import scala.collection.mutable.{Map => MutableMap}
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.DataFrame
 import software.uncharted.salt.core.analytic.Aggregator
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.generation.request.TileLevelRequest
-import software.uncharted.xdata.ops.salt.CartesianOp
+import software.uncharted.salt.core.projection.numeric.{CartesianProjection, MercatorProjection}
+import software.uncharted.salt.core.util.SparseArray
+import software.uncharted.xdata.ops.salt.{CartesianOp, ZXYOp}
 
 
 
-object TFIDFWordCloud extends CartesianOp {
-  def termFrequency(xCol: String,
-                    yCol: String,
-                    textCol: String,
-                    bounds: Option[(Double, Double, Double, Double)],
-                    zoomLevels: Seq[Int])
-                   (input: DataFrame):
+object TFIDFWordCloud extends ZXYOp {
+  def cartesianTermFrequency(xCol: String,
+                             yCol: String,
+                             textCol: String,
+                             bounds: (Double, Double, Double, Double),
+                             zoomLevels: Seq[Int])
+                            (input: DataFrame):
   RDD[SeriesData[(Int, Int, Int), (Int, Int), Map[String, Int], Nothing]] = {
     // Pull out term and document frequencies for each tile
     val request = new TileLevelRequest(zoomLevels, (tc: (Int, Int, Int)) => tc._1)
     val binAggregator = new WordCounter
 
-    super.apply(1, xCol, yCol, textCol, bounds.getOrElse((0.0, 0.0, 1.0, 1.0)), zoomLevels, binAggregator, None)(request)(input)
+    val projection = new CartesianProjection(zoomLevels, (bounds._1, bounds._2), (bounds._3, bounds._4))
+
+    super.apply(projection, 1, xCol, yCol, textCol, binAggregator, None)(request)(input)
+  }
+
+  def mercatorTermFrequency(xCol: String,
+                            yCol: String,
+                            textCol: String,
+                            zoomLevels: Seq[Int])
+                           (input: DataFrame):
+  RDD[SeriesData[(Int, Int, Int), (Int, Int), Map[String, Int], Nothing]] = {
+    // Pull out term and document frequencies for each tile
+    val request = new TileLevelRequest(zoomLevels, (tc: (Int, Int, Int)) => tc._1)
+    val binAggregator = new WordCounter
+
+    val projection = new MercatorProjection(zoomLevels)
+
+    super.apply(projection, 1, xCol, yCol, textCol, binAggregator, None)(request)(input)
   }
 
   /**
@@ -51,7 +69,7 @@ object TFIDFWordCloud extends CartesianOp {
     * @return
     */
   def doTFIDF (numWords: Int)(input: RDD[SeriesData[(Int, Int, Int), (Int, Int), Map[String, Int], Nothing]]):
-  RDD[((Int, Int, Int), (Int, Int), Map[String, Double])] = {
+  RDD[SeriesData[(Int, Int, Int), (Int, Int), List[(String, Double)], Nothing]] = {
     // Calculate number of documents and the inverse document frequency
     val (n, nD) = input.map{data =>
       // One bin per tile - get its data
@@ -96,9 +114,15 @@ object TFIDFWordCloud extends CartesianOp {
         val tf = frequencyInDoc
         val idf = math.log(N / termDocCounts(term))
         term -> (tf * idf)
-      }.toList.sortBy(-_._2).take(numWords).toMap
+      }.toList.sortBy(-_._2).take(numWords)
 
-      (tileCoordinate, binCoordinate, termScores)
+      new SeriesData[(Int, Int, Int), (Int, Int), List[(String, Double)], Nothing](
+        data.projection,
+        data.maxBin,
+        tileCoordinate,
+        new SparseArray[List[(String, Double)]](1, List[(String, Double)](), Map(0 -> termScores)),
+        None
+      )
     }
   }
 }

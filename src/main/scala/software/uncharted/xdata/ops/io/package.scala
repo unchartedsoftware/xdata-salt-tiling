@@ -218,9 +218,22 @@ package object io extends Logging {
     */
   def serializeElementScore[TC, BC, X](tiles: RDD[SeriesData[TC, BC, List[(String, Int)], X]]):
   RDD[(TC, Seq[Byte])] =
-    serializeTiles(scoreListToByteArray)(tiles)
+    serializeTiles(intScoreListToByteArray)(tiles)
 
-  def scoreListToByteArray: SparseArray[List[(String, Int)]] => Seq[Byte] = sparseData =>
+  def intScoreListToByteArray: SparseArray[List[(String, Int)]] => Seq[Byte] = sparseData =>
+    new JSONObject(sparseData.head.toMap).toString().getBytes
+
+  /**
+    * Same thing, but with Doubles instead of Ints
+    *
+    * @param tiles The input tile set.
+    * @return Index/byte tuples.
+    */
+  def serializeElementDoubleScore[TC, BC, X](tiles: RDD[SeriesData[TC, BC, List[(String, Double)], X]]):
+  RDD[(TC, Seq[Byte])] =
+    serializeTiles(doubleScoreListToByteArray)(tiles)
+
+  def doubleScoreListToByteArray: SparseArray[List[(String, Double)]] => Seq[Byte] = sparseData =>
     new JSONObject(sparseData.head.toMap).toString().getBytes
 
   /**
