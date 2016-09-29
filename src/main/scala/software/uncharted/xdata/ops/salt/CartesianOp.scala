@@ -53,6 +53,4 @@ trait CartesianOp extends ZXYOp {
     super.apply(projection, tileSize, xCol, yCol, vCol, binAggregator, tileAggregator)(request)(input)
   }
 }
-object CartesianOp extends CartesianOp {
-
-}
+object CartesianOp extends CartesianOp

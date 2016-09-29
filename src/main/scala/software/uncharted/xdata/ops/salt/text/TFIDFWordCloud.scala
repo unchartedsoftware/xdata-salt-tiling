@@ -24,6 +24,8 @@ import software.uncharted.salt.core.projection.numeric.{CartesianProjection, Mer
 import software.uncharted.salt.core.util.SparseArray
 import software.uncharted.xdata.ops.salt.{CartesianOp, ZXYOp}
 
+import scala.reflect.ClassTag
+
 
 
 object TFIDFWordCloud extends ZXYOp {
@@ -71,35 +73,18 @@ object TFIDFWordCloud extends ZXYOp {
   def doTFIDF (numWords: Int)(input: RDD[SeriesData[(Int, Int, Int), (Int, Int), Map[String, Int], Nothing]]):
   RDD[SeriesData[(Int, Int, Int), (Int, Int), List[(String, Double)], Nothing]] = {
     // Calculate number of documents and the inverse document frequency
-    val (n, nD) = input.map{data =>
+    val levelInfos = input.map{data =>
       // One bin per tile - get its data
       val level = data.coords._1
       val tileData = data.bins(0)
 
       // Doc count (by level)
-      val docCount = Array.fill(level+1)(0)
-      docCount(level) = 1
+      val docCount = oneTermArray(level + 1, 0, level, 1)
       // Count of docs containing each term (by level)
-      val terms = Array.fill(level+1)(Map[String, Int]())
-      terms(level) = tileData.map{case (term, frequency) => (term -> 1)}
+      val terms = oneTermArray(level + 1, Map[String, Int](), level, tileData.map{case (term, frequency) => (term -> 1)})
 
-      (docCount, terms)
-    }.reduce { (a, b) =>
-      val (docCountA, termsA) = a
-      val (docCountB, termsB) = b
-
-      val length = docCountA.length max docCountB.length
-
-      val docCount = (docCountA.padTo(length, 0) zip docCountB.padTo(length, 0)).map{case (ac, bc) => ac + bc}
-      val termsAA = termsA.padTo(length, Map[String, Int]())
-      val termsBB = termsB.padTo(length, Map[String, Int]())
-
-      val terms = (termsAA zip termsBB).map{case (ta, tb) =>
-        (ta.keys ++ tb.keys).map(key => (key -> (ta.getOrElse(key, 0) + tb.getOrElse(key, 0)))).toMap
-      }
-
-      (docCount, terms)
-    }
+      TFIDFInfo(docCount, terms)
+    }.reduce { (a, b) => a + b }
 
     input.map{data =>
       val tileCoordinate = data.coords
@@ -107,8 +92,8 @@ object TFIDFWordCloud extends ZXYOp {
       val binCoordinate = (1, 1)
       val termFrequencies = data.bins(0)
       val level = tileCoordinate._1
-      val N = n(level).toDouble
-      val termDocCounts = nD(level)
+      val N = levelInfos.docCount(level).toDouble
+      val termDocCounts = levelInfos.docTerms(level)
 
       val termScores = termFrequencies.map { case (term, frequencyInDoc) =>
         val tf = frequencyInDoc
@@ -125,6 +110,35 @@ object TFIDFWordCloud extends ZXYOp {
       )
     }
   }
+
+  private def oneTermArray[T: ClassTag] (size: Int, defaultValue: T, occupiedIndex: Int, occupiedValue: T): Array[T] = {
+    val result = Array.fill[T](size)(defaultValue)
+    result(occupiedIndex) = occupiedValue
+    result
+  }
+}
+
+/**
+  * A count of documents, and of the number of documents in which each term occurs, by tiling level
+  * @param docCount The number of documents, by tiling level
+  * @param docTerms The number of documents in which each term occurs, by tiling level
+  */
+case class TFIDFInfo (docCount: Array[Int], docTerms: Array[Map[String, Int]]) {
+  // scalastyle:off method.name
+  def + (that: TFIDFInfo): TFIDFInfo = {
+    val length = this.docCount.length max that.docCount.length
+
+    val aggregateCount = (this.docCount.padTo(length, 0) zip that.docCount.padTo(length, 0)).map{case (ac, bc) => ac + bc}
+    val termsAA = this.docTerms.padTo(length, Map[String, Int]())
+    val termsBB = that.docTerms.padTo(length, Map[String, Int]())
+
+    val aggregateTerms = (termsAA zip termsBB).map{case (ta, tb) =>
+      (ta.keys ++ tb.keys).map(key => (key -> (ta.getOrElse(key, 0) + tb.getOrElse(key, 0)))).toMap
+    }
+
+    TFIDFInfo(aggregateCount, aggregateTerms)
+  }
+  // scalastyle:on method.name
 }
 
 object WordCounter {

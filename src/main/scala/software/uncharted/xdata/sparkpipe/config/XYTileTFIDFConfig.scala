@@ -35,8 +35,11 @@ object XYTileTFIDFConfig extends Logging {
   val MAX_Y_KEY = "yMaximum"
 
   def optional[T] (config: Config, key: String, getFcn: (Config, String) => T): Option[T] = {
-    if (config.hasPath(key)) Some(getFcn(config, key))
-    else None
+    if (config.hasPath(key)) {
+      Some(getFcn(config, key))
+    } else {
+      None
+    }
   }
   def optionalString (config: Config, key: String): Option[String] =
     optional(config, key, (c, k) => c.getString(k))

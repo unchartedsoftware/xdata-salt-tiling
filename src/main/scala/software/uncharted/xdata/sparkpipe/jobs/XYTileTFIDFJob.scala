@@ -23,30 +23,34 @@ import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createTileOutputOperatio
 import scala.util.{Failure, Success}
 
 object XYTileTFIDFJob extends Logging {
-  def execute (config: Config): Unit = {
-    config.resolve()
-
-    // parse the schema, and exit on any errors
-    val schema = Schema(config).getOrElse {
+  // parse the schema, and exit on any errors
+  private def getSchema (config: Config) = {
+    Schema(config).getOrElse {
       error("Couldn't create schema - exiting")
       sys.exit(-1)
     }
+  }
 
-    // Parse tiling parameters out of supplied config
-    val tilingConfig = TilingConfig(config).getOrElse {
+  // Parse tiling parameters out of supplied config
+  private def getTilingConfig (config: Config) = {
+    TilingConfig(config).getOrElse {
       logger.error("Invalid tiling config")
       sys.exit(-1)
     }
+  }
 
-    // Parse TF/IDF parameters out of supplied config
-    val tfidfConfig = XYTileTFIDFConfig(config) match {
+  // Parse TF/IDF parameters out of supplied config
+  private def getTFIDFConfig (config: Config) = {
+    XYTileTFIDFConfig(config) match {
       case Success(c) => c
       case Failure(e) =>
         logger.error("Error getting TF/IDF config", e)
         sys.exit(-1)
     }
+  }
 
-    val TFOp = tfidfConfig.projection match {
+  private def createProjection (tfidfConfig: XYTileTFIDFConfig, tilingConfig: TilingConfig) = {
+    tfidfConfig.projection match {
       case "mercator" =>
         TFIDFWordCloud.mercatorTermFrequency(
           tfidfConfig.xColumn, tfidfConfig.yColumn, tfidfConfig.textColumn,
@@ -62,8 +66,17 @@ object XYTileTFIDFJob extends Logging {
           tfidfConfig.bounds.get, tilingConfig.levels
         )(_)
     }
+  }
 
-    val IDFOp = TFIDFWordCloud.doTFIDF(tfidfConfig.wordsToKeep)(_)
+  def execute (config: Config): Unit = {
+    config.resolve()
+
+    val schema = getSchema(config)
+    val tilingConfig = getTilingConfig(config)
+    val tfidfConfig = getTFIDFConfig(config)
+
+    val TFOperation = createProjection(tfidfConfig, tilingConfig)
+    val IDFOperation = TFIDFWordCloud.doTFIDF(tfidfConfig.wordsToKeep)(_)
 
     val outputOperation = createTileOutputOperation(config).getOrElse {
       logger.error("Output operation config")
@@ -78,8 +91,8 @@ object XYTileTFIDFJob extends Logging {
 
       // Process our data
       Pipe(df)
-        .to(TFOp)
-        .to(IDFOp)
+        .to(TFOperation)
+        .to(IDFOperation)
         .to(serializeElementDoubleScore)
         .to(outputOperation)
         .run
