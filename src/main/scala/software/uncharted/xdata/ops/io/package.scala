@@ -30,6 +30,7 @@ package object io extends Logging {
 
   //to remove scalastyle:string literal error
   val slash = "/"
+  val comma = ","
 
 
   /**
@@ -159,7 +160,7 @@ package object io extends Logging {
     val results = input.mapPartitions { tileDataIter =>
       tileDataIter.map { tileData =>
         val coord = tileData._1
-        val rowID = mkRowId(s"${layerName}/", slash, ".bin")(coord._1, coord._2, coord._3)
+        val rowID = mkRowId("", comma, "")(coord._1, coord._2, coord._3)
         (rowID, tileData._2)
       }
     }
@@ -169,7 +170,7 @@ package object io extends Logging {
     input
   }
 
-  private def mkRowId(prefix: String, separator: String, suffix: String)(level: Int, x: Int, y: Int): String = {
+  private[io] def mkRowId(prefix: String, separator: String, suffix: String)(level: Int, x: Int, y: Int): String = {
     val digits = math.log10(1 << level).floor.toInt + 1
     (prefix + "%02d" + separator + "%0" + digits + "d" + separator + "%0" + digits + "d" + suffix).format(level, x, y)
   }
