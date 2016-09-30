@@ -21,10 +21,12 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
 
 /**
-  * Difference between BDP_parallel and BDP:
-  *  - DatePartitioner class
-  *  -convert texts to key value pairs (date, text) or (date, (id, text))
-  * Pretty much everything else is the same and runs the sam as BDP, just on separate partiions.
+  * This is an extension of BDP (which itself is an extension of BTM, which is a variant on LDA)
+  * BDPParallel extends BDP with pseudo-parallelism. The BDP algorithm is run model-parallel over
+  * different partitions of data. A DatePartitioner is uses to partition data by date.
+  *
+  * Within each partition, the BDP algorithm is run on the partitioned data and an iterator of BDP
+  * results returned
   */
 object BDPParallel extends Serializable with Logging {
 
@@ -32,9 +34,6 @@ object BDPParallel extends Serializable with Logging {
     * Main Topic Modeling Function
     */
   // scalastyle:off parameter.number
-  //def partitionBDP(iterator: Iterator[(String, (String, String))],
-  // stpbroad: Broadcast[scala.collection.immutable.Set[String]], iterN: Int, k:Int, alpha: Double
-  // , eta: Double, weighted: Boolean = false, tfidf_path: String = "") = {
   def partitionBDP(
     iterator: Iterator[Row],
     stpbroad: Broadcast[scala.collection.immutable.Set[String]],

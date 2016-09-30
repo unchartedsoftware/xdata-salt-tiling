@@ -18,19 +18,79 @@ import org.apache.spark.broadcast.Broadcast
 
 
 /**
-  * NOTE:
-  * This is essentially the same as the code in the standard BTM algorithm. The changes are:
-  *     Sample Recorders
+  * BACKGROUND
+  *   Topic modeling is a machine learning method used to infer the latent structure in a collection of documents, uncovering
+  *   hidden topic patterns. It is important to note that the topics discovered by topic modeling are latent. That is, topic
+  *   modeling allows us to uncover topic-term probabilities, (i.e. the top words associated with a topic) but *not* the
+  *   topic itself. Topic modeling is uses to (automatically) organize, summarize and/or understand a large corpus.
+  *
+  *   Latent Dirichlet Allocation (LDA) is a popular algorithm for topic modeling, which performs well on a corpus of lengthy
+  *   documents. However, the data sparsity in short texts causes very noisy LDA models. To get around this issue we have
+  *   implemented an extension of LDA for short texts called Biterm Topic Modeling (BTM).
+  *
+  * BTM
+  *   The BTM model is a generative model which learns topics over short texts by directly modeling the generation of biterms
+  *   (co-occurring terms) across the corpus. Two key differences from the traditional (e.g. LDA) approaches are:
+  *     (1) word co-occurrence patterns are explicitly
+  *     (2) global co-occurrence patterns are modeled
+  *
+  * BDP
+  *   Biterm Topic Model, Dirichlet Process (BDP) is an extension to the BTM algorithm. BTM is a parametric algorithm (i.e.
+  *   the number of expected clusters must be specified a priori). BDP is a nonparametric extension which allows an unbounded
+  *   number of clusters to be discovered by the algorithm.
+  *
+  *  The key changes (from BTM) are:
+  *     Sample Recorders:
   *         the nonparametric Bayesian approach allows for unbounded values of K. This means
   *         that the sample recorders can expand (and contract!) to hold different numbers
-  *         of 'topics'. As a first effort I have kept as much of the BTM code logic the same
-  *         as possible but changed the sample recorders to using MutableArrays rather than Arrays
-  *     Markov Chain Monte Carlo (MCMC) sampling
-  *         n.b. we use an MCMC to estimate the conditional posterior for an unbounded K
-  *         draw topic index z using CRP + stick breaking
-  *         if z = k_new, increment the number of topics (tables), add to sample recorders
-  *         if nz(z) == 0 (i.e. if there are no samples assigned to topic z) remove the topic (table), remove from sample recorders
-  *         returns K, theta, phi (standard BTM returns theta, phi)
+  *         of 'topics'. As a result sample recorders to use MutableArrays rather than Arrays
+  *         (as in Xiaohui Yan's implementation)
+  *     Markov Chain Monte Carlo (MCMC) sampling:
+  *         n.b. we use an MCMC approach (Gibbs sampling) to estimate the conditional posterior for an unbounded K
+  *           draw topic index z using Chinese Restaurant Process + stick breaking
+  *           if z = k_new, increment the number of topics (tables), add to sample recorders
+  *           if nz(z) == 0 (i.e. if there are no samples assigned to topic z) remove the topic (table), remove from sample recorders
+  *           returns K, theta, phi (standard BTM returns theta, phi)
+  *
+  * BDP ALGORITHM
+  *   BDP infers two parameters from a corpus:
+  *     -   ϕ (phi):    topic-word distribution (i.e. the probability of a word w, given a topic z)
+  *     -   θ (theta):  global topic distribution (i.e. the probability of a topic z)
+  *
+  *   Phi
+  *     ϕ_w|k = (n_w|z + η) / (∑ n_w|z + Nη)
+  *
+  *   Theta
+  *     θ_z = (n_z + α) / (|B| + Kα )
+  *
+  *     Where:
+  *       N:        number of words in the vocabulary
+  *       w|k:      probability of word w given topic z
+  *       n_w|z:    number of word w given topic z
+  *       n_z:      number of topic z
+  *       α:        Dirichlet hyperparameter
+  *       |B|:      number of biterms
+  *       K:        number of topics
+  *
+  *   INPUT: biterm set B, hyperparameters α, η
+  *   OUTPUT: number of topics K, multinomial parameters theta, phi
+  *   REPEAT
+  *     FOR x ∈ B DO
+  *       Draw the topic index k from the conditional posterior for k (Gibbs sampling)
+  *       IF k = k_new THEN
+  *           K = K + 1
+  *       END IF
+  *       Update n_z, n_w2|z, n_w2|z
+  *     END FOR
+  *     Compute ϕ and θ
+  *   UNTIL iter = N_iter
+  *   RETURN K, ϕ, θ
+  *
+  * References:
+  *   https://github.com/xiaohuiyan/BTM
+  *   http://www2013.org/proceedings/p1445.pdf
+  *   http://www.bigdatalab.ac.cn/~lanyanyan/papers/2014/TKDE-yan.pdf
+  *
   **/
 class BDP(kK: Int) extends Serializable with Logging { // TODO enable logging
   var k = kK
@@ -149,6 +209,20 @@ class BDP(kK: Int) extends Serializable with Logging { // TODO enable logging
     (calcTheta(model, n_biterms, k, alpha ), calcPhi(model, m, k, beta ))
   }
 
+  /**
+   * The main method of Biterm Topic Modeling, fits a model to the input data.
+   * @param biterms   An Array of co-occuring terms
+   * @param words     An Array of terms representing the vocabulary of the model
+   * @param iterN     Number of iterations of MCMC sampling to run
+   * @param k         Number of topics to start with
+   * @param alpha     Dirichlet hyperparameter of the clumpiness of the model
+   * @param eta       Dirichlet hyperparameter of the distribution of the underlying base distribution
+   * @param weighted  Boolean flag controlling whether to use TFIDF weights or not
+   * @param topT      Number of top terms per topic to return
+   * @return          A tuple containing topic_dist (an array containing phi and topT words for each topic),
+   *                  theta & phi (model parameters inferred by MCMC sampling), a map containing (topic -> count) for each topic,
+   *                  and the running time in seconds.
+   */
   // scalastyle:off magic.number
   def fit(biterms: Array[Biterm],
     words: Array[String],

@@ -32,9 +32,7 @@ import scala.util.Random
   *
   */
 object Records extends Serializable {
-  // def wordCountArray(m: Int) = Array.fill[Long](m)(0)
   def wordCountArray(m: Int) = Array.fill[Double](m)(0)
-
   def createRecorders(m: Int, k: Int): (scala.collection.mutable.Map[Int,Int], scala.collection.mutable.Map[Int,Array[Double]]) = {
     // counts of how many words for each value of z
     val nwz = collection.mutable.Map(Iterator.range(0, k).map { z => z -> wordCountArray(m) }.toSeq: _*)
@@ -45,17 +43,13 @@ object Records extends Serializable {
 }
 
 
-// class SampleRecorder (m: Int, kK:Int) {
+
 class SampleRecorder (m: Int, kK:Int, weighted: Boolean = false) extends Serializable with Logging {
   if (weighted) {
     info("Using term weights rather than +/- 1. Input TFIDF dictionary")
   }
   // Initialize class variables
   var tfidf_dict: Map[Int,Double] = Map[Int,Double]()             // empty placeholder for tfidf_dict
-
-//  def setTfidf(path: String, date: String, word_dict:  Map[String, Int]) = {
-//    tfidf_dict = TFIDF.getTfidf(path, date, word_dict)
-//  }
 
   def setTfidf(tfidf_map:  Map[Int, Double]) = {
     tfidf_dict = tfidf_map
@@ -85,20 +79,15 @@ class SampleRecorder (m: Int, kK:Int, weighted: Boolean = false) extends Seriali
     nz(z) += 1
     nwz(z)(w1) = if (weighted) (nwz(z)(w1) + getWeight(w1)) else nwz(z)(w1) + 1
     nwz(z)(w2) = if (weighted) (nwz(z)(w2) + getWeight(w1)) else nwz(z)(w2) + 1
-//    nwz(z)(w1) =  nwz(z)(w1) + 1
-//    nwz(z)(w2) =  nwz(z)(w2) + 1
   }
 
   def decrement(biterm: (Int, Int), z: Int, k: Int ) = {
     val (w1, w2) = biterm // if z > k there will be nothing to decrement since that cluster has been deleted for being empty
      if ((z < k) & (k >0)) {
-//    if (z < k) {
       // don't decrement below 0
       if (nz(z) > 0) nz(z) -= 1
       if (nwz(z)(w1) > 0) nwz(z)(w1) = if (weighted) (nwz(z)(w1) - getWeight(w1)) else  nwz(z)(w1) - 1
       if (nwz(z)(w2) > 0) nwz(z)(w2) = if (weighted) (nwz(z)(w2) - getWeight(w1)) else  nwz(z)(w2) - 1
-//      if (nwz(z)(w1) > 0) nwz(z)(w1) =  nwz(z)(w1) - 1
-//      if (nwz(z)(w2) > 0) nwz(z)(w2) =  nwz(z)(w2) - 1
     }
   }
 

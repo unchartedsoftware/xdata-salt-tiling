@@ -2,7 +2,7 @@
 This operation is an implementation of the xdata [topic modelling](https://stash.uncharted.software/projects/XDATA/repos/topic-modelling/browse) project. Below are the notes associated with that project (which may be out of date since porting to pipeline op):
 ## Original Research Notes:
 
-This project represents just the latest in a series of variations and extensions of Biterm Topic Models (Yan et al. 2013)
+This project is an extension of Biterm Topic Models (Yan et al. 2013)
 Variations implemented here include:
   - A Dirichlet Process for nonparametric Bayesian inference so the model can grow in complexity
   - Option of using weights (TFIDF scores) on words rather than +/- 1 for sample recorder counts
@@ -28,10 +28,39 @@ BDP input:
     iterN: Int, k: Int, alpha: Double, eta: Double
 
 
-#### (SEMI) FIXED PARAMETERS
-val alpha = 1 / Math.E
-val eta = 0.01
+#### PARAMETERS (SEMI-FIXED)
 var k = 2
+For nonparametric models k represents the number of topics to *start* with
+
+
+#### HYPERPARAMETERS  (SEMI-FIXED)
+n.b. In Bayesian statistics a hyperparameter is a parameter over a prior distribution
+i.e. a parameter over parameters. The term is used to distinguish them from the
+parameters of of underlying model
+
+val alpha = 1 / Math.E
+  α is the Bayesian prior on the document-topic probabilities. It is also referred to
+  as a concentration parameter or a scaling parameter. It can be thought of as
+  representing our prior belief about about the data distribution; how 'clumpy' we
+  believe the topics to be. Smaller values of alpha imply fewer topics, larger values, more topics.
+
+  alpha specifies how strong the discretization of base distribution is. In the limit
+  of α -> 0 the realizations are concentrated at a single value, while in the limit of
+  α -> ∞ the realizations become continuous.
+
+  The Gamma prior of α ∝ Γ(1,1) (i.e. α = 1/ℇ) used here has been commonly used as a
+  good starting point in the literature and was empirically found to produce
+  satisfactory topic clustering
+
+
+val eta = 0.01
+	η (also Gₒ)	is a parameter which represents the base measure (or base distribution)
+	of the Dirichlet Process. The Dirichlet Process draws distributions around the
+	base distribution analogous to how a normal distribution draws numbers around its mean.
+  eta is a measure of the word/topic concentration; the 'smoothness' of the underlying
+  Dirichlet distribution.
+
+  The Gamma prior of η ∝ Γ(1,0.1)  (i.e. 0.01) was used following best-practices in the literature.
 
 
 #### INPUT PARAMETERS
@@ -59,8 +88,10 @@ Stopwords
 	- if run globally (multilingual) concatenating all stopword files is fine
 
 TFIDF scores
-	- don't worry about this now.
-	- A separate stage would have to compute TFIDF scores for a given corpus
+	- TFIDF score can optionally used as input to the sample recorders rather than +/-1.
+	 This has the effect of discounting terms that are frequent over the whole corpus
+	 while increasing the influence of terms that occur frequently in a short time span.
+	- A separate stage computes TFIDF scores for a given corpus
 
 
 #### OUTPUTTING RESULTS
