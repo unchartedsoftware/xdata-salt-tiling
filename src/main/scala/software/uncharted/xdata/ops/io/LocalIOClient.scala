@@ -23,21 +23,6 @@ import org.apache.spark.rdd.RDD
   */
 trait LocalIOClient[T] {
   /**
-    * A function to translate from the standard (level, x, y) tile index we use most often to the form needed by our
-    * type of I/O
-    */
-  val standardTileIndexTranslator: (String, (Int, Int, Int)) => String
-
-
-  /**
-    * Write out a standard dataset, indexed by the standard (level, x y) triplet.
-    */
-  def write(datasetName: String, data: RDD[((Int, Int, Int), Array[Byte])]): Unit = {
-    val localStandardTileIndexTranslator = standardTileIndexTranslator
-    write[(Int, Int, Int)](datasetName, data, standardTileIndexTranslator)
-  }
-
-  /**
     * Write out an entire dataset
     *
     * @param indexFcn A function to translate from indices to differentiating i/o keys
