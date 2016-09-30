@@ -105,26 +105,20 @@ object XYSegmentJob extends Logging {
     }
   }
 
-  private def writeMetadata[TC, BC, X](baseConfig: Config)(tiles: RDD[SeriesData[TC, BC, Double, X]]): RDD[SeriesData[TC, BC, Double, X]] = {
+  private def writeMetadata[BC, V](baseConfig: Config)(tiles: RDD[SeriesData[(Int, Int, Int), BC, V, (Double, Double)]]): RDD[SeriesData[(Int, Int, Int), BC, V, (Double, Double)]] = {
+    import net.liftweb.json.JsonDSL._ // scalastyle:ignore
+    import net.liftweb.json.JsonAST._ // scalastyle:ignore
+
     val metadata = tiles
-      .map(tile => (tile.coords.asInstanceOf[Tuple3[Int, Int, Int]]._1.toString, tile.tileMeta))
-      .mapValues(tileMeta => {
-        tileMeta match {
-          case Some(minMax) => (minMax.asInstanceOf[Tuple2[Double, Double]]._1, minMax.asInstanceOf[Tuple2[Double, Double]]._2)
-          case None => (0.0, 0.0)
-        }
+      .map(tile => {
+        val (level, minMax) = (tile.coords._1, tile.tileMeta.getOrElse((0.0, 0.0)))
+        level.toString -> (("min" -> minMax._1) ~ ("max" -> minMax._2))
       })
-      .mapValues(minMax =>
-        JSONObject(Map(
-          "min" -> minMax._1,
-          "max" -> minMax._2
-        ))
-      )
       .collect()
       .toMap
 
 
-    val jsonBytes = metadata.toString().getBytes
+    val jsonBytes = compactRender(metadata).getBytes.toSeq
     createMetadataOutputOperation(baseConfig).foreach(_("metadata.json", jsonBytes))
 
     tiles
