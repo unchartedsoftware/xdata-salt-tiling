@@ -18,6 +18,14 @@ import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.mllib.feature.{HashingTF, IDF}
 
 package object text {
+  /**
+    * Calculate the TFIDF of the input column and store the (term, tfidf) results in the output column.
+    *
+    * @param inputColumnName Name of the input column. It should be a Seq[String].
+    * @param outputColumnName Name of the output column. It will be a Seq[Row] with each row having two columns: term (String) & tfidf (Double).
+    * @param input Input DataFrame
+    * @return DataFrame with the calculated TFIDF values.
+    */
   def tfidf (inputColumnName: String, outputColumnName: String)(input: DataFrame): DataFrame = {
 
     //Get the TF. MLLib needs an RDD of iterable.
