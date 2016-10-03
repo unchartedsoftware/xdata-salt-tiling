@@ -12,7 +12,7 @@
   */
 package software.uncharted.xdata.sparkpipe.jobs
 
-import com.typesafe.config.Config
+import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.xdata.ops.io.serializeElementDoubleScore
@@ -97,5 +97,21 @@ object XYTileTFIDFJob extends Logging {
         .to(outputOperation)
         .run
     }
+  }
+
+  def execute(args: Array[String]): Unit = {
+    // get the properties file path
+    if (args.length < 1) {
+      logger.error("Path to conf file required")
+      sys.exit(-1)
+    }
+
+    // load properties file from supplied URI
+    val config = ConfigFactory.parseReader(scala.io.Source.fromFile(args(0)).bufferedReader()).resolve()
+    execute(config)
+  }
+
+  def main (args: Array[String]): Unit = {
+    execute(args)
   }
 }
