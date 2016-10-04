@@ -40,7 +40,7 @@ class BasicOperationsTest extends SparkFunSpec {
     }
 
     describe("#regexFilter") {
-      it("SHould pass through only strings that match the given regular expression") {
+      it("Should pass through only strings that match the given regular expression") {
         val data = sc.parallelize(Seq("abc def ghi", "abc d e f ghi", "the def quick", "def ghi", "abc def"))
         assertResult(List("abc def ghi", "the def quick", "def ghi"))(regexFilter(".*def.+")(data).collect.toList)
         assertResult(List("abc d e f ghi", "def ghi"))(regexFilter(".+def.*", true)(data).collect.toList)
@@ -80,7 +80,29 @@ class BasicOperationsTest extends SparkFunSpec {
         assertResult(List("one", "two", "three", "four"))(converted.select("c").rdd.map(_(0).asInstanceOf[String]).collect.toList)
       }
     }
+
+    describe("#joinDataFrames") {
+      it("Should combine two dataframes correctly") {
+        val left = toDataFrame(sqlc)(sc.parallelize(Seq(TestRow(1, 0.5, "a"), TestRow(2, 1.5, "b"), TestRow(3, 2.5, "c"))))
+        val right = toDataFrame(sqlc)(sc.parallelize(Seq(TestRow(1, 1.0, "e"), TestRow(2, 2.0, "d"), TestRow(3, 3.0, "c"), TestRow(4, 4.0, "b"))))
+
+        val rawJoined = joinDataFrames("a", "a")(left, right).rdd.collect
+        val joined = joinDataFrames("a", "a")(left, right).rdd.collect.map { row =>
+          assert(row(0) === row(3))
+          (
+            row(0).asInstanceOf[Int],
+            row(1).asInstanceOf[Double], row(2).asInstanceOf[String],
+            row(4).asInstanceOf[Double], row(5).asInstanceOf[String]
+            )
+        }.sortBy(_._1)
+
+        assert(3 === joined.length)
+        assert((1, 0.5, "a", 1.0, "e") === joined(0))
+        assert((2, 1.5, "b", 2.0, "d") === joined(1))
+        assert((3, 2.5, "c", 3.0, "c") === joined(2))
+      }
+    }
   }
 }
 
-case class TestRow (a: Int, b: Double, c: String)
+case class TestRow(a: Int, b: Double, c: String)

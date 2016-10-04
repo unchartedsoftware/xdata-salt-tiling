@@ -144,4 +144,15 @@ object BasicOperations {
 
     parser.csvRdd(sqlc, input)
   }
+
+  def joinDataFrames (indexColumnA: String, indexColumnB: String)(inputA: DataFrame, inputB: DataFrame): DataFrame = {
+    inputA.join(inputB, inputA(indexColumnA) === inputB(indexColumnB))
+  }
+}
+
+class OverlappingSchemaException (val overlappingColumns: Seq[String], message: String, cause: Throwable)
+  extends Exception(message, cause) {
+  def this (overlappingColumns: Seq[String]) = this(overlappingColumns, null, null)
+  def this (overlappingColumns: Seq[String], cause: Throwable) = this(overlappingColumns, null, cause)
+  def this (overlappingColumns: Seq[String], message: String) = this(overlappingColumns, message, null)
 }
