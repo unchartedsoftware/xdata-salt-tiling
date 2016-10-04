@@ -16,7 +16,7 @@ import java.io.File
 import java.nio.file.{Paths, Files}
 
 import org.apache.commons.io.FileUtils
-import software.uncharted.salt.core.generation.output.TestSeriesData
+import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.util.SparseArray
 import software.uncharted.xdata.ops.salt.MercatorTimeProjection
 import software.uncharted.xdata.spark.SparkFunSpec
@@ -210,8 +210,8 @@ class PackageTest extends SparkFunSpec {
     it("should create an RDD of bin coordinate / byte array tuples from series data") {
       val series = sc.parallelize(
         Seq(
-          TestSeriesData(new MercatorTimeProjection(Seq(0)), (3, 1, 1), (1, 2, 3), arr0, Some(0.0, 1.0)),
-          TestSeriesData(new MercatorTimeProjection(Seq(0)), (3, 1, 1), (4, 5, 6), arr1, Some(0.0, 1.0))
+          new SeriesData(new MercatorTimeProjection(Seq(0)), (3, 1, 1), (1, 2, 3), arr0, Some(0.0, 1.0)),
+          new SeriesData(new MercatorTimeProjection(Seq(0)), (3, 1, 1), (4, 5, 6), arr1, Some(0.0, 1.0))
         ))
       val result = serializeBinArray(series).collect()
       assertResult(2)(result.length)
@@ -249,7 +249,7 @@ class PackageTest extends SparkFunSpec {
   describe("#serializeBinArray") {
     it("should ignore tiles with no updated bins") {
       val series = sc.parallelize(
-        Seq(TestSeriesData(
+        Seq(new SeriesData(
           new MercatorTimeProjection(Seq(0)), (3, 1, 1), (1, 2, 3), genHeatmapArray(0.0, 0.0, 0.0, 0.0), Some(0.0, 1.0))))
       val result = serializeBinArray(series).collect()
       assertResult(0)(result.length)
@@ -282,8 +282,8 @@ class PackageTest extends SparkFunSpec {
 
       val series = sc.parallelize(
         Seq(
-          TestSeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (1, 2, 3), arr0, None),
-          TestSeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (4, 5, 6), arr1, None)
+          new SeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (1, 2, 3), arr0, None),
+          new SeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (4, 5, 6), arr1, None)
         ))
 
       val json = List(new JSONObject(Map("aa" -> 1, "bb" -> 2)).toString().getBytes, new JSONObject(Map("cc" -> 3, "dd" -> 4)).toString().getBytes)
@@ -302,7 +302,7 @@ class PackageTest extends SparkFunSpec {
   describe("#serializeElementScore") {
     it("should ignore tiles with no updated bins ") {
       val series = sc.parallelize(
-        Seq(TestSeriesData(new MercatorTimeProjection(
+        Seq(new SeriesData(new MercatorTimeProjection(
           Seq(0)), (1, 1, 1), (1, 2, 3), genTopicArray(List()), None)))
       val result = serializeElementScore(series).collect()
       assertResult(0)(result.length)
