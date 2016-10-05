@@ -40,8 +40,6 @@ object MercatorSegmentOp {
                            zoomLevels: Seq[Int],
                            tileSize: Int)
                           (input: DataFrame): RDD[SeriesData[(Int, Int, Int), (Int, Int), Double, (Double, Double)]] = {
-
-    // TODO This is a copy from CartesianTimeHeatmap. Is it what we need?
     val valueExtractor: (Row) => Option[Double] = valueCol match {
       case Some(colName: String) => (r: Row) => {
         val rowIndex = r.schema.fieldIndex(colName)
@@ -74,8 +72,8 @@ object MercatorSegmentOp {
       coordinateExtractor,
       projection,
       valueExtractor,
-      SumAggregator, // TODO This is a copy from CartesianTimeHeatmap, as advised by Nathan. Does it work?
-      Some(MinMaxAggregator) // TODO This is a copy from CartesianTimeHeatmap, as advised by Nathan. Does it work?
+      SumAggregator,
+      Some(MinMaxAggregator)
     )
 
     BasicSaltOperations.genericTiling(series)(request)(input.rdd)
