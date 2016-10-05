@@ -40,7 +40,7 @@ object LDAOp {
     val wordLists = input.map{case (id, text) =>
         val words = text.split(notWord).map(_.toLowerCase)
         val wordCounts = MutableMap[String, Int]()
-        words.foreach(word => wordCounts(word) = wordCounts.getOrElse(word, 0))
+        words.foreach(word => wordCounts(word) = wordCounts.getOrElse(word, 0) + 1)
       (id, wordCounts.toList.sorted.toArray)
     }
     // Get a list of all used words, in alphabetical order.
@@ -50,7 +50,7 @@ object LDAOp {
     val wordVectors = wordLists.map{case (id, wordList) =>
       val indices = wordList.map{case (word, count) => dictionary(word)}
       val values = wordList.map{case (word, count) => count.toDouble}
-      val wordVector: Vector = new SparseVector(wordList.size, indices, values)
+      val wordVector: Vector = new SparseVector(dictionary.size, indices, values)
       (id, wordVector)
     }
     (dictionary, wordVectors)
@@ -100,6 +100,7 @@ object LDAOp {
 
     // Figure out our dictionary
     val (dictionary, documents) = textToWordCount(input)
+    val localDocs = documents.collect
 
     val model = getDistributedModel(sc, new LDA().setK(numTopics).setOptimizer("em").run(documents))
 
