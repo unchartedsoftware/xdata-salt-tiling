@@ -26,6 +26,7 @@ import org.apache.spark.rdd.RDD
   * An operation to run Latent Dirichlet Allocation on texts in a corpus
   */
 object LDAOp {
+  val stopWords = scala.io.Source.fromInputStream(getClass.getResourceAsStream("/software/uncharted/xdata/ops/salt/text/STOPWORDS/stopwords_en.txt")).getLines.map(_.trim.toLowerCase).toSet
   val notWord = "('[^a-zA-Z]|[^a-zA-Z]'|[^a-zA-Z'])+"
   val tmpDir: String = "/tmp"
 
@@ -38,13 +39,18 @@ object LDAOp {
     */
   def textToWordCount[T] (input: RDD[(T, String)]): (Map[String, Int], RDD[(T, Vector)]) = {
     val wordLists = input.map{case (id, text) =>
-        val words = text.split(notWord).map(_.toLowerCase)
+        val words = text.split(notWord).map(_.toLowerCase).filter(word => !stopWords.contains(word))
         val wordCounts = MutableMap[String, Int]()
         words.foreach(word => wordCounts(word) = wordCounts.getOrElse(word, 0) + 1)
       (id, wordCounts.toList.sorted.toArray)
     }
     // Get a list of all used words, in alphabetical order.
-    val dictionary = wordLists.flatMap(_._2).map(_._1).distinct.collect.sorted.zipWithIndex.toMap
+    // First, collect them up with counts...
+    // Then knock off the top 200 (assume they are stop words)...
+    // Then record the rest
+    val allWords = wordLists.flatMap(_._2).reduceByKey(_ + _).collect.sortBy(-_._2)
+    val dictionary = allWords.map(_._1).sorted.zipWithIndex.toMap
+//    val dictionary = wordLists.flatMap(_._2).map(_._1).distinct.collect.sorted.zipWithIndex.toMap
 
     // Port that dictionary back into our word maps, creating sparse vectors by map index
     val wordVectors = wordLists.map{case (id, wordList) =>
@@ -61,12 +67,12 @@ object LDAOp {
     *
     * @param idCol The name of a column containing a (long) id unique to each row
     * @param textCol The name of the column containing the text to analyze
-    * @param k The number of topics to find
-    * @param n The number of topics to record for each document
+    * @param numTopics The number of topics to find
+    * @param topicsPerDocument The number of topics to record for each document
     * @param input The dataframe containing the data to analyze
     * @return The topics for each document
     */
-  def lda (idCol: String, textCol: String, k: Int, w: Int, n: Int)(input: DataFrame): DataFrame = {
+  def lda(idCol: String, textCol: String, numTopics: Int, wordsPerTopic: Int, topicsPerDocument: Int)(input: DataFrame): DataFrame = {
     val textRDD = input.select(idCol, textCol).rdd.map { row =>
       val id = row.getLong(0)
       val text = row.getString(1)
@@ -74,7 +80,7 @@ object LDAOp {
     }
 
     // Perform our LDA analysis
-    val rawResults = lda(k, w, n)(textRDD).map{case (index, text, scores) =>
+    val rawResults = lda(numTopics, wordsPerTopic, topicsPerDocument)(textRDD).map{case (index, text, scores) =>
       // Get rid of the text, and put the results in a product we can turn to a DataFrame easily
       DocumentTopics(index, scores)
     }
