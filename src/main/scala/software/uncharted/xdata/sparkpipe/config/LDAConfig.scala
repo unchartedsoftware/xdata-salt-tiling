@@ -66,13 +66,17 @@ object LDAConfig {
   }
 
   private def optionallyGetSubconfig (config: Config, key: String): Option[Config] = {
-    if (config.hasPath(key))
+    if (config.hasPath(key)) {
       Some(config.getConfig(key))
-    else
+    } else {
       None
+    }
   }
   private def optionallyGetString (config: Config, key: String, defaultValue: String): String = {
-    if (config.hasPath(key)) config.getString(key)
-    else defaultValue
+    if (config.hasPath(key)) {
+      config.getString(key)
+    } else {
+      defaultValue
+    }
   }
 }

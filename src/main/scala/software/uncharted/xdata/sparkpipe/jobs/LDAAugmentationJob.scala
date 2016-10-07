@@ -27,16 +27,8 @@ import scala.util.{Failure, Success}
   * A job that augments a csv-like dataset with a new column representing the LDA-derived topics in that dataset
   */
 object LDAAugmentationJob extends AbstractJob {
-  /**
-    * This function actually executes the task the job describes
-    *
-    * @param sqlc   An SQL context in which to run spark processes in our job
-    * @param config The job configuration
-    */
-  override def execute(sqlc: SQLContext, config: Config): Unit = {
-    config.resolve()
-
-    val inputConfig = HdfsIOConfig.csv("input")(config) match {
+  private def readInputConfig (config: Config): HdfsCsvConfig = {
+    HdfsIOConfig.csv("input")(config) match {
       case Success(config) => {
         if (config.neededColumns.length != 1) {
           logger.error("Input configuration specifies other than 1 column")
@@ -48,22 +40,39 @@ object LDAAugmentationJob extends AbstractJob {
         logger.error("Error reading input config", e)
         sys.exit(-1)
     }
+  }
 
-    val ldaConfig = LDAConfig(config) match {
-      case Success(config) => config
-      case Failure(e) =>
-        logger.error("Error reading LDA configuration", e)
-        sys.exit(-1)
-    }
-
-    val outputConfig = HdfsIOConfig.csv("output")(config) match {
+  private def readOutputConfig (config: Config): HdfsCsvConfig = {
+    HdfsIOConfig.csv("output")(config) match {
       case Success(config) => config
       case Failure(e) =>
         logger.error("Error reading output configuration", e)
         sys.exit(-1)
     }
+  }
 
+  private def readLDAConfig (config: Config): LDAConfig = {
+    LDAConfig(config) match {
+      case Success(config) => config
+      case Failure(e) =>
+        logger.error("Error reading LDA configuration", e)
+        sys.exit(-1)
+    }
+  }
 
+  /**
+    * This function actually executes the task the job describes
+    *
+    * @param sqlc   An SQL context in which to run spark processes in our job
+    * @param config The job configuration
+    */
+  override def execute(sqlc: SQLContext, config: Config): Unit = {
+    config.resolve()
+
+    val inputConfig = readInputConfig(config)
+    val outputConfig = readOutputConfig(config)
+
+    val ldaConfig = readLDAConfig(config)
 
     // Read data
     val inputData = readFile(sqlc.sparkContext, inputConfig).zipWithIndex().map { case ((rawRecord, fields), index) =>
@@ -96,8 +105,11 @@ object LDAAugmentationJob extends AbstractJob {
 
     // Replace separators if necessary
     val toWrite =
-      if (outputConfig.separator == inputConfig.separator) output
-      else output.map(line => line.split(inputConfig.separator).mkString(outputConfig.separator))
+      if (outputConfig.separator == inputConfig.separator) {
+        output
+      } else {
+        output.map(line => line.split(inputConfig.separator).mkString(outputConfig.separator))
+      }
 
     // Write out the data
     toWrite.saveAsTextFile(outputConfig.location)

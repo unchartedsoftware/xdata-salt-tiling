@@ -94,7 +94,8 @@ class LDAOperationTests extends SparkFunSpec {
   }
 
   def printResults (input: DataFrame, output: DataFrame): Unit = {
-    input.join(output, input("index") === output("documentIndex")).select("index", "text", "topics").collect.map{row =>
+    val outputRenamed = output.toDF("outputIndex", "outputText", "topics")
+    input.join(outputRenamed, input("index") === outputRenamed("outputIndex")).select("index", "text", "topics").collect.map{row =>
       val id = row.getLong(0)
       val text = row.getString(1)
 

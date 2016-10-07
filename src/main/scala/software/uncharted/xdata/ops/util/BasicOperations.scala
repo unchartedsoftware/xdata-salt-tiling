@@ -152,7 +152,9 @@ object BasicOperations {
 
 class OverlappingSchemaException (val overlappingColumns: Seq[String], message: String, cause: Throwable)
   extends Exception(message, cause) {
+  // scalastyle:off null
   def this (overlappingColumns: Seq[String]) = this(overlappingColumns, null, null)
   def this (overlappingColumns: Seq[String], cause: Throwable) = this(overlappingColumns, null, cause)
   def this (overlappingColumns: Seq[String], message: String) = this(overlappingColumns, message, null)
+  // scalastyle:on null
 }

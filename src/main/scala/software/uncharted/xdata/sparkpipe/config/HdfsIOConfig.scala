@@ -14,7 +14,7 @@ package software.uncharted.xdata.sparkpipe.config
 
 
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters._ // scalastyle:ignore
 import scala.util.Try
 import com.typesafe.config.Config
 
@@ -35,18 +35,32 @@ object HdfsIOConfig {
   def csv(key: String, defaultSeparator: String = DEFAULT_SEPARATOR)(config: Config): Try[HdfsCsvConfig] = {
     Try {
       val fileConfig = config.getConfig(key)
+      val separator =
+        if (fileConfig.hasPath(SEPARATOR_KEY)) {
+          fileConfig.getString(SEPARATOR_KEY)
+        } else {
+          defaultSeparator
+        }
+      val neededColumns =
+        if (fileConfig.hasPath(RELEVANT_COLUMNS_KEY)) {
+          fileConfig.getIntList(RELEVANT_COLUMNS_KEY).asScala.toSeq.map(_.intValue())
+        } else {
+          Seq[Int]()
+        }
+
       HdfsCsvConfig(
         fileConfig.getString(LOCATION_KEY),
         optionalInt(fileConfig, PARTITIONS_KEY),
-        if (fileConfig.hasPath(SEPARATOR_KEY)) fileConfig.getString(SEPARATOR_KEY)
-        else defaultSeparator,
-        if (fileConfig.hasPath(RELEVANT_COLUMNS_KEY)) fileConfig.getIntList(RELEVANT_COLUMNS_KEY).asScala.toSeq.map(_.intValue())
-        else Seq[Int]()
+        separator,
+        neededColumns
       )
     }
   }
 
   def optionalInt (config: Config, path: String): Option[Int] =
-    if (config.hasPath(path)) Some(config.getInt(path))
-    else None
+    if (config.hasPath(path)) {
+      Some(config.getInt(path))
+    } else {
+      None
+    }
 }

@@ -26,7 +26,11 @@ import org.apache.spark.rdd.RDD
   * An operation to run Latent Dirichlet Allocation on texts in a corpus
   */
 object LDAOp {
-  val stopWords = scala.io.Source.fromInputStream(getClass.getResourceAsStream("/software/uncharted/xdata/ops/salt/text/STOPWORDS/stopwords_en.txt")).getLines.map(_.trim.toLowerCase).toSet
+  val stopWords = {
+    val stopWordsFile = "/software/uncharted/xdata/ops/salt/text/STOPWORDS/stopwords_en.txt"
+    val stopWordsFileStream = getClass.getResourceAsStream(stopWordsFile)
+    scala.io.Source.fromInputStream(stopWordsFileStream).getLines.map(_.trim.toLowerCase).toSet
+  }
   val notWord = "('[^a-zA-Z]|[^a-zA-Z]'|[^a-zA-Z'])+"
   val tmpDir: String = "/tmp"
 
