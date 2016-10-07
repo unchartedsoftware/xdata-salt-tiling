@@ -239,6 +239,7 @@ dependencies {
 
 	// Provided config - needed to compile, expected to be available when deployed
 	provided "org.apache.spark:spark-core_$dependencyScalaVersion:$sparkVersion"
+  provided "org.apache.spark:spark-mllib_$dependencyScalaVersion:$sparkVersion"
 	provided "org.apache.spark:spark-sql_$dependencyScalaVersion:$sparkVersion"
 
 	// Test related
