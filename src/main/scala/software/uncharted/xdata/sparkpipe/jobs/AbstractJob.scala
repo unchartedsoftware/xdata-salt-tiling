@@ -12,18 +12,25 @@
   */
 package software.uncharted.xdata.sparkpipe.jobs
 
+
+
 import java.io.File
 
 import scala.io.Source
+import scala.collection.JavaConverters._ // scalastyle:ignore
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
 import org.apache.spark.sql.SQLContext
+
 import software.uncharted.xdata.sparkpipe.config.SparkConfig
+
+
 
 /**
   * A basic job trait that standardizes reading and combining config files and execution
   */
 trait AbstractJob extends Logging {
+  var debug = false
   /**
     * This function actually executes the task the job describes
     *
@@ -43,20 +50,32 @@ trait AbstractJob extends Logging {
     val environmentalConfig = ConfigFactory.load()
     val config =
       args.flatMap { cfgFileName =>
-        val cfgFile = new File(cfgFileName)
-        if (!cfgFile.exists()) {
-          logger.warn(s"Config file $cfgFileName doesn't exist")
-          None
-        } else if (!cfgFile.isFile) {
-          logger.warn(s"Config file $cfgFileName is a directory, not a file")
-          None
-        } else if (!cfgFile.canRead) {
-          logger.warn(s"Can't read config file $cfgFileName")
+        if (cfgFileName == "debug") {
+          debug = true
           None
         } else {
-          Some(ConfigFactory.parseReader(Source.fromFile(cfgFile).bufferedReader()))
+          val cfgFile = new File(cfgFileName)
+          if (!cfgFile.exists()) {
+            logger.warn(s"Config file $cfgFileName doesn't exist")
+            None
+          } else if (!cfgFile.isFile) {
+            logger.warn(s"Config file $cfgFileName is a directory, not a file")
+            None
+          } else if (!cfgFile.canRead) {
+            logger.warn(s"Can't read config file $cfgFileName")
+            None
+          } else {
+            if (debug) {
+              println(s"Reading config file $cfgFile")
+            }
+            Some(ConfigFactory.parseReader(Source.fromFile(cfgFile).bufferedReader()))
+          }
         }
       }.fold(environmentalConfig)((base, fallback) => base.withFallback(fallback))
+
+    if (debug) {
+      debugConfig(config)
+    }
 
     val sqlc = SparkConfig(config)
     try {
@@ -66,6 +85,14 @@ trait AbstractJob extends Logging {
     }
   }
 
+  def debugConfig (config: Config): Unit = {
+    println("Full config info:")
+    config.entrySet().asScala.foreach{entry =>
+      val key = entry.getKey
+      val value = entry.getValue
+      println(s"""\t"$key":"$value"""")
+    }
+  }
   /**
     * All jobs need a main function to allow them to run
     */
