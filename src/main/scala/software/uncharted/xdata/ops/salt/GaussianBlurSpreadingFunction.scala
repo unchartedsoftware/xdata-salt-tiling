@@ -18,8 +18,8 @@ class GaussianBlurSpreadingFunction(radius: Int, sigma: Double, maxBins: (Int, I
     */
   // TODO: Are there types for tile coordinate, bin coordinate?
   // TODO: Should those types take into acct 3 dimensional bin coordinates which are present in
+  // TODO: Confirm that the default value is 1.0
   override def spread(coordsTraversable: Traversable[((Int, Int, Int), (Int, Int))], value: Option[Double]): Traversable[((Int, Int, Int), (Int, Int), Option[Double])] = {
-    // TODO: Confirm that the default value is 1.0
     val coordsValueMap = coordsTraversable
       .flatMap(addNeighbouringBins(value.getOrElse(1.0))) // Add bins in neighborhood, affected by gaussian blur
       .groupBy(coordsValueMap => coordsValueMap._1) // Group by key. Key: (tileCoordinate, binCoordinate)
@@ -39,7 +39,7 @@ class GaussianBlurSpreadingFunction(radius: Int, sigma: Double, maxBins: (Int, I
     for (kernelX <- 0 to kernelDimension - 1) {
       for (kernelY <- 0 to kernelDimension - 1) {
         val (kernelTileCoord, kernelBinCoord) = calcKernelCoord(tileCoordinate, binCoordinate, (kernelX, kernelY))
-        if (kernelTileCoord != tileCoordinate || kernelBinCoord != binCoordinate) {
+        if (!result.contains(kernelTileCoord, kernelBinCoord)) {
           result = result + ((kernelTileCoord, kernelBinCoord) -> 0.0)
         }
       }
