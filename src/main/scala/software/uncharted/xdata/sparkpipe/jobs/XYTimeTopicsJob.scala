@@ -14,7 +14,7 @@ package software.uncharted.xdata.sparkpipe.jobs
 
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.{DataFrame, SQLContext}
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.temporal.parseDate
 import software.uncharted.sparkpipe.ops.core.dataframe.text.{includeTermFilter, split}
@@ -24,11 +24,10 @@ import software.uncharted.xdata.sparkpipe.config.{Schema, SparkConfig, TilingCon
 import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOperation, createTileOutputOperation, dataframeFromSparkCsv}
 
 // scalastyle:off method.length
-object XYTimeTopicsJob extends Logging {
-
+object XYTimeTopicsJob extends AbstractJob {
   private val convertedTime = "convertedTime"
 
-  def execute(config: Config): Unit = {
+  def execute(sqlc: SQLContext, config: Config): Unit = {
 
     config.resolve()
 
@@ -65,27 +64,21 @@ object XYTimeTopicsJob extends Logging {
     }
 
     // Create the spark context from the supplied config
-    val sqlc = SparkConfig(config)
-    try {
-      // Create the dataframe from the input config
-      val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc)
+    // Create the dataframe from the input config
+    val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc)
 
-      // Pipe the dataframe
-      Pipe(df)
-        .to(split(topicsConfig.textCol, "\\b+"))
-        .to(includeTermFilter(topicsConfig.textCol, topicsConfig.termList.keySet))
-        .to(_.select(topicsConfig.xCol, topicsConfig.yCol, topicsConfig.timeCol, topicsConfig.textCol))
-        .to(_.cache())
-        .to(topicsOp)
-        .to(serializeElementScore)
-        .to(outputOperation)
-        .run()
+    // Pipe the dataframe
+    Pipe(df)
+      .to(split(topicsConfig.textCol, "\\b+"))
+      .to(includeTermFilter(topicsConfig.textCol, topicsConfig.termList.keySet))
+      .to(_.select(topicsConfig.xCol, topicsConfig.yCol, topicsConfig.timeCol, topicsConfig.textCol))
+      .to(_.cache())
+      .to(topicsOp)
+      .to(serializeElementScore)
+      .to(outputOperation)
+      .run()
 
-      writeMetadata(config, tilingConfig, topicsConfig)
-
-    } finally {
-      sqlc.sparkContext.stop()
-    }
+    writeMetadata(config, tilingConfig, topicsConfig)
   }
 
   private def writeMetadata(baseConfig: Config, tilingConfig: TilingConfig, topicsConfig: XYTimeTopicsConfig): Unit = {
@@ -106,21 +99,5 @@ object XYTimeTopicsJob extends Logging {
 
     val termJsonBytes = compactRender(topicsConfig.termList).toString().getBytes.toSeq
     outputOp.foreach(_("terms.json", termJsonBytes))
-  }
-
-  def execute(args: Array[String]): Unit = {
-    // get the properties file path
-    if (args.length < 1) {
-      logger.error("Path to conf file required")
-      sys.exit(-1)
-    }
-
-    // load properties file from supplied URI
-    val config = ConfigFactory.parseReader(scala.io.Source.fromFile(args(0)).bufferedReader()).resolve()
-    execute(config)
-  }
-
-  def main (args: Array[String]): Unit = {
-    XYTimeTopicsJob.execute(args)
   }
 }

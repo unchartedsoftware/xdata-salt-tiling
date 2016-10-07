@@ -17,8 +17,8 @@ import software.uncharted.xdata.ops.util.BasicOperations
 import software.uncharted.xdata.spark.mllib.MatrixUtilities
 
 import scala.collection.mutable.{Map => MutableMap}
-import org.apache.spark.mllib.clustering.{LDAModel, DistributedLDAModel, LDA, LocalLDAModel}
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.mllib.clustering.{DistributedLDAModel, LDA, LDAModel, LocalLDAModel}
+import org.apache.spark.sql.{Column, DataFrame}
 import org.apache.spark.mllib.linalg.{DenseVector, Matrix, SparseVector, Vector}
 import org.apache.spark.rdd.RDD
 
@@ -38,6 +38,7 @@ object LDAOp {
     * @return
     */
   def textToWordCount[T] (input: RDD[(T, String)]): (Map[String, Int], RDD[(T, Vector)]) = {
+    // Break documents up into word bags, with counts, ignoring stop words
     val wordLists = input.map{case (id, text) =>
         val words = text.split(notWord).map(_.toLowerCase).filter(word => !stopWords.contains(word))
         val wordCounts = MutableMap[String, Int]()
@@ -45,12 +46,8 @@ object LDAOp {
       (id, wordCounts.toList.sorted.toArray)
     }
     // Get a list of all used words, in alphabetical order.
-    // First, collect them up with counts...
-    // Then knock off the top 200 (assume they are stop words)...
-    // Then record the rest
     val allWords = wordLists.flatMap(_._2).reduceByKey(_ + _).collect.sortBy(-_._2)
     val dictionary = allWords.map(_._1).sorted.zipWithIndex.toMap
-//    val dictionary = wordLists.flatMap(_._2).map(_._1).distinct.collect.sorted.zipWithIndex.toMap
 
     // Port that dictionary back into our word maps, creating sparse vectors by map index
     val wordVectors = wordLists.map{case (id, wordList) =>
@@ -73,6 +70,9 @@ object LDAOp {
     * @return The topics for each document
     */
   def lda(idCol: String, textCol: String, numTopics: Int, wordsPerTopic: Int, topicsPerDocument: Int)(input: DataFrame): DataFrame = {
+    val sqlc = input.sqlContext
+
+    // Get the indexed documents
     val textRDD = input.select(idCol, textCol).rdd.map { row =>
       val id = row.getLong(0)
       val text = row.getString(1)
@@ -80,13 +80,11 @@ object LDAOp {
     }
 
     // Perform our LDA analysis
-    val rawResults = lda(numTopics, wordsPerTopic, topicsPerDocument)(textRDD).map{case (index, text, scores) =>
-      // Get rid of the text, and put the results in a product we can turn to a DataFrame easily
-      DocumentTopics(index, scores)
-    }
+    val rawResults = lda(numTopics, wordsPerTopic, topicsPerDocument)(textRDD)
+    // Mutate to dataframe form for joining with original data
+    val dfResults = sqlc.createDataFrame(rawResults.map{case (index, scores) => DocumentTopics(index, scores)})
 
-    // Reformat to a dataframe
-    BasicOperations.toDataFrame(input.sqlContext)(rawResults)
+    input.join(dfResults, input(idCol) === dfResults("ldaDocumentIndex")).drop(new Column("ldaDocumentIndex"))
   }
 
   /**
@@ -101,7 +99,7 @@ object LDAOp {
     *         Seq[(word, wordScoreForTopic)]
     */
   def lda (numTopics: Int, wordsPerTopic: Int, topicsPerDocument: Int)
-          (input: RDD[(Long, String)]): RDD[(Long, String, Seq[TopicScore])] = {
+          (input: RDD[(Long, String)]): RDD[(Long, Seq[TopicScore])] = {
     val sc = input.context
 
     // Figure out our dictionary
@@ -117,7 +115,7 @@ object LDAOp {
     val topicsByDocument: RDD[(Long, Array[Int], Array[Double])] = model.topTopicsPerDocument(topicsPerDocument)
 
     // Unwind the topics for each document
-    input.join(topicsByDocument.map { case (docId, topics, weights) =>
+    topicsByDocument.map { case (docId, topics, weights) =>
       // Get the top n topic indices
       val topTopics = topics.zip(weights).sortBy(-_._2).take(topicsPerDocument).toSeq
 
@@ -125,8 +123,6 @@ object LDAOp {
       (docId, topTopics.map { case (index, score) =>
         TopicScore(allTopics(index), score)
       })
-    }).map{case (id, (document, topics)) =>
-      (id, document, topics)
     }
   }
 
@@ -161,4 +157,4 @@ object LDAOp {
 
 case class WordScore (word: String, score: Double)
 case class TopicScore (topic: Seq[WordScore], score: Double)
-case class DocumentTopics (documentIndex: Long, topics: Seq[TopicScore])
+case class DocumentTopics (ldaDocumentIndex: Long, topics: Seq[TopicScore])
