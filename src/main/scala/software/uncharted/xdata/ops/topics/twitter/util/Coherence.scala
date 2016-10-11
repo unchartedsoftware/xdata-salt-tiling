@@ -19,6 +19,7 @@ import grizzled.slf4j.Logging
 import org.apache.spark.rdd.RDD
 import scala.io.Source
 import scala.math._
+import org.apache.spark.sql.DataFrame
 
 object Coherence extends Serializable with Logging {
 
@@ -88,7 +89,7 @@ object Coherence extends Serializable with Logging {
    * @param topT         the top T words which to consider in computing coherence scores
    * @return       (Array of coherence scores (one per topic), average coherence score for input data)
    */
-  def computeCoherence(rdd: RDD[String], topic_terms: Array[Array[String]], topT: Int) : (Seq[Double], Double) = {
+  def computeCoherenceHelper(rdd: RDD[String], topic_terms: Array[Array[String]], topT: Int) : (Seq[Double], Double) = {
     val topT_topics = topic_terms.map(x => x.take(topT)).toSeq
     val vocabulary = topTwordsFromTopics(topic_terms, topT)
     // convert documents into token arrays
@@ -103,5 +104,25 @@ object Coherence extends Serializable with Logging {
     }
     val avg_cs = cs.sum / cs.size
     (cs, avg_cs)
+  }
+
+  def computeCoherence (
+    cparts : Array[(String, Array[(Double, Seq[String])], Array[Double], Array[Double], Map[Int,Int], Int, Double)],
+    data: DataFrame,
+    numTopTopics : Int,
+    textCol : String
+  ) : scala.collection.mutable.Map[String, (Seq[Double], Double)] = {
+
+    var result : scala.collection.mutable.Map[String, (Seq[Double], Double)] = scala.collection.mutable.Map()
+
+    cparts.foreach { cp =>
+      val (date, topic_dist, theta, phi, nzMap, m, duration) = cp
+      val topic_terms = topic_dist.map(x => x._2.toArray)
+      val textrdd = data.select(textCol).rdd.map(r => r(r.fieldIndex(textCol)).toString)
+      val (_cs, _avg_cs) = Coherence.computeCoherenceHelper(textrdd, topic_terms, numTopTopics)
+      result += ((date, (_cs, _avg_cs)))
+    }
+
+    result
   }
 }

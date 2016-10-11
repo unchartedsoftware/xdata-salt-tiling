@@ -40,8 +40,13 @@ object TopicModellingJob extends Logging {
     val sqlContext: SQLContext = SparkConfig(config)
     val sparkContext: SparkContext = sqlContext.sparkContext
     val params: TopicModellingParams = TopicModellingConfigParser.parse(config, sparkContext)
+    //
+    // val outputOperation = createTileOutputOperation(config).getOrElse {
+    //   logger.error("Output operation config")
+    //   sys.exit(-1)
+    // }
 
-    // Parse Errors?
+    // TODO Parse Errors?
     val reader = sqlContext.read
     .format("com.databricks.spark.csv")
     .option("header", "true")
@@ -60,6 +65,7 @@ object TopicModellingJob extends Logging {
       params.numTopTopics,
       params.outdir,
       params.path,
+      sqlContext,
       params.startDate,
       params.stopwords_bcst,
       params.textCol,
@@ -68,7 +74,9 @@ object TopicModellingJob extends Logging {
 
     try {
       Pipe(reader.load(params.path))
-        .to(topicModellingOp).run()
+        .to(topicModellingOp)
+        // .maybeTo(outputOperation)
+        .run()
     } finally {
       System.clearProperty("spark.driver.port")
       System.clearProperty("spark.hostPort")

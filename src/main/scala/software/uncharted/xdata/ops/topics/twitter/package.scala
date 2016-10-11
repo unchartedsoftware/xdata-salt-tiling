@@ -13,12 +13,14 @@
 package software.uncharted.xdata.ops.topics
 
 import org.apache.spark.broadcast.Broadcast
+import org.apache.spark.{SparkContext}
+import org.apache.spark.sql.{SQLContext}
 import org.apache.spark.sql.{Column, DataFrame}
 import org.joda.time.{Days, DateTime}
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.addColumn
 import software.uncharted.sparkpipe.ops.core.dataframe.temporal.dateFilter
-import software.uncharted.xdata.ops.topics.twitter.util.{BDPParallel, BTMUtil, TopicModellingUtil}
+import software.uncharted.xdata.ops.topics.twitter.util.{BDPParallel, BTMUtil, TopicModellingUtil, Coherence}
 
 /**
   *
@@ -37,6 +39,7 @@ package object twitter {
     numTopTopics: Int,
     outdir: String,
     path: String,
+    sqlContext: SQLContext,
     startDateStr: String,
     stopwords_bcst: Broadcast[Set[String]],
     textCol: String,
@@ -68,18 +71,23 @@ package object twitter {
 
     val cparts = TopicModellingUtil.castResults(parts)
 
-    TopicModellingUtil.writeResultsToFile(
+    var coherenceMap : Option[scala.collection.mutable.Map[String,(Seq[Double],Double)]] = None
+    if (computeCoherence) {
+      coherenceMap = Some(Coherence.computeCoherence(cparts, input, numTopTopics, textCol))
+    }
+
+    TopicModellingUtil.writeTopicsToDF(
       alpha,
       beta,
+      coherenceMap,
       computeCoherence,
       cparts,
       data,
       iterN,
       numTopTopics,
       outdir,
+      sqlContext,
       textCol
     )
-
-    input
   }
 }
