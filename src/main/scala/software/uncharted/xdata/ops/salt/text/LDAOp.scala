@@ -108,7 +108,6 @@ object LDAOp {
 
     // Figure out our dictionary
     val (dictionary, documents) = textToWordCount(input)
-    val localDocs = documents.collect
 
     val model = getDistributedModel(sc, new LDA().setK(numTopics).setOptimizer("em").run(documents))
 
