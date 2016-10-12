@@ -68,10 +68,11 @@ object LDAAugmentationJob extends AbstractJob {
     */
   override def execute(sqlc: SQLContext, config: Config): Unit = {
     config.resolve()
+    // Ignore info messages
+    org.apache.log4j.Logger.getRootLogger.setLevel(org.apache.log4j.Level.WARN)
 
     val inputConfig = readInputConfig(config)
     val outputConfig = readOutputConfig(config)
-
     val ldaConfig = readLDAConfig(config)
 
     // Read data
@@ -82,8 +83,10 @@ object LDAAugmentationJob extends AbstractJob {
 
     // Pull out the text column
     val texts = inputData.map { case (id, (rawRecord, text)) => (id, text) }
+    dbg("(1) There are " + texts.count + " texts")
     // Perform LDA on the text column
     val topics = LDAOp.lda(ldaConfig.numTopics, ldaConfig.wordsPerTopic, ldaConfig.topicsPerDocument)(texts)
+    dbg("(2) There are " + topics.count + " topic records")
     // Reformat topics for output
     val formattedTopics = topics.map { case (docId, topics) =>
       (
@@ -94,26 +97,47 @@ object LDAAugmentationJob extends AbstractJob {
         }.mkString(ldaConfig.topicSeparator)
         )
     }
-
+    dbg("(3) There are " + formattedTopics.count + " formatted topic records")
     // Join the LDA results back in
     val joinedData = inputData.join(formattedTopics)
+    dbg("(4) There are " + joinedData.count + " joined records")
     // TODO: Sort or not based upon an input parameter
     val sortedData = joinedData.sortBy(_._1)
+    dbg("(5) There are " + sortedData.count + " sorted recoreds")
     val output = sortedData.map { case (id, ((rawRecord, text), topics)) =>
       rawRecord + inputConfig.separator + topics
     }
 
     // Replace separators if necessary
-    val toWrite =
-      if (outputConfig.separator == inputConfig.separator) {
-        output
-      } else {
-        output.map(line => line.split(inputConfig.separator).mkString(outputConfig.separator))
-      }
-
+    val toWrite = reformatOutput(output, inputConfig, outputConfig)
+    dbg("(6) There are " + toWrite.count + " records to write\n" + "Writing to " + outputConfig.location)
     // Write out the data
     toWrite.saveAsTextFile(outputConfig.location)
   }
+
+  private def reformatOutput (startingOutput: RDD[String],
+                              inputConfig: HdfsCsvConfig,
+                              outputConfig: HdfsCsvConfig): RDD[String] = {
+    val reseparated =
+      if (outputConfig.separator == inputConfig.separator) {
+        startingOutput
+      } else {
+        startingOutput.map(line => line.split(inputConfig.separator).mkString(outputConfig.separator))
+      }
+    outputConfig.partitions.map(partitions => reseparated.repartition(partitions)).getOrElse(reseparated)
+  }
+
+  // scalastyle:off regex
+  def dbg (msg: String): Unit = {
+    println
+    println
+    println
+    println(msg)
+    println
+    println
+    println
+  }
+  // scalastyle:on regex
 
   def readFile (sc: SparkContext, config: HdfsCsvConfig): RDD[(String, Seq[String])] = {
     sc.textFile(config.location).map{line =>

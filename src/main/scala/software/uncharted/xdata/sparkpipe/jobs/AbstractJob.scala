@@ -66,7 +66,9 @@ trait AbstractJob extends Logging {
             None
           } else {
             if (debug) {
+              // scalastyle:off regex
               println(s"Reading config file $cfgFile")
+              // scalastyle:on regex
             }
             Some(ConfigFactory.parseReader(Source.fromFile(cfgFile).bufferedReader()))
           }
@@ -85,6 +87,7 @@ trait AbstractJob extends Logging {
     }
   }
 
+  // scalastyle:off regex
   def debugConfig (config: Config): Unit = {
     println("Full config info:")
     config.entrySet().asScala.foreach{entry =>
@@ -93,6 +96,8 @@ trait AbstractJob extends Logging {
       println(s"""\t"$key":"$value"""")
     }
   }
+  // scalastyle:on regex
+
   /**
     * All jobs need a main function to allow them to run
     */
