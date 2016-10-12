@@ -15,7 +15,7 @@ package software.uncharted.xdata.sparkpipe.jobs
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.{SQLContext, DataFrame}
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.xdata.ops.topics.twitter.doTopicModelling
 import software.uncharted.xdata.sparkpipe.config.{SparkConfig, TopicModellingConfigParser, TopicModellingParams}
@@ -24,63 +24,147 @@ import software.uncharted.xdata.sparkpipe.config.{SparkConfig, TopicModellingCon
 object TopicModellingJob extends Logging {
 
   /**
-    * Entrypoint
+    * This job runs the topic modelling op
+    *
+    * This job takes a config file as its only argument. The config file contains all parameters needed to run this job.
+    * The config file is of the format:
+    *   object {
+    *     key1 = value1
+    *     key2 = value2
+    *   }
+    *   object2 {
+    *     key1 = value1
+    * }
+    * And contains the following members:
+    *  Within the "topics" object:
+    *    "beta" (optional) : a Double that specifies the value of beta. Defaults to 0.01
+    *    "computeCoherence"  : a Boolean that specifies whether or not you would like to comput the coherence score of each topic
+    *    "dateColumn" : a String that specifies the column in which to find the date
+    *    "endDate" : a String that specifies the end (exclusive) of the date range you are running this job over
+    *    "idColumn" : a String that specifies the column in which to find the id
+    *    "iterN" (optional) : a String that specifies the number of iterations. Defaults to 150
+    *    "k" (optional) : a String that specifies the value of k. Defaults to 2
+    *    "numTopTopics" : a String that specifies the number of top topics to output
+    *    "pathToCorpus" : a String that specifies the path to the data (on which to do the topic modelling)
+    *    "pathToTfidf" (optional) : a String that specifies the path to precomputed tfidf scores. Job does not compute tfidf if pathToTfidf is unspecified
+    *    "startDate" : a String that specifies beginning of the date range you are running this job over
+    *    "pathToStopwords" : an Array of Strings that specifies the path to the various stopword files
+    *    "textColumn" : a String that specifies column in which to find the text column
+    *    "pathToWrite" : a String that specifies the path to the data (on which to do the topic modelling)
+    *  Within the "spark" object:
+    *    "master" : a String value that specifies the master node of this spark instance
+    *    "app.name" : a String value that specifies this spark app's name
+    *
+    *  Notes:
+    *  pathToTfidf:
+    *  If you wish to provide precomputed tfidf scores, they must be in a csv file that adheres to the following schema:
+    *  val schema = StructType(
+    *    StructField("date", StringType, false) ::
+    *    StructField("word", StringType , false) ::
+    *    StructField("score", DoubleType, false) ::
+    *    Nil
+    *  )
+    *
+    * For example:
+    * topics {
+    *   beta = 0.01
+    *   computeCoherence = true
+    *   dateColumn = date
+    *   stopWordFiles = [
+    *     src/test/resources/topic-modelling/stopwords/stopwords_all_en.v2.txt,
+    *     src/test/resources/topic-modelling/stopwords/stopwords_html_tags.txt
+    *   ]
+    *   ...
+    * }
+    * spark {
+    *   master = local
+    *   ...
+    * }
     *
     * @param args Array of commandline arguments
     */
   def main(args: Array[String]): Unit = {
     // get the properties file path
     if (args.length != 1) {
-      logger.error("Usage: <topic-modelling-executable> <config-file>")
+      logger.error("Usage: <job-executable> <config-file>")
       sys.exit(-1)
     }
 
     // load properties file from supplied URI
     val config: Config = ConfigFactory.parseReader(scala.io.Source.fromFile(args(0)).bufferedReader()).resolve()
     val sqlContext: SQLContext = SparkConfig(config)
-    val sparkContext: SparkContext = sqlContext.sparkContext
-    val params: TopicModellingParams = TopicModellingConfigParser.parse(config, sparkContext)
-    //
-    // val outputOperation = createTileOutputOperation(config).getOrElse {
-    //   logger.error("Output operation config")
-    //   sys.exit(-1)
-    // }
+    val params: TopicModellingParams = TopicModellingConfigParser.parse(config)
 
-    // TODO Parse Errors?
-    val reader = sqlContext.read
+    // TODO
+    // Write results to file if 'outfile' specified in config
+    val outputOperation = JobUtil.createTopicsOutputOperation(params.pathToWrite)
+
+    val reader_corpus = sqlContext.read
     .format("com.databricks.spark.csv")
     .option("header", "true")
     .option("inferSchema", "true")
     .option("delimiter", "\t")
 
-    val topicModellingOp = doTopicModelling(
-      params.alpha,
-      params.beta,
-      params.computeCoherence,
-      params.dateCol,
-      params.endDate,
-      params.idCol,
-      params.iterN,
-      params.k,
-      params.numTopTopics,
-      params.outdir,
-      params.path,
-      sqlContext,
-      params.startDate,
-      params.stopwords_bcst,
-      params.textCol,
-      params.tfidf_bcst
-    )(_)
+    val reader_tfidf = sqlContext.read
+    .format("com.databricks.spark.csv")
+    .option("header", "false")
+    .option("inferSchema", "true")
+    .option("delimiter", ",")
 
     try {
-      Pipe(reader.load(params.path))
+
+      // Without tfidf
+      val topicModellingOp = doTopicModelling(
+        params.alpha,
+        params.beta,
+        params.computeCoherence,
+        params.dateCol,
+        params.endDate,
+        params.idCol,
+        params.iterN,
+        params.k,
+        params.numTopTopics,
+        params.pathToWrite,
+        sqlContext, // TODO
+        params.startDate,
+        sqlContext.sparkContext.broadcast(params.stopwords),
+        params.textCol,
+        None
+      )(_ : DataFrame)
+
+      Pipe(reader_corpus.load(params.pathToCorpus))
         .to(topicModellingOp)
-        // .maybeTo(outputOperation)
+        .maybeTo(outputOperation)
         .run()
+
+      // With tfidf
+      // val topicModellingOp = doTopicModelling(
+      //   params.alpha,
+      //   params.beta,
+      //   params.computeCoherence,
+      //   params.dateCol,
+      //   params.endDate,
+      //   params.idCol,
+      //   params.iterN,
+      //   params.k,
+      //   params.numTopTopics,
+      //   params.pathToWrite,
+      //   sqlContext, // TODO
+      //   params.startDate,
+      //   sqlContext.sparkContext.broadcast(params.stopwords),
+      //   params.textCol
+      // )(_ : (DataFrame, DataFrame))
+      // val corpus = Pipe(reader_corpus.load(params.pathToCorpus))
+      // val tfidf = Pipe(reader_tfidf.load(params.pathToTfidf))
+      // val merge = Pipe(corpus, tfidf)
+      //   .to(topicModellingOp)
+      //   .maybeTo(outputOperation)
+      //   .run()
+
     } finally {
       System.clearProperty("spark.driver.port")
       System.clearProperty("spark.hostPort")
-      sparkContext.stop()
+      sqlContext.sparkContext.stop()
     }
   }
 }

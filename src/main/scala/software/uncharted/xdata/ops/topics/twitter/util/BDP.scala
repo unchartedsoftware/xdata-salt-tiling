@@ -92,16 +92,9 @@ import org.apache.spark.broadcast.Broadcast
   *   http://www.bigdatalab.ac.cn/~lanyanyan/papers/2014/TKDE-yan.pdf
   *
   **/
-class BDP(kK: Int) extends Serializable with Logging { // TODO enable logging
-  var k = kK
+class BDP(kk: Int) extends Serializable with Logging { // TODO enable logging
+  var k = kk
   var tfidf_dict: scala.collection.immutable.Map[Int,Double] = scala.collection.immutable.Map[Int,Double]()
-
-  def initTfidf(tfidf_bcst: Broadcast[Array[(String, String, Double)]],
-                date: String, word_dict: scala.collection.immutable.Map[String, Int]
-               ) : Map[Int, Double] = {
-    val tfidf = tfidf_bcst.value
-    TFIDF.filterTfidf(tfidf, date, word_dict)
-  }
 
   // ============================= Markov Chain Monte Carlo (MCMC)  ============================================
   def estimateMCMC(biterms:Array[Biterm], iterN: Int, model: SampleRecorder, m: Int, alpha: Double, eta: Double): (Int, Double) = {

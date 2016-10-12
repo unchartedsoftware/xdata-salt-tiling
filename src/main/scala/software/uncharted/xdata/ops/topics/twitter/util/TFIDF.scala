@@ -14,6 +14,8 @@
 package software.uncharted.xdata.ops.topics.twitter.util
 
 import scala.io.Source
+import org.apache.spark.broadcast.Broadcast
+import org.apache.spark.sql.DataFrame
 
 /**
  * NOTE: TFIDF scores are not used in the current implementation. For prototyping
@@ -48,44 +50,76 @@ import scala.io.Source
 object TFIDF extends Serializable {
 
   /**
-   * Read pre-computed TFIDF scores from a local file, returning a dictionary of word -> score for a given date
-   * @param path    A string representing the path to a local tab-separated file containing pre-computed TFIDF scores with schema (date, term, score
-   * @param date    A string representing a given date in the format YEAR-MONTH-DATE (e.g. 2016-02-21)
-   * @param word_dict A Map of word -> count
-   * @return        A Map containing the (word -> score) pairs for the given date
-   */
-  def getTfidfLocal(path: String, date: String, word_dict: scala.collection.immutable.Map[String, Int]): scala.collection.immutable.Map[Int,Double] = {
-    val lines = Source.fromFile(path).getLines.map(_.split("\t"))
-    lines.filter(x => x(0) == date)
-      .map(x => (x(1), x(2).toDouble))
-      .filter(x => word_dict contains x._1 )
-      .map(x => (word_dict.get(x._1).get, x._2))
-      .toMap
+  * Load pre computed tfidf scores from a DataFrame
+  * @param input The DataFrame from which to read
+  * @return and Array in the form of (date, word, score)
+  */
+  def loadTFIDF(input: DataFrame): Array[(String, String, Double)] = {
+    input.collect.map{row => (
+      row(0).asInstanceOf[String], // date
+      row(1).asInstanceOf[String], // word
+      row(2).asInstanceOf[Double] // score
+    )}
   }
 
+  def initTfidf(tfidf_bcst: Broadcast[Array[(String, String, Double)]],
+                date: String, word_dict: scala.collection.immutable.Map[String, Int]
+               ) : Map[Int, Double] = {
+    val tfidf = tfidf_bcst.value
+    val tfidf_date_filtered = filterDateRange(tfidf, Array(date))
+    val tfidf_word_filtered = filterWordDict(tfidf_date_filtered, word_dict)
+    tfidfToMap(tfidf_word_filtered, word_dict)
+  }
+
+  // /**
+  //   * XXX Depricated
+  //   * Read pre-computed TFIDF scores from a local file, returning a dictionary of word -> score for a given date
+  //   * @param path    A string representing the path to a local tab-separated file containing pre-computed TFIDF scores with schema (date, term, score
+  //   * @param dates   An Array of dates with format YEAR-MONTH-DATE (e.g. 2016-02021)
+  //   * @return        An Array with schema (date, term, score) for all days in dates
+  //   */
+  // def loadTfidf(path: String, dates: Array[String]): Array[(String, String, Double)] = {
+  //   val lines = Source.fromFile(path).getLines.map(_.split("\t"))
+  //   lines.filter(x => dates contains x(0))
+  //     .map(x => (x(0), x(1), x(2).toDouble)).toArray
+  // }
+
   /**
-   * Read pre-computed TFIDF scores from a local file, returning a dictionary of word -> score for a given date
-   * @param path    A string representing the path to a local tab-separated file containing pre-computed TFIDF scores with schema (date, term, score
+   * Filter an array of TFIDF scores to a given set of dates
+   * @param tfidf   An Array with schema (date, term, score) for TFIDF scores of words
    * @param dates   An Array of dates with format YEAR-MONTH-DATE (e.g. 2016-02021)
    * @return        An Array with schema (date, term, score) for all days in dates
    */
-  def loadTfidf(path: String, dates: Array[String]): Array[(String, String, Double)] = {
-    val lines = Source.fromFile(path).getLines.map(_.split("\t"))
-    lines.filter(x => dates contains x(0))
-      .map(x => (x(0), x(1), x(2).toDouble)).toArray
+  def filterDateRange(
+    tfidf: Array[(String, String, Double)],
+    dates: Array[String]
+  ): Array[(String, String, Double)] = {
+    tfidf.filter{case (d, w, s) => dates contains d}
   }
 
   /**
-   * Filter an array of TFIDF scores with schema (date, term, score) for terms in word_dict
+   * Filter an array of TFIDF scores for terms in word_dict
    * @param tfidf     An Array with schema (date, term, score) for TFIDF scores of words for given dates
-   * @param date      A string representing a given date in the format YEAR-MONTH-DATE (e.g. 2016-02-21)
    * @param word_dict A Map of word -> count
    * @return          The input array containing only terms in word_dict
    */
-  def filterTfidf(tfidf: Array[(String, String, Double)], date: String, word_dict: scala.collection.immutable.Map[String, Int]): scala.collection.immutable.Map[Int,Double] = {
-    val filtered = tfidf.filter{case (d, w, s) => d == date}
-      .filter{case (d, w, s) => word_dict contains w }
-      .map{case (d, w, s) => (word_dict.get(w).get, s) }
-    filtered.toMap
+  def filterWordDict(
+    tfidf: Array[(String, String, Double)],
+    word_dict: scala.collection.immutable.Map[String, Int]
+  ): Array[(String, String, Double)] = {
+    tfidf.filter{case (d, w, s) => word_dict contains w }
+  }
+
+  /**
+   * Convert a tfidf array to a map where the key is the word's count, and the value is the word's tfidf score. The word itself is left out
+   * @param tfidf     An Array with schema (date, term, score) for TFIDF scores of words for given dates
+   * @param word_dict A Map of word -> count
+   * @return          A map of word counts and their scores
+   */
+  def tfidfToMap(
+    tfidf: Array[(String, String, Double)],
+    word_dict: scala.collection.immutable.Map[String, Int]
+  ): scala.collection.immutable.Map[Int,Double] = {
+    tfidf.map{case (d, w, s) => (word_dict.get(w).get, s) }.toMap
   }
 }

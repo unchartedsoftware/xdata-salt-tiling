@@ -64,7 +64,7 @@ object BDPParallel extends Serializable with Logging {
 
       var weighted = false
       if (tfidf_bcst.isDefined) {
-        bdp.initTfidf(tfidf_bcst.get, date, word_dict)
+        TFIDF.initTfidf(tfidf_bcst.get, date, word_dict)
         weighted = true
       }
 

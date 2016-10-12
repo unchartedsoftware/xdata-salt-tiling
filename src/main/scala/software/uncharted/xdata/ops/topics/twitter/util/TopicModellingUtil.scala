@@ -99,73 +99,6 @@ object TopicModellingUtil extends Logging {
     * @param computeCoherence
     * @param numTopTopics
     */
-  // def writeTopicsToFile(
-  //   alpha: Double,
-  //   beta: Double,
-  //   computeCoherence : Boolean,
-  //   cparts : Array[(String, Array[(Double, Seq[String])], Array[Double], Array[Double], Map[Int,Int], Int, Double)],
-  //   data: DataFrame,
-  //   iterN : Int,
-  //   numTopTopics : Int,
-  //   outdir: String,
-  //   textCol : String
-  // )() : Unit = {
-  //   cparts.foreach { cp =>
-  //     val (date, topic_dist, theta, phi, nzMap, m, duration) = cp
-  //     var cs : Option[Array[Double]] = None
-  //     var avg_cs : Option[Double] = None
-  //     if (computeCoherence) { // n.b. compute and output coherence scores
-  //       val topic_terms = topic_dist.map(x => x._2.toArray)
-  //       val textrdd = data.select(textCol).rdd.map(r => r(r.fieldIndex(textCol)).toString)
-  //       val (_cs, _avg_cs) = Coherence.computeCoherence(textrdd, topic_terms, numTopTopics)
-  //       cs = Some(_cs.toArray)
-  //       avg_cs = Some(_avg_cs)
-  //     }
-  //
-  //     if (!Files.exists(Paths.get(outdir))) {
-  //       Files.createDirectory(Paths.get(outdir))
-  //       info(s"Creating directory $outdir")
-  //     }
-  //     info(s"Writing results to directory $outdir")
-  //     val labeled_topic_dist = topic_dist.map{ // append 'labels' to each row
-  //       case (theta, tpcs) => (theta, findLabels(tpcs), tpcs)
-  //     }
-  //     val now = Calendar.getInstance().getTime
-  //     val minuteFormat = new SimpleDateFormat("mm")
-  //     val dur = "%.4f".format(duration)
-  //     val outfile = outdir + s"topics_$date.txt"
-  //     val out = new PrintWriter(new File(outfile))
-  //     val klen = labeled_topic_dist.length
-  //     out.println(s"# Date: $date\talpha: $alpha\tbeta: $beta\titerN: $iterN\tM: $m\tK: $klen")
-  //     out.println(s"# Running time:\t$dur min.")
-  //     out.println(s"Average Coherence Score: " + avg_cs.getOrElse().toString)
-  //     out.println(s"Coherence scores: " + cs.getOrElse(Array()).mkString(", "))
-  //     out.println("#" + "-" * 80)
-  //     out.println("#Z\tCount\tp(z)\t\t\tTop terms descending")
-  //     out.println("#" + "-" * 80)
-  //     labeled_topic_dist.zipWithIndex.map {
-  //       case (td, i) => i + "\t" + nzMap(i) + "\t" + td._1 + "\t" + td._2.mkString(", ") + "\t->\t" + td._3.take(20).mkString(", ")
-  //     } foreach {
-  //       out.println
-  //     }
-  //     out.close()
-  //   }
-  // }
-
-  // scalastyle:off method.length
-  /**
-    * Write the results of topic modelling to file. Writes one result file per day in the date range given as input
-    *
-    * @param cparts
-    * @param data
-    * @param textCol
-    * @param alpha
-    * @param beta
-    * @param outdir
-    * @param iterN
-    * @param computeCoherence
-    * @param numTopTopics
-    */
   def writeTopicsToDF(
     alpha: Double,
     beta: Double,
@@ -207,7 +140,7 @@ object TopicModellingUtil extends Logging {
       * Output schema for results. Results are segmented by date
       */
     val schema = StructType(
-      StructField("date", StringType) ::
+      StructField("date", StringType, false) ::
       StructField("Z", IntegerType, false) ::
       StructField("nzmap(i) TODO", IntegerType, false) ::
       StructField("theta", DoubleType, false) ::
@@ -225,14 +158,7 @@ object TopicModellingUtil extends Logging {
     )
 
     val rdd = sqlContext.sparkContext.parallelize(result.toSeq)
-    val df = sqlContext.createDataFrame(rdd, schema)
 
-    df.collect.foreach(println)
-
-    df.write
-    .format("com.databricks.spark.csv")
-    .option("header", "true")
-    .save("/Users/llay/outschema2.csv")
-    df
+    sqlContext.createDataFrame(rdd, schema)
   }
 }

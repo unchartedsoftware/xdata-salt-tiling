@@ -58,4 +58,15 @@ object JobUtil {
       None
     }
   }
+
+  def createTopicsOutputOperation(path : String): Option[(DataFrame) => DataFrame] = {
+    if (!path.isEmpty) {
+      Some((input : DataFrame) => {
+        input.write.format("com.databricks.spark.csv").option("header", "true").save(path)
+        input
+      })
+    } else {
+      None
+    }
+  }
 }

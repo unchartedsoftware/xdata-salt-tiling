@@ -28,12 +28,12 @@ case class TopicModellingParams (
   iterN: Int,
   k: Int,
   numTopTopics : Int,
-  outdir: String,
-  path : String,
+  pathToCorpus : String,
+  pathToTfidf : String,
   startDate: String,
-  stopwords_bcst: Broadcast[Set[String]],
+  stopwords: Set[String],
   textCol : String,
-  tfidf_bcst: Option[Broadcast[Array[(String, String, Double)]]]
+  pathToWrite: String
 )
 
 /**
@@ -41,7 +41,7 @@ case class TopicModellingParams (
   */
 // scalastyle:off method.length
 object TopicModellingConfigParser extends Logging {
-  def parse(config: Config, sc: SparkContext): TopicModellingParams = {
+  def parse(config: Config): TopicModellingParams = {
     try {
       val topicsConfig = config.getConfig("topics")
       val alpha = 1 / Math.E // topicsConfig.getDouble("alpha") // Interpreted by ConfigFactory as String, not Double
@@ -53,23 +53,13 @@ object TopicModellingConfigParser extends Logging {
       val iterN = if (topicsConfig.hasPath("iterN")) topicsConfig.getInt("iterN") else 150
       val k = if (topicsConfig.hasPath("k")) topicsConfig.getInt("k") else 2
       val numTopTopics = topicsConfig.getInt("numTopTopics")
-      val outdir = topicsConfig.getString("outdir")
-      val path = topicsConfig.getString("path")
+      val pathToCorpus = topicsConfig.getString("pathToCorpus")
+      val pathToTfidf = if (topicsConfig.hasPath("pathToTfidf")) topicsConfig.getString("pathToTfidf") else ""
       val startDate = topicsConfig.getString("startDate")
-      val textCol = topicsConfig.getString("textColumn")
-
-      // LM INPUT DATA
       val swfiles : List[String] = topicsConfig.getStringList("stopWordFiles").toArray[String](Array()).toList
-      val stopwords = WordDict.loadStopwords(swfiles) ++ Set("#isis", "isis", "#isil", "isil")
-      val stopwords_bcst = sc.broadcast(stopwords)
-
-      val tfidf_path = if (config.hasPath("tfidf_path")) config.getString("tfidf_path") else ""
-      val tfidf_bcst = if (!tfidf_path.isEmpty) {
-        val tfidf_array = TFIDF.loadTfidf(tfidf_path, TopicModellingUtil.dateRange(startDate, endDate))
-        Some(sc.broadcast(tfidf_array))
-      } else {
-        None
-      }
+      val stopwords = WordDict.loadStopwords(swfiles)
+      val textCol = topicsConfig.getString("textColumn")
+      val pathToWrite = topicsConfig.getString("pathToWrite")
 
       TopicModellingParams(
         alpha,
@@ -81,12 +71,13 @@ object TopicModellingConfigParser extends Logging {
         iterN,
         k,
         numTopTopics,
-        outdir,
-        path,
+        pathToCorpus,
+        pathToTfidf,
         startDate,
-        stopwords_bcst,
+        stopwords,
         textCol,
-        tfidf_bcst)
+        pathToWrite
+      )
 
     } catch {
       case e: ConfigException =>
