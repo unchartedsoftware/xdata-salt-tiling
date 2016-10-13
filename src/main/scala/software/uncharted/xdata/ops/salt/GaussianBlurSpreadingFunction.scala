@@ -76,29 +76,17 @@ abstract class GaussianBlurSpreadingFunction[BC](radius: Int, sigma: Double, tms
     (tileCoord, binCoord, Some(result.sum))
   }
 
-  def calcKernelCoord(tileCoord: TileCoord, binCoord: BC, kernelIndex: Bin2DCoord): (TileCoord, BC)
+  def calcKernelCoord(tileCoord: TileCoord, binCoord: BC, kernelIndex: (Int, Int)): (TileCoord, BC)
 
   def translateLeft(tileCoord: TileCoord) = (tileCoord._1, tileCoord._2 - 1, tileCoord._3)
 
   def translateRight(tileCoord: TileCoord) = (tileCoord._1, tileCoord._2 + 1, tileCoord._3)
 
-  def translateUp(tileCoord: TileCoord) = {
-    if (tms) {
-      (tileCoord._1, tileCoord._2, tileCoord._3 + 1)
-    } else {
-      (tileCoord._1, tileCoord._2, tileCoord._3 - 1)
-    }
-  }
+  def translateUp(tileCoord: TileCoord) = if (tms) (tileCoord._1, tileCoord._2, tileCoord._3 + 1) else (tileCoord._1, tileCoord._2, tileCoord._3 - 1)
 
-  def translateDown(tileCoord: TileCoord) = {
-    if (tms) {
-      (tileCoord._1, tileCoord._2, tileCoord._3 - 1)
-    } else {
-      (tileCoord._1, tileCoord._2, tileCoord._3 + 1)
-    }
-  }
+  def translateDown(tileCoord: TileCoord) = if (tms) (tileCoord._1, tileCoord._2, tileCoord._3 - 1) else (tileCoord._1, tileCoord._2, tileCoord._3 + 1)
 
-  def isTileCoordValid(tileCoord: TileCoord): Boolean = (tileCoord._2 >= 0) && (tileCoord._3 >= 0) && (tileCoord._2 <= (1 << tileCoord._1) - 1) && (tileCoord._3 <= (1 << tileCoord._1) - 1)
+  def isTileCoordValid(tileCoord: TileCoord) = (tileCoord._2 >= 0) && (tileCoord._3 >= 0) && (tileCoord._2 <= (1 << tileCoord._1) - 1) && (tileCoord._3 <= (1 << tileCoord._1) - 1)
 
   def isBinCoordValid(binCoord: BC): Boolean
 }
@@ -106,7 +94,7 @@ abstract class GaussianBlurSpreadingFunction[BC](radius: Int, sigma: Double, tms
 class GaussianBlurSpreadingFunction2D(radius: Int, sigma: Double, maxBins: Bin2DCoord, tms: Boolean = true)
   extends GaussianBlurSpreadingFunction[Bin2DCoord](radius: Int, sigma: Double, tms: Boolean) {
 
-  def calcKernelCoord(tileCoord: TileCoord, binCoord: Bin2DCoord, kernelIndex: Bin2DCoord): (TileCoord, Bin2DCoord) = {
+  def calcKernelCoord(tileCoord: TileCoord, binCoord: Bin2DCoord, kernelIndex: (Int, Int)): (TileCoord, Bin2DCoord) = {
     var kernelBinCoordX = binCoord._1 + kernelIndex._1 - Math.floor(kernelDimension / 2).toInt
     var kernelBinCoordY = binCoord._2 + kernelIndex._2 - Math.floor(kernelDimension / 2).toInt
     var kernelBinCoord = (kernelBinCoordX, kernelBinCoordY)
@@ -146,25 +134,25 @@ class GaussianBlurSpreadingFunction2D(radius: Int, sigma: Double, maxBins: Bin2D
 class GaussianBlurSpreadingFunction3D(radius: Int, sigma: Double, maxBins: Bin3DCoord, tms: Boolean = true)
   extends GaussianBlurSpreadingFunction[Bin3DCoord](radius: Int, sigma: Double, tms: Boolean) {
 
-  def calcKernelCoord(tileCoord: TileCoord, binCoord: Bin3DCoord, kernelIndex: Bin2DCoord): (TileCoord, Bin3DCoord) = {
-    var kernelXCoord = binCoord._1 + kernelIndex._1 - Math.floor(kernelDimension / 2).toInt
-    var kernelYCoord = binCoord._2 + kernelIndex._2 - Math.floor(kernelDimension / 2).toInt
-    var kernelBinCoord = (kernelXCoord, kernelYCoord, binCoord._3)
+  def calcKernelCoord(tileCoord: TileCoord, binCoord: Bin3DCoord, kernelIndex: (Int, Int)): (TileCoord, Bin3DCoord) = {
+    var kernelBinCoordX = binCoord._1 + kernelIndex._1 - Math.floor(kernelDimension / 2).toInt
+    var kernelBinCoordY = binCoord._2 + kernelIndex._2 - Math.floor(kernelDimension / 2).toInt
+    var kernelBinCoord = (kernelBinCoordX, kernelBinCoordY, binCoord._3)
     var kernelTileCoord = tileCoord
 
     // If kernel bin coordinate lies outside of the tile, calculate new coordinates for tile and bin
-    if (kernelXCoord < 0) {
+    if (kernelBinCoordX < 0) {
       kernelTileCoord = translateLeft(kernelTileCoord)
       kernelBinCoord = calcBinCoordInLeftTile(kernelBinCoord)
-    } else if (kernelXCoord > maxBins._1) {
+    } else if (kernelBinCoordX > maxBins._1) {
       kernelTileCoord = translateRight(kernelTileCoord)
       kernelBinCoord = calcBinCoordInRightTile(kernelBinCoord)
     }
 
-    if (kernelYCoord < 0) {
+    if (kernelBinCoordY < 0) {
       kernelTileCoord = translateUp(kernelTileCoord)
       kernelBinCoord = calcBinCoordInTopTile(kernelBinCoord)
-    } else if (kernelYCoord > maxBins._2) {
+    } else if (kernelBinCoordY > maxBins._2) {
       kernelTileCoord = translateDown(kernelTileCoord)
       kernelBinCoord = calcBinCoordInBottomTile(kernelBinCoord)
     }
