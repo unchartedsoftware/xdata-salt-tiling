@@ -38,7 +38,7 @@ object TopicModellingJob extends Logging {
     * And contains the following members:
     *  Within the "topics" object:
     *    "beta" (optional) : a Double that specifies the value of beta. Defaults to 0.01
-    *    "computeCoherence"  : a Boolean that specifies whether or not you would like to comput the coherence score of each topic
+    *    "computeCoherence"  : a Boolean that specifies whether or not you would like to compute the coherence score of each topic
     *    "dateColumn" : a String that specifies the column in which to find the date
     *    "endDate" : a String that specifies the end (inclusive) of the date range you are running this job over
     *    "idColumn" : a String that specifies the column in which to find the id
@@ -113,32 +113,6 @@ object TopicModellingJob extends Logging {
     .option("delimiter", ",")
 
     try {
-
-      // Without tfidf
-      // val topicModellingOp = doTopicModelling(
-      //   params.alpha,
-      //   params.beta,
-      //   params.computeCoherence,
-      //   params.dateCol,
-      //   params.endDate,
-      //   params.idCol,
-      //   params.iterN,
-      //   params.k,
-      //   params.numTopTopics,
-      //   params.pathToWrite,
-      //   sqlContext, // TODO
-      //   params.startDate,
-      //   stopwords_bcst,
-      //   params.textCol,
-      //   None
-      // )(_ : DataFrame)
-      //
-      // Pipe(reader_corpus.load(params.pathToCorpus))
-      //   .to(topicModellingOp)
-      //   .maybeTo(outputOperation)
-      //   .run()
-
-      // With tfidf
       val topicModellingOp = doTopicModelling(
         params.alpha,
         params.beta,
@@ -150,7 +124,7 @@ object TopicModellingJob extends Logging {
         params.k,
         params.numTopTopics,
         params.pathToWrite,
-        sqlContext, // TODO
+        sqlContext,
         params.startDate,
         stopwords_bcst,
         params.textCol
@@ -161,6 +135,14 @@ object TopicModellingJob extends Logging {
         .to(topicModellingOp)
         .maybeTo(outputOperation)
         .run()
+
+        // Without tfidf
+        // val topicModellingOp = doTopicModelling(params.alpha, params.beta, params.computeCoherence, params.dateCol, params.endDate, params.idCol, params.iterN, params.k, params.numTopTopics, params.pathToWrite, sqlContext, params.startDate, stopwords_bcst, params.textCol, None)(_ : DataFrame)
+        //
+        // Pipe(reader_corpus.load(params.pathToCorpus))
+        //   .to(topicModellingOp)
+        //   .maybeTo(outputOperation)
+        //   .run()
 
     } finally {
       System.clearProperty("spark.driver.port")

@@ -60,10 +60,10 @@ object BTMUtil extends Serializable with Logging {
   // scalastyle:off magic.number
   def reportTopics(theta: Array[Double], phi:Array[Double], words: Array[String], m: Int, k: Int, numWords: Int = 20) : Array[(Double, Seq[Int])] = {
     Iterator.range(0, k).toArray.map { z =>
-      (theta(z), (0 until m).sortBy(w => -phi(w * k + z)).take(numWords).map(words).asInstanceOf[Seq[Int]]) // XXX was .toSeq
+      (theta(z), (0 until m).sortBy(w => -phi(w * k + z)).take(numWords).map(words).asInstanceOf[Seq[Int]])
     }
   }
-  // scalastyle:oon magic.number
+  // scalastyle:on magic.number
 
   /**
     * Measure Job running time

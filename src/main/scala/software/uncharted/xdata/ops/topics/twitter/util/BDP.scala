@@ -203,7 +203,11 @@ class BDP(kk: Int) extends Serializable with Logging { // TODO enable logging
   }
 
   /**
-    *
+    * Initialize this BDP instance's tfidf dictionary/map with the input map.
+    * Filter out dates outside of the given and filter out words not in the given word dictionary (associated with the given date)
+    * @param tfidf_bcst the tfidf data
+    * @param date the date to filter tfidf by
+    * @param word_dict the word map to filter tfidf by
     */
   def initTfidf(
     tfidf_bcst: Broadcast[Array[(String, String, Double)]],

@@ -82,7 +82,7 @@ object TopicModellingConfigParser extends Logging {
     } catch {
       case e: ConfigException =>
         error(s"Failure parsing arguments from Topic Modelling configuration file", e)
-        sys.exit(-1) // FIXME Move someplace else?
+        sys.exit(-1)
     }
   }
 }

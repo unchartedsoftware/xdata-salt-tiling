@@ -130,7 +130,7 @@ object TopicModellingUtil extends Logging {
           iterN,
           m,
           topic_dist.length, // k
-          if (!coherenceMap.isEmpty) {val score = coherenceMap.get(date); score._1(i)} else None, // coherence score TODO index at i
+          if (!coherenceMap.isEmpty) {val score = coherenceMap.get(date); score._1(i)} else None, // coherence score
           if (!coherenceMap.isEmpty) {val avg = coherenceMap.get(date); avg._2} else None // average coherence score
         ))
       }
@@ -140,20 +140,20 @@ object TopicModellingUtil extends Logging {
       * Output schema for results. Results are segmented by date
       */
     val schema = StructType(
-      StructField("date", StringType, false) ::
+      StructField("Date", StringType, false) ::
       StructField("Z", IntegerType, false) ::
-      StructField("nzmap(i) TODO", IntegerType, false) ::
-      StructField("theta", DoubleType, false) ::
-      StructField("topic_labels", ArrayType(StringType, false), false) ::
-      StructField("topics", ArrayType(StringType, false), false) ::
-      StructField("job_duration_minutes", StringType, false) ::
-      StructField("alpha", DoubleType, false) ::
-      StructField("beta", DoubleType, false) ::
-      StructField("iterN", IntegerType, false) ::
-      StructField("m", IntegerType, false) ::
-      StructField("k", IntegerType, false) ::
-      StructField("coherence_scores", DoubleType, true) ::
-      StructField("average_coherence_score", DoubleType, true) ::
+      StructField("Recorder_map", IntegerType, false) ::
+      StructField("Theta", DoubleType, false) ::
+      StructField("Topic_labels", ArrayType(StringType, false), false) ::
+      StructField("Topics", ArrayType(StringType, false), false) ::
+      StructField("Job_duration_minutes", StringType, false) ::
+      StructField("Alpha", DoubleType, false) ::
+      StructField("Beta", DoubleType, false) ::
+      StructField("IterN", IntegerType, false) ::
+      StructField("M", IntegerType, false) ::
+      StructField("K", IntegerType, false) ::
+      StructField("Coherence_score", DoubleType, true) ::
+      StructField("Average_coherence_score", DoubleType, true) ::
       Nil
     )
 

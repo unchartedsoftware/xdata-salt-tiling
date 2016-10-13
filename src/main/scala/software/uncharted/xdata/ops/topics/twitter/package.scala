@@ -28,7 +28,6 @@ import software.uncharted.xdata.ops.topics.twitter.util.{BDPParallel, BTMUtil, T
   * of DataFrames where the second represents your pre-computed tfidf scores
   */
 package object twitter {
-  // scalastyle:off parameter.number method.length
 
   /**
     * Perform Topic Modelling
@@ -40,7 +39,7 @@ package object twitter {
     * @param computeCoherence  Whether or not to compute the coherence score of each topic
     * @param dateCol The column of the input DataFrame in which to find the date
     * @param endDateStr The end (inclusive) of the date range this job is to be run over
-    * @param idColumn The column of the input DataFrame in which to find the id
+    * @param idCol The column of the input DataFrame in which to find the id
     * @param iterN The number of iterations. Defaults to 150
     * @param k The value of k. Defaults to 2
     * @param numTopTopics The number of top topics to output
@@ -52,6 +51,7 @@ package object twitter {
     *
     * @param input A tuple of DataFrames of the form: (corpus data, tfidf scores)
     */
+  // scalastyle:off parameter.number method.length
   def doTopicModelling(
     alpha: Double,
     beta: Double,
@@ -105,7 +105,7 @@ package object twitter {
     * @param computeCoherence  Whether or not to compute the coherence score of each topic
     * @param dateCol The name of the column of the input DataFrame in which to find the date
     * @param endDateStr The end (inclusive) of the date range this job is to be run over
-    * @param idColumn The name of the column of the input DataFrame in which to find the id
+    * @param idCol The name of the column of the input DataFrame in which to find the id
     * @param iterN The number of iterations. Defaults to 150
     * @param k The value of k. Defaults to 2
     * @param numTopTopics The number of top topics to output
@@ -153,7 +153,7 @@ package object twitter {
       // Add formatted date col
       .to(addColumn(formatted_date_col, (value: String) => {datePsr(value)}, dateCol))
       // filter tweets outside of date range
-      .to(dateFilter(startDateStr, endDateStr, "yyyy-MM-dd", formatted_date_col)) // TODO "yyyy-MM-dd" configurable
+      .to(dateFilter(startDateStr, endDateStr, "yyyy-MM-dd", formatted_date_col))
       // partition by date
       .to(_.repartition(numPartitions, new Column(formatted_date_col)))
       .run
