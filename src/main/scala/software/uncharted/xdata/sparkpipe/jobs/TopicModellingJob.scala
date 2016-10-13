@@ -40,14 +40,14 @@ object TopicModellingJob extends Logging {
     *    "beta" (optional) : a Double that specifies the value of beta. Defaults to 0.01
     *    "computeCoherence"  : a Boolean that specifies whether or not you would like to comput the coherence score of each topic
     *    "dateColumn" : a String that specifies the column in which to find the date
-    *    "endDate" : a String that specifies the end (exclusive) of the date range you are running this job over
+    *    "endDate" : a String that specifies the end (inclusive) of the date range you are running this job over
     *    "idColumn" : a String that specifies the column in which to find the id
     *    "iterN" (optional) : a String that specifies the number of iterations. Defaults to 150
     *    "k" (optional) : a String that specifies the value of k. Defaults to 2
     *    "numTopTopics" : a String that specifies the number of top topics to output
     *    "pathToCorpus" : a String that specifies the path to the data (on which to do the topic modelling)
     *    "pathToTfidf" (optional) : a String that specifies the path to precomputed tfidf scores. Job does not compute tfidf if pathToTfidf is unspecified
-    *    "startDate" : a String that specifies beginning of the date range you are running this job over
+    *    "startDate" : a String that specifies beginning (inclusive) of the date range you are running this job over
     *    "pathToStopwords" : an Array of Strings that specifies the path to the various stopword files
     *    "textColumn" : a String that specifies column in which to find the text column
     *    "pathToWrite" : a String that specifies the path to the data (on which to do the topic modelling)
@@ -95,7 +95,8 @@ object TopicModellingJob extends Logging {
     val sqlContext: SQLContext = SparkConfig(config)
     val params: TopicModellingParams = TopicModellingConfigParser.parse(config)
 
-    // TODO
+    val stopwords_bcst = sqlContext.sparkContext.broadcast(params.stopwords)
+
     // Write results to file if 'outfile' specified in config
     val outputOperation = JobUtil.createTopicsOutputOperation(params.pathToWrite)
 
@@ -114,30 +115,6 @@ object TopicModellingJob extends Logging {
     try {
 
       // Without tfidf
-      val topicModellingOp = doTopicModelling(
-        params.alpha,
-        params.beta,
-        params.computeCoherence,
-        params.dateCol,
-        params.endDate,
-        params.idCol,
-        params.iterN,
-        params.k,
-        params.numTopTopics,
-        params.pathToWrite,
-        sqlContext, // TODO
-        params.startDate,
-        sqlContext.sparkContext.broadcast(params.stopwords),
-        params.textCol,
-        None
-      )(_ : DataFrame)
-
-      Pipe(reader_corpus.load(params.pathToCorpus))
-        .to(topicModellingOp)
-        .maybeTo(outputOperation)
-        .run()
-
-      // With tfidf
       // val topicModellingOp = doTopicModelling(
       //   params.alpha,
       //   params.beta,
@@ -151,15 +128,39 @@ object TopicModellingJob extends Logging {
       //   params.pathToWrite,
       //   sqlContext, // TODO
       //   params.startDate,
-      //   sqlContext.sparkContext.broadcast(params.stopwords),
-      //   params.textCol
-      // )(_ : (DataFrame, DataFrame))
-      // val corpus = Pipe(reader_corpus.load(params.pathToCorpus))
-      // val tfidf = Pipe(reader_tfidf.load(params.pathToTfidf))
-      // val merge = Pipe(corpus, tfidf)
+      //   stopwords_bcst,
+      //   params.textCol,
+      //   None
+      // )(_ : DataFrame)
+      //
+      // Pipe(reader_corpus.load(params.pathToCorpus))
       //   .to(topicModellingOp)
       //   .maybeTo(outputOperation)
       //   .run()
+
+      // With tfidf
+      val topicModellingOp = doTopicModelling(
+        params.alpha,
+        params.beta,
+        params.computeCoherence,
+        params.dateCol,
+        params.endDate,
+        params.idCol,
+        params.iterN,
+        params.k,
+        params.numTopTopics,
+        params.pathToWrite,
+        sqlContext, // TODO
+        params.startDate,
+        stopwords_bcst,
+        params.textCol
+      )(_ : (DataFrame, DataFrame))
+      val corpus = Pipe(reader_corpus.load(params.pathToCorpus))
+      val tfidf = Pipe(reader_tfidf.load(params.pathToTfidf))
+      val merge = Pipe(corpus, tfidf)
+        .to(topicModellingOp)
+        .maybeTo(outputOperation)
+        .run()
 
     } finally {
       System.clearProperty("spark.driver.port")

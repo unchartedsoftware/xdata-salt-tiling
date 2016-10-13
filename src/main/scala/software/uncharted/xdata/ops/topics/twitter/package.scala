@@ -23,13 +23,34 @@ import software.uncharted.sparkpipe.ops.core.dataframe.temporal.dateFilter
 import software.uncharted.xdata.ops.topics.twitter.util.{BDPParallel, BTMUtil, TopicModellingUtil, Coherence, TFIDF}
 
 /**
-  *
+  * This package contains the operation (doTopicModelling) to compute the topics of a given corpus.
+  * This operation can optionally perform tfidf processing. To do this, pass the operation a tuple
+  * of DataFrames where the second represents your pre-computed tfidf scores
   */
 package object twitter {
   // scalastyle:off parameter.number method.length
 
   /**
-    * Take a second DataFrame, representing precomputed tfidf scores, as input. Parse this DataFrame into a broadcast variable and use it to do topic modelling
+    * Perform Topic Modelling
+    * Take a second DataFrame, representing precomputed tfidf scores, as input.
+    * Parse this DataFrame into a broadcast variable and use it to do topic modelling
+    *
+    * @param alpha The value of alpha. Defaults to 1/e
+    * @param beta The value of beta. Defaults to 0.01
+    * @param computeCoherence  Whether or not to compute the coherence score of each topic
+    * @param dateCol The column of the input DataFrame in which to find the date
+    * @param endDateStr The end (inclusive) of the date range this job is to be run over
+    * @param idColumn The column of the input DataFrame in which to find the id
+    * @param iterN The number of iterations. Defaults to 150
+    * @param k The value of k. Defaults to 2
+    * @param numTopTopics The number of top topics to output
+    * @param pathToWrite The path to the data (on which to do the topic modelling)
+    * @param sqlContext A SQLContext object used to create the resulting DataFrame
+    * @param startDateStr Beginning (inclusive) of the date range you are running this job over
+    * @param stopwords_bcst All word to be ignored as potential topics
+    * @param textCol Column in which to find the text column
+    *
+    * @param input A tuple of DataFrames of the form: (corpus data, tfidf scores)
     */
   def doTopicModelling(
     alpha: Double,
@@ -77,6 +98,26 @@ package object twitter {
     )(input._1)
   }
 
+  /**
+    * Preform topic modelling
+    * @param alpha The value of alpha. Defaults to 1/e
+    * @param beta The value of beta. Defaults to 0.01
+    * @param computeCoherence  Whether or not to compute the coherence score of each topic
+    * @param dateCol The name of the column of the input DataFrame in which to find the date
+    * @param endDateStr The end (inclusive) of the date range this job is to be run over
+    * @param idColumn The name of the column of the input DataFrame in which to find the id
+    * @param iterN The number of iterations. Defaults to 150
+    * @param k The value of k. Defaults to 2
+    * @param numTopTopics The number of top topics to output
+    * @param pathToWrite The path to the data (on which to do the topic modelling)
+    * @param sqlContext A SQLContext object used to create the resulting DataFrame
+    * @param startDateStr Beginning (inclusive) of the date range you are running this job over
+    * @param stopwords_bcst All word to be ignored as potential topics
+    * @param textCol The name of the column in which to find the text column
+    * @param tfidf_bcst The precomputed tfidf scores
+    *
+    * @param input The corpus data
+    */
   def doTopicModelling(
     alpha: Double,
     beta: Double,
@@ -97,13 +138,16 @@ package object twitter {
     input: DataFrame
   ) : DataFrame = {
 
+    // create a date parser specific to the input data
     val datePsr = BTMUtil.makeTwitterDateParser()
+    // Choose the number of partitions. Namely, the number of days in the date range
     var numPartitions : Int = Days.daysBetween(new DateTime(startDateStr).toLocalDate(), new DateTime(endDateStr).toLocalDate()).getDays()
     if (numPartitions.equals(2)) numPartitions += 1 // For some reason one partition is empty when partitioning a date range of length 2. Add a 3rd
 
     val formatted_date_col = "_ymd_date"
 
-    val data = Pipe(input) // select the corpus DataFrame
+    // Prepare the data for BTM
+    val data = Pipe(input)
       // select the columns we care about
       .to(_.select(dateCol, idCol, textCol))
       // Add formatted date col
@@ -120,10 +164,13 @@ package object twitter {
       .filter(p => p.isDefined)
       .map(p => p.get)
 
+    // Cast from `Any` to the proper types
     val cparts = TopicModellingUtil.castResults(parts)
 
-    var coherenceMap : Option[scala.collection.mutable.Map[String,(Seq[Double],Double)]] = if (computeCoherence) Some(Coherence.computeCoherence(cparts, input, numTopTopics, textCol)) else None
+    // If requested, compute the coherence score for each result
+    var coherenceMap : Option[Map[String,(Seq[Double],Double)]] = if (computeCoherence) Some(Coherence.computeCoherence(cparts, input, numTopTopics, textCol)) else None
 
+    // Create a dataframe of the results
     TopicModellingUtil.writeTopicsToDF(
       alpha,
       beta,

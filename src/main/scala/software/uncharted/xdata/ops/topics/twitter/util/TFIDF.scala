@@ -62,28 +62,6 @@ object TFIDF extends Serializable {
     )}
   }
 
-  def initTfidf(tfidf_bcst: Broadcast[Array[(String, String, Double)]],
-                date: String, word_dict: scala.collection.immutable.Map[String, Int]
-               ) : Map[Int, Double] = {
-    val tfidf = tfidf_bcst.value
-    val tfidf_date_filtered = filterDateRange(tfidf, Array(date))
-    val tfidf_word_filtered = filterWordDict(tfidf_date_filtered, word_dict)
-    tfidfToMap(tfidf_word_filtered, word_dict)
-  }
-
-  // /**
-  //   * XXX Depricated
-  //   * Read pre-computed TFIDF scores from a local file, returning a dictionary of word -> score for a given date
-  //   * @param path    A string representing the path to a local tab-separated file containing pre-computed TFIDF scores with schema (date, term, score
-  //   * @param dates   An Array of dates with format YEAR-MONTH-DATE (e.g. 2016-02021)
-  //   * @return        An Array with schema (date, term, score) for all days in dates
-  //   */
-  // def loadTfidf(path: String, dates: Array[String]): Array[(String, String, Double)] = {
-  //   val lines = Source.fromFile(path).getLines.map(_.split("\t"))
-  //   lines.filter(x => dates contains x(0))
-  //     .map(x => (x(0), x(1), x(2).toDouble)).toArray
-  // }
-
   /**
    * Filter an array of TFIDF scores to a given set of dates
    * @param tfidf   An Array with schema (date, term, score) for TFIDF scores of words
@@ -105,7 +83,7 @@ object TFIDF extends Serializable {
    */
   def filterWordDict(
     tfidf: Array[(String, String, Double)],
-    word_dict: scala.collection.immutable.Map[String, Int]
+    word_dict: Map[String, Int]
   ): Array[(String, String, Double)] = {
     tfidf.filter{case (d, w, s) => word_dict contains w }
   }
@@ -118,8 +96,8 @@ object TFIDF extends Serializable {
    */
   def tfidfToMap(
     tfidf: Array[(String, String, Double)],
-    word_dict: scala.collection.immutable.Map[String, Int]
-  ): scala.collection.immutable.Map[Int,Double] = {
-    tfidf.map{case (d, w, s) => (word_dict.get(w).get, s) }.toMap
+    word_dict: Map[String, Int]
+  ): Map[Int,Double] = {
+    tfidf.map{case (d, w, s) => (word_dict.get(w).get, s)}.toMap
   }
 }

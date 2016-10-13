@@ -18,7 +18,6 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SQLContext}
 import software.uncharted.xdata.ops.io.{writeBytesToFile, writeBytesToS3, writeToFile, writeToS3}
 import software.uncharted.xdata.sparkpipe.config.{FileOutputConfig, S3OutputConfig}
-
 import scala.collection.JavaConverters._ // scalastyle:ignore
 
 object JobUtil {
@@ -62,7 +61,7 @@ object JobUtil {
   def createTopicsOutputOperation(path : String): Option[(DataFrame) => DataFrame] = {
     if (!path.isEmpty) {
       Some((input : DataFrame) => {
-        input.write.format("com.databricks.spark.csv").option("header", "true").save(path)
+        input.write.format("com.databricks.spark.csv").option("header", "true").mode("overwrite").save(path)
         input
       })
     } else {

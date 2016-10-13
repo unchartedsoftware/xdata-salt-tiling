@@ -85,7 +85,7 @@ object Coherence extends Serializable with Logging {
 
   /**
    * @param rdd          RDD containing JUST the cleaned text
-   * @param topic_terms  the top words (just the words, not theta) returned by running topic modeling (output as topic_dist)
+   * @param topic_terms  the top words (just the words, not theta) returned by running topic modelling (output as topic_dist)
    * @param topT         the top T words which to consider in computing coherence scores
    * @return       (Array of coherence scores (one per topic), average coherence score for input data)
    */
@@ -111,10 +111,8 @@ object Coherence extends Serializable with Logging {
     data: DataFrame,
     numTopTopics : Int,
     textCol : String
-  ) : scala.collection.mutable.Map[String, (Seq[Double], Double)] = {
-
+  ) : Map[String, (Seq[Double], Double)] = {
     var result : scala.collection.mutable.Map[String, (Seq[Double], Double)] = scala.collection.mutable.Map()
-
     cparts.foreach { cp =>
       val (date, topic_dist, theta, phi, nzMap, m, duration) = cp
       val topic_terms = topic_dist.map(x => x._2.toArray)
@@ -122,7 +120,6 @@ object Coherence extends Serializable with Logging {
       val (_cs, _avg_cs) = Coherence.computeCoherenceHelper(textrdd, topic_terms, numTopTopics)
       result += ((date, (_cs, _avg_cs)))
     }
-
-    result
+    result.toMap // make immutable
   }
 }

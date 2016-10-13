@@ -102,7 +102,7 @@ object TopicModellingUtil extends Logging {
   def writeTopicsToDF(
     alpha: Double,
     beta: Double,
-    coherenceMap: Option[scala.collection.mutable.Map[String, (Seq[Double], Double)]],
+    coherenceMap: Option[Map[String, (Seq[Double], Double)]],
     computeCoherence : Boolean,
     cparts : Array[(String, Array[(Double, Seq[String])], Array[Double], Array[Double], Map[Int,Int], Int, Double)],
     data: DataFrame,

@@ -19,17 +19,17 @@ import org.apache.spark.broadcast.Broadcast
 
 /**
   * BACKGROUND
-  *   Topic modeling is a machine learning method used to infer the latent structure in a collection of documents, uncovering
-  *   hidden topic patterns. It is important to note that the topics discovered by topic modeling are latent. That is, topic
-  *   modeling allows us to uncover topic-term probabilities, (i.e. the top words associated with a topic) but *not* the
-  *   topic itself. Topic modeling is uses to (automatically) organize, summarize and/or understand a large corpus.
+  *   Topic modelling is a machine learning method used to infer the latent structure in a collection of documents, uncovering
+  *   hidden topic patterns. It is important to note that the topics discovered by topic modelling are latent. That is, topic
+  *   modelling allows us to uncover topic-term probabilities, (i.e. the top words associated with a topic) but *not* the
+  *   topic itself. Topic modelling is uses to (automatically) organize, summarize and/or understand a large corpus.
   *
-  *   Latent Dirichlet Allocation (LDA) is a popular algorithm for topic modeling, which performs well on a corpus of lengthy
+  *   Latent Dirichlet Allocation (LDA) is a popular algorithm for topic modelling, which performs well on a corpus of lengthy
   *   documents. However, the data sparsity in short texts causes very noisy LDA models. To get around this issue we have
-  *   implemented an extension of LDA for short texts called Biterm Topic Modeling (BTM).
+  *   implemented an extension of LDA for short texts called Biterm Topic Modelling (BTM).
   *
   * BTM
-  *   The BTM model is a generative model which learns topics over short texts by directly modeling the generation of biterms
+  *   The BTM model is a generative model which learns topics over short texts by directly modelling the generation of biterms
   *   (co-occurring terms) across the corpus. Two key differences from the traditional (e.g. LDA) approaches are:
   *     (1) word co-occurrence patterns are explicitly
   *     (2) global co-occurrence patterns are modeled
@@ -94,7 +94,7 @@ import org.apache.spark.broadcast.Broadcast
   **/
 class BDP(kk: Int) extends Serializable with Logging { // TODO enable logging
   var k = kk
-  var tfidf_dict: scala.collection.immutable.Map[Int,Double] = scala.collection.immutable.Map[Int,Double]()
+  var tfidf_dict: Map[Int,Double] = Map[Int,Double]()
 
   // ============================= Markov Chain Monte Carlo (MCMC)  ============================================
   def estimateMCMC(biterms:Array[Biterm], iterN: Int, model: SampleRecorder, m: Int, alpha: Double, eta: Double): (Int, Double) = {
@@ -203,7 +203,21 @@ class BDP(kk: Int) extends Serializable with Logging { // TODO enable logging
   }
 
   /**
-   * The main method of Biterm Topic Modeling, fits a model to the input data.
+    *
+    */
+  def initTfidf(
+    tfidf_bcst: Broadcast[Array[(String, String, Double)]],
+    date: String,
+    word_dict: Map[String, Int]
+  ) : Unit = {
+    val tfidf = tfidf_bcst.value
+    val tfidf_date_filtered = TFIDF.filterDateRange(tfidf, Array(date))
+    val tfidf_word_filtered = TFIDF.filterWordDict(tfidf_date_filtered, word_dict)
+    tfidf_dict = TFIDF.tfidfToMap(tfidf_word_filtered, word_dict)
+  }
+
+  /**
+   * The main method of Biterm Topic Modelling, fits a model to the input data.
    * @param biterms   An Array of co-occuring terms
    * @param words     An Array of terms representing the vocabulary of the model
    * @param iterN     Number of iterations of MCMC sampling to run
@@ -228,7 +242,9 @@ class BDP(kk: Int) extends Serializable with Logging { // TODO enable logging
   ) : (Array[(Double, Seq[Int])], Array[Double], Array[Double], Map[Int,Int], Double) = {
     val m = words.length
     val SR = new SampleRecorder(m, k, weighted)
-    if (weighted) { SR.setTfidf(tfidf_dict) }
+    if (weighted) {
+      SR.setTfidf(tfidf_dict)
+    }
     SR.initRecorders(biterms)
     val btmDp = new BDP(k)
     info("Running MCMC sampling...")

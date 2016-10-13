@@ -31,7 +31,7 @@ import org.apache.spark.sql.Row
 object BDPParallel extends Serializable with Logging {
 
   /**
-    * Main Topic Modeling Function
+    * Main Topic Modelling Function
     */
   // scalastyle:off parameter.number
   def partitionBDP(
@@ -59,12 +59,11 @@ object BDPParallel extends Serializable with Logging {
 
       val bdp = new BDP(k)
 
-      val biterms0 = texts.map(text => BTMUtil.extractBitermsFromTextRandomK(text, word_dict, stopwords.toSet, k)).flatMap(x => x)
-      val biterms = biterms0
+      val biterms = texts.map(text => BTMUtil.extractBitermsFromTextRandomK(text, word_dict, stopwords.toSet, k)).flatMap(x => x)
 
       var weighted = false
       if (tfidf_bcst.isDefined) {
-        TFIDF.initTfidf(tfidf_bcst.get, date, word_dict)
+        bdp.initTfidf(tfidf_bcst.get, date, word_dict)
         weighted = true
       }
 
