@@ -60,8 +60,8 @@ class XYTimeHeatmapJobTest extends FunSpec {
           assertResult(expectedJson)(jsonObject)
 
         } finally {
-          System.setProperty("user.dir", oldDir)
-          FileUtils.deleteDirectory(new File(testOutputDir))
+//          System.setProperty("user.dir", oldDir)
+//          FileUtils.deleteDirectory(new File(testOutputDir))
         }
       }
 

@@ -1,20 +1,22 @@
 /**
- * Copyright (c) 2014-2015 Uncharted Software Inc. All rights reserved.
- *
- * Property of Uncharted(tm), formerly Oculus Info Inc.
- * http://uncharted.software/
- *
- * This software is the confidential and proprietary information of
- * Uncharted Software Inc. ("Confidential Information"). You shall not
- * disclose such Confidential Information and shall use it only in
- * accordance with the terms of the license agreement you entered into
- * with Uncharted Software Inc.
- */
+  * Copyright (c) 2014-2015 Uncharted Software Inc. All rights reserved.
+  *
+  * Property of Uncharted(tm), formerly Oculus Info Inc.
+  * http://uncharted.software/
+  *
+  * This software is the confidential and proprietary information of
+  * Uncharted Software Inc. ("Confidential Information"). You shall not
+  * disclose such Confidential Information and shall use it only in
+  * accordance with the terms of the license agreement you entered into
+  * with Uncharted Software Inc.
+  */
 package software.uncharted.xdata.sparkpipe.jobs
 
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.DataFrame
+import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.temporal.parseDate
 import software.uncharted.xdata.ops.io.serializeBinArray
@@ -75,31 +77,44 @@ object XYTimeHeatmapJob extends Logging {
         .to(_.select(heatmapConfig.xCol, heatmapConfig.yCol, heatmapConfig.timeCol))
         .to(_.cache())
         .to(heatmapOperation)
+        .to(writeMetadata(config))
         .to(serializeBinArray)
+        .to(flipYAxis)
         .to(outputOperation)
         .run()
-
-      // create and save extra level metadata - the tile x,y,z dimensions in this case
-      writeMetadata(config, tilingConfig, heatmapConfig)
 
     } finally {
       sqlc.sparkContext.stop()
     }
   }
 
-  private def writeMetadata(baseConfig: Config, tilingConfig: TilingConfig, heatmapConfig: XYTimeHeatmapConfig): Unit = {
-    import net.liftweb.json.JsonDSL._ // scalastyle:ignore
-    import net.liftweb.json.JsonAST._ // scalastyle:ignore
+  private def writeMetadata[BC, V](baseConfig: Config)(tiles: RDD[SeriesData[(Int, Int, Int), BC, V, (Double, Double)]]): RDD[SeriesData[(Int, Int, Int), BC, V, (Double, Double)]] = {
+    import net.liftweb.json.JsonDSL._
+    // scalastyle:ignore
+    import net.liftweb.json.JsonAST._
+    // scalastyle:ignore
 
-    val binCount = tilingConfig.bins.getOrElse(MercatorTimeHeatmap.defaultTileSize)
-    val levelMetadata =
-      ("bins" -> binCount) ~
-      ("range" ->
-        (("start" -> heatmapConfig.timeRange.min) ~
-          ("count" -> heatmapConfig.timeRange.count) ~
-          ("step" -> heatmapConfig.timeRange.step)))
-    val jsonBytes = compactRender(levelMetadata).getBytes.toSeq
-    createMetadataOutputOperation(baseConfig).foreach(_("metadata.json", jsonBytes))
+    val metadata = tiles
+      .map(tile => {
+        val (level, minMax) = (tile.coords._1, tile.tileMeta.getOrElse((0.0, 0.0)))
+        level.toString -> (("min" -> minMax._1) ~ ("max" -> minMax._2))
+      })
+      .collect()
+      .toMap
+
+
+    val jsonBytes = compactRender(metadata).getBytes.toSeq
+    createMetadataOutputOperation(baseConfig).foreach(_ ("metadata.json", jsonBytes))
+
+    tiles
+  }
+
+  private def flipYAxis(input: RDD[((Int, Int, Int), Seq[Byte])]): RDD[((Int, Int, Int), Seq[Byte])] = {
+    input.map { case (index, data) => {
+      val limit = (1 << index._1) - 1
+      ((index._1, index._2, limit - index._3), data)
+    }
+    }
   }
 
   def execute(args: Array[String]): Unit = {
@@ -114,7 +129,7 @@ object XYTimeHeatmapJob extends Logging {
     execute(config)
   }
 
-  def main (args: Array[String]): Unit = {
+  def main(args: Array[String]): Unit = {
     XYTimeHeatmapJob.execute(args)
   }
 }

@@ -16,7 +16,7 @@ package software.uncharted.xdata.ops.salt
 import software.uncharted.salt.core.spreading.SpreadingFunction
 import software.uncharted.xdata.ops.salt.GaussianBlurSpreadingFunction.{Bin2DCoord, Bin3DCoord, TileCoord}
 
-abstract class GaussianBlurSpreadingFunction[BC](radius: Int, sigma: Double)
+abstract class GaussianBlurSpreadingFunction[BC](radius: Int, sigma: Double, tms: Boolean = true)
   extends SpreadingFunction[TileCoord, BC, Double] {
 
   val kernel = GaussianBlurSpreadingFunction.makeGaussianKernel(radius, sigma)
@@ -41,16 +41,16 @@ abstract class GaussianBlurSpreadingFunction[BC](radius: Int, sigma: Double)
 
   def addNeighbouringBins(value: Double)
                          (coords: (TileCoord, BC)): Map[(TileCoord, BC), Double] = {
-    val tileCoordinate = coords._1
-    val binCoordinate = coords._2
-    var result = Map(((tileCoordinate, binCoordinate) -> value))
+    val tileCoord = coords._1
+    val binCoord = coords._2
+    var result = Map(((tileCoord, binCoord) -> value))
 
     // Translate kernel coordinates into tile and bin coordinates and add them to result
-    for (kernelX <- 0 to kernelDimension - 1) {
-      for (kernelY <- 0 to kernelDimension - 1) {
-        val (kernelTileCoord, kernelBinCoord) = calcKernelCoord(tileCoordinate, binCoordinate, (kernelX, kernelY))
+    for (kernelY <- 0 to kernelDimension - 1) {
+      for (kernelX <- 0 to kernelDimension - 1) {
+        val (kernelTileCoord, kernelBinCoord) = calcKernelCoord(tileCoord, binCoord, (kernelX, kernelY))
         if (!result.contains(kernelTileCoord, kernelBinCoord)) {
-          result = result + ((kernelTileCoord, kernelBinCoord) -> 0.0)
+          result = result + ((kernelTileCoord, kernelBinCoord) -> 0.0) // Default value for coordinates not part of the original coordsTraversable is 0
         }
       }
     }
@@ -62,55 +62,70 @@ abstract class GaussianBlurSpreadingFunction[BC](radius: Int, sigma: Double)
                  (coordsValueMap: ((TileCoord, BC), Double)): (TileCoord, BC, Option[Double]) = {
     val coords = coordsValueMap._1
     val data = coordsValueMap._2
-    val tileCoordinate = coords._1
-    val binCoordinate = coords._2
+    val tileCoord = coords._1
+    val binCoord = coords._2
     var result = List[Double]()
 
-    for (kernelX <- 0 to kernelDimension - 1) {
-      for (kernelY <- 0 to kernelDimension - 1) {
-        val (kernelTileCoord, kernelBinCoord) = calcKernelCoord(tileCoordinate, binCoordinate, (kernelX, kernelY))
+    for (kernelY <- 0 to kernelDimension - 1) {
+      for (kernelX <- 0 to kernelDimension - 1) {
+        val (kernelTileCoord, kernelBinCoord) = calcKernelCoord(tileCoord, binCoord, (kernelX, kernelY))
         val coordValue = coordsValueMapTraversable.get((kernelTileCoord, kernelBinCoord))
-        result = result :+ kernel(kernelX)(kernelY) * coordValue.getOrElse(0.0) // If no value found, then coordinate isn't part of the original coordsTraversable, so assume value is 0.
+        result = result :+ kernel(kernelY)(kernelX) * coordValue.getOrElse(0.0)
       }
     }
 
-    (tileCoordinate, binCoordinate, Some(result.sum))
+    (tileCoord, binCoord, Some(result.sum))
   }
 
-  def calcKernelCoord(tileCoord: TileCoord, binCoordinate: BC, kernelIndex: Bin2DCoord): (TileCoord, BC)
+  def calcKernelCoord(tileCoord: TileCoord, binCoord: BC, kernelIndex: Bin2DCoord): (TileCoord, BC)
 
-  // TODO: Do I need to take into consideration tms here?
-  def translateLeft(tileCoordinate: TileCoord) = (tileCoordinate._1 - 1, tileCoordinate._2, tileCoordinate._3)
+  def translateLeft(tileCoord: TileCoord) = (tileCoord._1, tileCoord._2 - 1, tileCoord._3)
 
-  def translateRight(tileCoordinate: TileCoord) = (tileCoordinate._1 + 1, tileCoordinate._2, tileCoordinate._3)
+  def translateRight(tileCoord: TileCoord) = (tileCoord._1, tileCoord._2 + 1, tileCoord._3)
 
-  def translateUp(tileCoordinate: TileCoord) = (tileCoordinate._1, tileCoordinate._2 + 1, tileCoordinate._3)
+  def translateUp(tileCoord: TileCoord) = {
+    if (tms) {
+      (tileCoord._1, tileCoord._2, tileCoord._3 + 1)
+    } else {
+      (tileCoord._1, tileCoord._2, tileCoord._3 - 1)
+    }
+  }
 
-  def translateDown(tileCoordinate: TileCoord) = (tileCoordinate._1, tileCoordinate._2 - 1, tileCoordinate._3)
+  def translateDown(tileCoord: TileCoord) = {
+    if (tms) {
+      (tileCoord._1, tileCoord._2, tileCoord._3 - 1)
+    } else {
+      (tileCoord._1, tileCoord._2, tileCoord._3 + 1)
+    }
+  }
+
+  def isTileCoordValid(tileCoord: TileCoord): Boolean = (tileCoord._2 >= 0) && (tileCoord._3 >= 0) && (tileCoord._2 <= (1 << tileCoord._1) - 1) && (tileCoord._3 <= (1 << tileCoord._1) - 1)
+
+  def isBinCoordValid(binCoord: BC): Boolean
 }
 
-class GaussianBlurSpreadingFunction2D(radius: Int, sigma: Double, maxBins: Bin2DCoord)
-  extends GaussianBlurSpreadingFunction[Bin2DCoord](radius: Int, sigma: Double) {
+class GaussianBlurSpreadingFunction2D(radius: Int, sigma: Double, maxBins: Bin2DCoord, tms: Boolean = true)
+  extends GaussianBlurSpreadingFunction[Bin2DCoord](radius: Int, sigma: Double, tms: Boolean) {
 
   def calcKernelCoord(tileCoord: TileCoord, binCoord: Bin2DCoord, kernelIndex: Bin2DCoord): (TileCoord, Bin2DCoord) = {
-    var kernelXCoord = binCoord._1 + kernelIndex._1 - Math.floor(kernelDimension / 2).toInt
-    var kernelYCoord = binCoord._2 + kernelIndex._2 - Math.floor(kernelDimension / 2).toInt
-    var kernelBinCoord = (kernelXCoord, kernelYCoord)
+    var kernelBinCoordX = binCoord._1 + kernelIndex._1 - Math.floor(kernelDimension / 2).toInt
+    var kernelBinCoordY = binCoord._2 + kernelIndex._2 - Math.floor(kernelDimension / 2).toInt
+    var kernelBinCoord = (kernelBinCoordX, kernelBinCoordY)
     var kernelTileCoord = tileCoord
 
     // If kernel bin coordinate lies outside of the tile, calculate new coordinates for tile and bin
-    if (kernelBinCoord._1 < 0) {
+    if (kernelBinCoordX < 0) {
       kernelTileCoord = translateLeft(kernelTileCoord)
       kernelBinCoord = calcBinCoordInLeftTile(kernelBinCoord)
-    } else if (kernelBinCoord._1 > maxBins._1) {
+    } else if (kernelBinCoordX > maxBins._1) {
       kernelTileCoord = translateRight(kernelTileCoord)
       kernelBinCoord = calcBinCoordInRightTile(kernelBinCoord)
     }
 
-    if (kernelBinCoord._2 < 0) {
+    if (kernelBinCoordY < 0) {
       kernelTileCoord = translateUp(kernelTileCoord)
       kernelBinCoord = calcBinCoordInTopTile(kernelBinCoord)
-    } else if (kernelBinCoord._2 > maxBins._2) {
+    } else if (kernelBinCoordY > maxBins._2) {
       kernelTileCoord = translateDown(kernelTileCoord)
       kernelBinCoord = calcBinCoordInBottomTile(kernelBinCoord)
     }
@@ -125,28 +140,32 @@ class GaussianBlurSpreadingFunction2D(radius: Int, sigma: Double, maxBins: Bin2D
   def calcBinCoordInTopTile(kernelBinCoord: Bin2DCoord) = (kernelBinCoord._1, maxBins._2 + kernelBinCoord._2 + 1)
 
   def calcBinCoordInBottomTile(kernelBinCoord: Bin2DCoord) = (kernelBinCoord._1, kernelBinCoord._2 - maxBins._2 - 1)
+
+  def isBinCoordValid(binCoord: Bin2DCoord) = (binCoord._1 >= 0) && (binCoord._2 >= 0) && (binCoord._1 <= maxBins._1) && (binCoord._2 <= maxBins._2)
 }
 
-class GaussianBlurSpreadingFunction3D(radius: Int, sigma: Double, maxBins: Bin3DCoord)
-  extends GaussianBlurSpreadingFunction[Bin3DCoord](radius: Int, sigma: Double) {
+class GaussianBlurSpreadingFunction3D(radius: Int, sigma: Double, maxBins: Bin3DCoord, tms: Boolean = true)
+  extends GaussianBlurSpreadingFunction[Bin3DCoord](radius: Int, sigma: Double, tms: Boolean) {
 
   def calcKernelCoord(tileCoord: TileCoord, binCoord: Bin3DCoord, kernelIndex: Bin2DCoord): (TileCoord, Bin3DCoord) = {
-    var kernelBinCoord = (binCoord._1 + kernelIndex._1 - Math.floor(kernelDimension / 2).toInt, binCoord._2 + kernelIndex._2 - Math.floor(kernelDimension / 2).toInt, binCoord._3)
+    var kernelXCoord = binCoord._1 + kernelIndex._1 - Math.floor(kernelDimension / 2).toInt
+    var kernelYCoord = binCoord._2 + kernelIndex._2 - Math.floor(kernelDimension / 2).toInt
+    var kernelBinCoord = (kernelXCoord, kernelYCoord, binCoord._3)
     var kernelTileCoord = tileCoord
 
     // If kernel bin coordinate lies outside of the tile, calculate new coordinates for tile and bin
-    if (kernelBinCoord._1 < 0) {
+    if (kernelXCoord < 0) {
       kernelTileCoord = translateLeft(kernelTileCoord)
       kernelBinCoord = calcBinCoordInLeftTile(kernelBinCoord)
-    } else if (kernelBinCoord._1 > maxBins._1) {
+    } else if (kernelXCoord > maxBins._1) {
       kernelTileCoord = translateRight(kernelTileCoord)
       kernelBinCoord = calcBinCoordInRightTile(kernelBinCoord)
     }
 
-    if (kernelBinCoord._2 < 0) {
+    if (kernelYCoord < 0) {
       kernelTileCoord = translateUp(kernelTileCoord)
       kernelBinCoord = calcBinCoordInTopTile(kernelBinCoord)
-    } else if (kernelBinCoord._2 > maxBins._2) {
+    } else if (kernelYCoord > maxBins._2) {
       kernelTileCoord = translateDown(kernelTileCoord)
       kernelBinCoord = calcBinCoordInBottomTile(kernelBinCoord)
     }
@@ -161,6 +180,8 @@ class GaussianBlurSpreadingFunction3D(radius: Int, sigma: Double, maxBins: Bin3D
   def calcBinCoordInTopTile(kernelBinCoord: Bin3DCoord) = (kernelBinCoord._1, maxBins._2 + kernelBinCoord._2 + 1, kernelBinCoord._3)
 
   def calcBinCoordInBottomTile(kernelBinCoord: Bin3DCoord) = (kernelBinCoord._1, kernelBinCoord._2 - maxBins._2 - 1, kernelBinCoord._3)
+
+  def isBinCoordValid(binCoord: Bin3DCoord) = binCoord._1 >= 0 && binCoord._2 >= 0 && binCoord._1 <= maxBins._1 && binCoord._2 <= maxBins._2
 }
 
 object GaussianBlurSpreadingFunction {

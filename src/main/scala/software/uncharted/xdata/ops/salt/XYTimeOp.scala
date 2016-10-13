@@ -83,8 +83,7 @@ trait XYTimeOp {
       projection,
       valueExtractor,
       binAggregator,
-      tileAggregator,
-      Some(new GaussianBlurSpreadingFunction3D(1, 3, (tileSize - 1, tileSize - 1, timeRange.count - 1)))
+      tileAggregator
     )
 
     BasicSaltOperations.genericTiling(series)(request)(frame.rdd)
