@@ -35,7 +35,6 @@ abstract class GaussianBlurSpreadingFunction[BC](radius: Int, sigma: Double, tms
       .groupBy(coordsValueMap => coordsValueMap._1) // Group by key. Key: (tileCoordinate, BinCoordinate2D)
       .map({ case (group, traversable) => traversable.reduce { (a, b) => (a._1, a._2 + b._2) } }) // Reduces by key, adding the values
 
-    // TODO: Can I think of a better way to write this
     coordsValueMap.map(applyKernel(coordsValueMap))
   }
 
@@ -194,21 +193,21 @@ object GaussianBlurSpreadingFunction {
     val kernel = Array.ofDim[Double](kernelDimension, kernelDimension)
     var sum = 0.0
 
-    for (x <- 0 until kernelDimension) {
-      for (y <- 0 until kernelDimension) {
-        val uc = x - (kernel.length - 1) / 2
-        val vc = y - (kernel(0).length - 1) / 2
+    for (y <- 0 until kernelDimension) {
+      for (x <- 0 until kernelDimension) {
+        val uc = y - (kernel.length - 1) / 2
+        val vc = x - (kernel(0).length - 1) / 2
         // Calculate and save
         val g = Math.exp(-(uc * uc + vc * vc) / (2 * sigma * sigma))
         sum += g
-        kernel(x)(y) = g
+        kernel(y)(x) = g
       }
     }
 
     // Normalize the kernel
-    for (x <- 0 until kernel.length) {
-      for (y <- 0 until kernel(0).length) {
-        kernel(x)(y) /= sum
+    for (y <- 0 until kernel.length) {
+      for (x <- 0 until kernel(0).length) {
+        kernel(y)(x) /= sum
       }
     }
 
