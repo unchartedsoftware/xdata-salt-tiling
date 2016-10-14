@@ -437,16 +437,16 @@ class MercatorLineProjection(maxLineLength: Int = 1024,
 
   private val mercatorProjection = new MercatorProjection(zoomLevels, min, max, tms)
 
-  override def project(dc: Option[(Double, Double, Double, Double)], maxBin: (Int, Int)): Option[Seq[((Int, Int, Int), (Int, Int))]] = {
+  override def project(coordinates: Option[(Double, Double, Double, Double)], maxBin: (Int, Int)): Option[Seq[((Int, Int, Int), (Int, Int))]] = {
     val xBins = maxBin._1 + 1
     val yBins = maxBin._2 + 1
 
-    if (!dc.isDefined) {
+    if (!coordinates.isDefined) {
       None
     } else {
       // compute start and end-points of the line in WMS/TMS mercator space, for each zoomLevel
-      val startdc = (dc.get._1, dc.get._2)
-      val enddc = (dc.get._3, dc.get._4)
+      val startdc = (coordinates.get._1, coordinates.get._2)
+      val enddc = (coordinates.get._3, coordinates.get._4)
       val start = mercatorProjection.project(Some(startdc), maxBin)
       val end = mercatorProjection.project(Some(enddc), maxBin)
 
@@ -467,7 +467,7 @@ class MercatorLineProjection(maxLineLength: Int = 1024,
             universalBinIndexToTileIndex(zoomLevels(i), ub, maxBin)
           }))
         }
-        Some(result.toSeq)
+        Some(result)
       } else {
         None
       }
