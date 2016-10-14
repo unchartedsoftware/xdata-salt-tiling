@@ -92,7 +92,7 @@ import org.apache.spark.broadcast.Broadcast
   *   http://www.bigdatalab.ac.cn/~lanyanyan/papers/2014/TKDE-yan.pdf
   *
   **/
-class BDP(kk: Int) extends Serializable with Logging { // TODO enable logging
+class BDP(kk: Int) extends Serializable with Logging {
   var k = kk
   var tfidf_dict: Map[Int,Double] = Map[Int,Double]()
 

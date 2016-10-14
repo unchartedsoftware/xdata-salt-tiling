@@ -1,5 +1,6 @@
 # Twitter Topic Modelling
-This operation is an implementation of the xdata [topic modelling](https://stash.uncharted.software/projects/XDATA/repos/topic-modelling/browse) project. Below are the notes associated with that project (which may be out of date since porting to pipeline op):
+This operation is an implementation of the xdata [topic modelling](https://stash.uncharted.software/projects/XDATA/repos/topic-modelling/browse) project. Below are the notes associated with that project:
+
 ## Original Research Notes:
 
 This project is an extension of Biterm Topic Models (Yan et al. 2013)

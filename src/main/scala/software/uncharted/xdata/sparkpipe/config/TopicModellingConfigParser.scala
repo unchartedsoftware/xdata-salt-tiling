@@ -44,7 +44,8 @@ object TopicModellingConfigParser extends Logging {
   def parse(config: Config): TopicModellingParams = {
     try {
       val topicsConfig = config.getConfig("topics")
-      val alpha = 1 / Math.E // topicsConfig.getDouble("alpha") // Interpreted by ConfigFactory as String, not Double
+      val alphaStr = topicsConfig.getString("alpha")
+      val alpha = if (alphaStr == "1/Math.E") 1/Math.E else alphaStr.toDouble
       val beta = if (topicsConfig.hasPath("beta")) topicsConfig.getDouble("beta") else 0.01
       val computeCoherence = topicsConfig.getBoolean("computeCoherence")
       val dateCol = topicsConfig.getString("dateColumn")

@@ -37,14 +37,15 @@ object TopicModellingJob extends Logging {
     * }
     * And contains the following members:
     *  Within the "topics" object:
+    *    "alpha" (optional) : a dirichlet hyperparameter of the clumpiness of the model. Defaults to 1/e
     *    "beta" (optional) : a Double that specifies the value of beta. Defaults to 0.01
     *    "computeCoherence"  : a Boolean that specifies whether or not you would like to compute the coherence score of each topic
     *    "dateColumn" : a String that specifies the column in which to find the date
     *    "endDate" : a String that specifies the end (inclusive) of the date range you are running this job over
     *    "idColumn" : a String that specifies the column in which to find the id
-    *    "iterN" (optional) : a String that specifies the number of iterations. Defaults to 150
-    *    "k" (optional) : a String that specifies the value of k. Defaults to 2
-    *    "numTopTopics" : a String that specifies the number of top topics to output
+    *    "iterN" (optional) : a String that specifies the number of iterations of MCMC sampling to run. Defaults to 150
+    *    "k" (optional) : a String that specifies the number of topics to start with. Defaults to 2
+    *    "numTopTopics" : a String that specifies the top T words which to consider in computing coherence scores
     *    "pathToCorpus" : a String that specifies the path to the data (on which to do the topic modelling)
     *    "pathToTfidf" (optional) : a String that specifies the path to precomputed tfidf scores. Job does not compute tfidf if pathToTfidf is unspecified
     *    "startDate" : a String that specifies beginning (inclusive) of the date range you are running this job over

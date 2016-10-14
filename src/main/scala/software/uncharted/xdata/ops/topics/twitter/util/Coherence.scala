@@ -35,9 +35,8 @@ object Coherence extends Serializable with Logging {
     Source.fromFile(topic_dist_file).getLines.filter(x => !x.startsWith("#")).map(_.split("\t")).map(x => x(termIdx)).map(x => x.split(",\\s?")).toArray
   }
 
-  def topTwordsFromTopics(topics: Array[Array[String]], topT: Int) = {
-    val ttopics = topics.map(x => x.take(topT))
-    ttopics.flatMap(x => x).toSet
+  def topTwordsFromTopics(topics: Array[Array[String]], topT: Int) : Set[String] = {
+    topics.flatMap(x => x.take(topT)).toSet
   }
 
   // Nathan's improvement on the function below - doesn't involve Java boxing - unboxing

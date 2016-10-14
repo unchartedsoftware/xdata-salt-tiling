@@ -16,13 +16,10 @@ import java.io.{File, PrintWriter}
 import java.text.SimpleDateFormat
 import java.util.{Calendar,Date}
 import java.nio.file.{Paths, Files}
-import grizzled.slf4j.{Logging, Logger}
-import org.apache.spark.sql.DataFrame
+import grizzled.slf4j.Logging
 import org.joda.time.{DateTime, Days, Period}
-import org.apache.spark.sql.Row
+import org.apache.spark.sql.{DataFrame, Row, SQLContext}
 import org.apache.spark.sql.types.{StructType, IntegerType, StructField, BooleanType, StringType, LongType, ArrayType, DoubleType}
-
-import org.apache.spark.sql.{SQLContext}
 
 // scalastyle:off public.methods.have.type parameter.number
 /**

@@ -38,18 +38,14 @@ The results are then constructed into pipeline operations and their arguments.
 These operations are then made into a pipe and run.
 
 ### Current Jobs
-Responsible for running operations in `src/main/scala/software/uncharted/xdata/ops/`:
+Responsible for running operations in `src/main/scala/software/uncharted/xdata/ops/`. Below are the Job names and the operations they run:
 - `TopicModellingJob`
-  - Operation:
-    - `TopicModelling`
+  - `TopicModelling`
 - `TopicModellingParallelJob`
-  - Operation:
-    - `TopicModellingParallel`
+  - `TopicModellingParallel`
 - `XYTimeHeatmapJob`
-  - Operation:
-   - `salt/MercatorTimeHeatmap`, or
-   - `salt/CartesianTimeHeatmap`
+ - `salt/MercatorTimeHeatmap`, or
+ - `salt/CartesianTimeHeatmap`
 - `XYTimeTopicsJob`
-  - Operation:
-    - `salt/MercatorTimeTopics`, or
-    - `salt/CartesianTimeTopics`
+  - `salt/MercatorTimeTopics`, or
+  - `salt/CartesianTimeTopics`

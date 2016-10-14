@@ -14,8 +14,7 @@ package software.uncharted.xdata.ops.topics
 
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.{SparkContext}
-import org.apache.spark.sql.{SQLContext}
-import org.apache.spark.sql.{Column, DataFrame}
+import org.apache.spark.sql.{Column, DataFrame, SQLContext}
 import org.joda.time.{Days, DateTime}
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.addColumn
@@ -34,15 +33,15 @@ package object twitter {
     * Take a second DataFrame, representing precomputed tfidf scores, as input.
     * Parse this DataFrame into a broadcast variable and use it to do topic modelling
     *
-    * @param alpha The value of alpha. Defaults to 1/e
+    * @param alpha A dirichlet hyperparameter of the clumpiness of the model. Defaults to 1/e
     * @param beta The value of beta. Defaults to 0.01
     * @param computeCoherence  Whether or not to compute the coherence score of each topic
     * @param dateCol The column of the input DataFrame in which to find the date
     * @param endDateStr The end (inclusive) of the date range this job is to be run over
     * @param idCol The column of the input DataFrame in which to find the id
-    * @param iterN The number of iterations. Defaults to 150
-    * @param k The value of k. Defaults to 2
-    * @param numTopTopics The number of top topics to output
+    * @param iterN The number of iterations of MCMC sampling to run. Defaults to 150
+    * @param k The number of topics to start with. Defaults to 2
+    * @param numTopTopics Number of top terms per topic to output
     * @param pathToWrite The path to the data (on which to do the topic modelling)
     * @param sqlContext A SQLContext object used to create the resulting DataFrame
     * @param startDateStr Beginning (inclusive) of the date range you are running this job over
@@ -100,20 +99,19 @@ package object twitter {
 
   /**
     * Preform topic modelling
-    * @param alpha The value of alpha. Defaults to 1/e
+    * @param alpha A dirichlet hyperparameter of the clumpiness of the model. Defaults to 1/e
     * @param beta The value of beta. Defaults to 0.01
     * @param computeCoherence  Whether or not to compute the coherence score of each topic
-    * @param dateCol The name of the column of the input DataFrame in which to find the date
+    * @param dateCol The column of the input DataFrame in which to find the date
     * @param endDateStr The end (inclusive) of the date range this job is to be run over
-    * @param idCol The name of the column of the input DataFrame in which to find the id
-    * @param iterN The number of iterations. Defaults to 150
-    * @param k The value of k. Defaults to 2
-    * @param numTopTopics The number of top topics to output
+    * @param idCol The column of the input DataFrame in which to find the id
+    * @param iterN The number of iterations of MCMC sampling to run. Defaults to 150
+    * @param k The number of topics to start with. Defaults to 2
+    * @param numTopTopics Number of top terms per topic to output
     * @param pathToWrite The path to the data (on which to do the topic modelling)
     * @param sqlContext A SQLContext object used to create the resulting DataFrame
     * @param startDateStr Beginning (inclusive) of the date range you are running this job over
     * @param stopwords_bcst All word to be ignored as potential topics
-    * @param textCol The name of the column in which to find the text column
     * @param tfidf_bcst The precomputed tfidf scores
     *
     * @param input The corpus data
