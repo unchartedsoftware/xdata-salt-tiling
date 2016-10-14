@@ -15,10 +15,9 @@ package software.uncharted.xdata.ops.salt
 
 import scala.collection.mutable.{ArrayBuffer, Buffer => MutableBuffer}
 import software.uncharted.salt.core.spreading.SpreadingFunction
-import software.uncharted.xdata.geometry._
-import Line.intPointToDoublePoint
 import software.uncharted.salt.core.projection.numeric.MercatorProjection
-
+import software.uncharted.xdata.geometry.{CartesianTileProjection2D, LineToPoints, Line, CartesianBinning, ArcBinner, MercatorTileProjection2D}
+import software.uncharted.xdata.geometry.Line.intPointToDoublePoint
 
 /**
   * A line projection that projects straight from lines to raster bins in one pass.
