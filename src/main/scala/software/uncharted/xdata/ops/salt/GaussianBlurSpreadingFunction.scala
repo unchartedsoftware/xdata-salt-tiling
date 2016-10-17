@@ -15,6 +15,14 @@ package software.uncharted.xdata.ops.salt
 
 import software.uncharted.salt.core.spreading.SpreadingFunction
 
+/**
+  * An abstract implementation of the Gaussian Blur. Applies a gaussian blur over a set of coordinates given the value at the coordinate.
+  * Values for coordinates not passed in, are assumed to be 0
+  *
+  * @param radius The radius of the kernel to applied
+  * @param sigma  The sigma value for the gaussian distribution
+  * @param tms    if true, the Y axis for tile coordinates only is flipped
+  */
 abstract class GaussianBlurSpreadingFunction[BC](radius: Int, sigma: Double, tms: Boolean = true)
   extends SpreadingFunction[TileCoord, BC, Double] {
 
@@ -93,6 +101,14 @@ abstract class GaussianBlurSpreadingFunction[BC](radius: Int, sigma: Double, tms
   protected def isBinCoordValid(binCoord: BC): Boolean
 }
 
+/**
+  * An implementation of the Gaussian Blur for bin coordinates that are 2 dimensional (x and y).
+  *
+  * @param radius  The radius of the kernel to applied
+  * @param sigma   The sigma value for the gaussian distribution
+  * @param maxBins The maximum number of bins in the x and y direction
+  * @param tms     if true, the Y axis for tile coordinates only is flipped
+  */
 class GaussianBlurSpreadingFunction2D(radius: Int, sigma: Double, maxBins: Bin2DCoord, tms: Boolean = true)
   extends GaussianBlurSpreadingFunction[Bin2DCoord](radius: Int, sigma: Double, tms: Boolean) {
 
@@ -139,7 +155,17 @@ class GaussianBlurSpreadingFunction2D(radius: Int, sigma: Double, maxBins: Bin2D
   protected def isBinCoordValid(binCoord: Bin2DCoord) = (binCoord.x >= 0) && (binCoord.y >= 0) && (binCoord.x <= maxBins.x) && (binCoord.y <= maxBins.y)
 }
 
-class GaussianBlurSpreadingFunction3D(radius: Int, sigma: Double, maxBins: Bin3DCoord, tms: Boolean = true)
+/**
+  * An implementation of the Gaussian Blur for bin coordinates that are 3 dimensional (x, y, and z).
+  * Useful for applying gaussian blur to XYTimeOps, where the z dimension represents time.
+  * However, the third coordinate's value does not matter. Manipulations are done only on the x and y coordinates
+  *
+  * @param radius  The radius of the kernel to applied
+  * @param sigma   The sigma value for the gaussian distribution
+  * @param maxBins The maximum number of bins in the x and y direction
+  * @param tms     if true, the Y axis for tile coordinates only is flipped
+  */
+class GaussianBlurSpreadingFunction3D(radius: Int, sigma: Double, maxBins: Bin2DCoord, tms: Boolean = true)
   extends GaussianBlurSpreadingFunction[Bin3DCoord](radius: Int, sigma: Double, tms: Boolean) {
 
   def spread(coordsTraversable: Traversable[((Int, Int, Int), (Int, Int, Int))], value: Option[Double]): Traversable[((Int, Int, Int), (Int, Int, Int), Option[Double])] = {
@@ -186,7 +212,6 @@ class GaussianBlurSpreadingFunction3D(radius: Int, sigma: Double, maxBins: Bin3D
 }
 
 object GaussianBlurSpreadingFunction {
-
   protected def makeGaussianKernel(radius: Int, sigma: Double): Array[Array[Double]] = {
     val kernelDimension = calcKernelDimension(radius)
     val kernel = Array.ofDim[Double](kernelDimension, kernelDimension)
