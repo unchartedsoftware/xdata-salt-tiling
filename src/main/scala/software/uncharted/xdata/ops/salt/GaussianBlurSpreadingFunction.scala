@@ -89,13 +89,6 @@ abstract class GaussianBlurSpreadingFunction[BC](radius: Int, sigma: Double, tms
   protected def translateUp(tileCoord: TileCoord) = if (tms) TileCoord(tileCoord.z, tileCoord.x, tileCoord.y + 1) else TileCoord(tileCoord.z, tileCoord.x, tileCoord.y - 1)
 
   protected def translateDown(tileCoord: TileCoord) = if (tms) TileCoord(tileCoord.z, tileCoord.x, tileCoord.y - 1) else TileCoord(tileCoord.z, tileCoord.x, tileCoord.y + 1)
-
-  protected def isTileCoordValid(tileCoord: TileCoord) = {
-    val maxTiles = (1 << tileCoord.z) - 1
-    (tileCoord.x >= 0) && (tileCoord.y >= 0) && (tileCoord.x <= maxTiles) && (tileCoord.y <= maxTiles)
-  }
-
-  protected def isBinCoordValid(binCoord: BC): Boolean
 }
 
 /**
@@ -148,8 +141,6 @@ class GaussianBlurSpreadingFunction2D(radius: Int, sigma: Double, maxBins: Bin2D
   private def calcBinCoordInTopTile(kernelBinCoord: Bin2DCoord) = Bin2DCoord(kernelBinCoord.x, maxBins.y + kernelBinCoord.y + 1)
 
   private def calcBinCoordInBottomTile(kernelBinCoord: Bin2DCoord) = Bin2DCoord(kernelBinCoord.x, kernelBinCoord.y - maxBins.y - 1)
-
-  protected def isBinCoordValid(binCoord: Bin2DCoord) = (binCoord.x >= 0) && (binCoord.y >= 0) && (binCoord.x <= maxBins.x) && (binCoord.y <= maxBins.y)
 }
 
 /**
@@ -204,8 +195,6 @@ class GaussianBlurSpreadingFunction3D(radius: Int, sigma: Double, maxBins: Bin2D
   private def calcBinCoordInTopTile(kernelBinCoord: Bin3DCoord) = Bin3DCoord(kernelBinCoord.x, maxBins.y + kernelBinCoord.y + 1, kernelBinCoord.z)
 
   private def calcBinCoordInBottomTile(kernelBinCoord: Bin3DCoord) = Bin3DCoord(kernelBinCoord.x, kernelBinCoord.y - maxBins.y - 1, kernelBinCoord.z)
-
-  protected def isBinCoordValid(binCoord: Bin3DCoord) = binCoord.x >= 0 && binCoord.y >= 0 && binCoord.x <= maxBins.x && binCoord.y <= maxBins.y
 }
 
 object GaussianBlurSpreadingFunction {
