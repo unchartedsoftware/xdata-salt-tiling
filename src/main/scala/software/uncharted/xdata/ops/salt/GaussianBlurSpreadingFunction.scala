@@ -52,12 +52,10 @@ abstract class GaussianBlurSpreadingFunction[BC](radius: Int, sigma: Double, tms
     var result = Map(((tileCoord, binCoord) -> value))
 
     // Translate kernel coordinates into tile and bin coordinates and add them to result
-    for (kernelY <- 0 to kernelDimension - 1) {
-      for (kernelX <- 0 to kernelDimension - 1) {
-        val (kernelTileCoord, kernelBinCoord) = calcKernelCoord(tileCoord, binCoord, (kernelX, kernelY))
-        if (!result.contains(kernelTileCoord, kernelBinCoord)) {
-          result = result + ((kernelTileCoord, kernelBinCoord) -> 0.0) // Default value for coordinates not part of the original coordsTraversable is 0
-        }
+    for (kernelY <- 0 to kernelDimension - 1; kernelX <- 0 to kernelDimension - 1) {
+      val (kernelTileCoord, kernelBinCoord) = calcKernelCoord(tileCoord, binCoord, (kernelX, kernelY))
+      if (!result.contains(kernelTileCoord, kernelBinCoord)) {
+        result = result + ((kernelTileCoord, kernelBinCoord) -> 0.0) // Default value for coordinates not part of the original coordsTraversable is 0
       }
     }
 
@@ -72,12 +70,10 @@ abstract class GaussianBlurSpreadingFunction[BC](radius: Int, sigma: Double, tms
     val binCoord = coords._2
     var result = List[Double]()
 
-    for (kernelY <- 0 to kernelDimension - 1) {
-      for (kernelX <- 0 to kernelDimension - 1) {
-        val (kernelTileCoord, kernelBinCoord) = calcKernelCoord(tileCoord, binCoord, (kernelX, kernelY))
-        val coordValue = coordsValueMapTraversable.get((kernelTileCoord, kernelBinCoord))
-        result = result :+ kernel(kernelY)(kernelX) * coordValue.getOrElse(0.0)
-      }
+    for (kernelY <- 0 to kernelDimension - 1; kernelX <- 0 to kernelDimension - 1) {
+      val (kernelTileCoord, kernelBinCoord) = calcKernelCoord(tileCoord, binCoord, (kernelX, kernelY))
+      val coordValue = coordsValueMapTraversable.get((kernelTileCoord, kernelBinCoord))
+      result = result :+ kernel(kernelY)(kernelX) * coordValue.getOrElse(0.0)
     }
 
     (tileCoord, binCoord, Some(result.sum))
