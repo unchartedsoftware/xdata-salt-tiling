@@ -191,7 +191,7 @@ object GaussianBlurSpreadingFunction {
   type Bin2DCoord = (Int, Int)
   type Bin3DCoord = (Int, Int, Int)
 
-  protected def makeGaussianKernel(radius: Int, sigma: Double): Array[Array[Double]] = {
+  private[salt] def makeGaussianKernel(radius: Int, sigma: Double): Array[Array[Double]] = {
     val kernelDimension = calcKernelDimension(radius)
     val kernel = Array.ofDim[Double](kernelDimension, kernelDimension)
     var sum = 0.0
