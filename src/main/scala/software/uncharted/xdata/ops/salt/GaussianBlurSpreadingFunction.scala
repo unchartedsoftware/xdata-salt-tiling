@@ -19,8 +19,8 @@ import software.uncharted.xdata.ops.salt.GaussianBlurSpreadingFunction.{Bin2DCoo
 abstract class GaussianBlurSpreadingFunction[BC](radius: Int, sigma: Double, tms: Boolean = true)
   extends SpreadingFunction[TileCoord, BC, Double] {
 
-  val kernel = GaussianBlurSpreadingFunction.makeGaussianKernel(radius, sigma)
-  val kernelDimension = GaussianBlurSpreadingFunction.calcKernelDimension(radius)
+  protected val kernel = GaussianBlurSpreadingFunction.makeGaussianKernel(radius, sigma)
+  protected val kernelDimension = GaussianBlurSpreadingFunction.calcKernelDimension(radius)
 
   /**
     * Spread a single value over multiple visualization-space coordinates
@@ -38,7 +38,7 @@ abstract class GaussianBlurSpreadingFunction[BC](radius: Int, sigma: Double, tms
     coordsValueMap.map(applyKernel(coordsValueMap))
   }
 
-  def addNeighbouringBins(value: Double)
+  private def addNeighbouringBins(value: Double)
                          (coords: (TileCoord, BC)): Map[(TileCoord, BC), Double] = {
     val tileCoord = coords._1
     val binCoord = coords._2
@@ -57,7 +57,7 @@ abstract class GaussianBlurSpreadingFunction[BC](radius: Int, sigma: Double, tms
     result
   }
 
-  def applyKernel(coordsValueMapTraversable: Map[(TileCoord, BC), Double])
+  private def applyKernel(coordsValueMapTraversable: Map[(TileCoord, BC), Double])
                  (coordsValueMap: ((TileCoord, BC), Double)): (TileCoord, BC, Option[Double]) = {
     val coords = coordsValueMap._1
     val data = coordsValueMap._2
@@ -78,23 +78,27 @@ abstract class GaussianBlurSpreadingFunction[BC](radius: Int, sigma: Double, tms
 
   def calcKernelCoord(tileCoord: TileCoord, binCoord: BC, kernelIndex: (Int, Int)): (TileCoord, BC)
 
-  def translateLeft(tileCoord: TileCoord) = (tileCoord._1, tileCoord._2 - 1, tileCoord._3)
+  protected def translateLeft(tileCoord: TileCoord) = (tileCoord._1, tileCoord._2 - 1, tileCoord._3)
 
-  def translateRight(tileCoord: TileCoord) = (tileCoord._1, tileCoord._2 + 1, tileCoord._3)
+  protected def translateRight(tileCoord: TileCoord) = (tileCoord._1, tileCoord._2 + 1, tileCoord._3)
 
-  def translateUp(tileCoord: TileCoord) = if (tms) (tileCoord._1, tileCoord._2, tileCoord._3 + 1) else (tileCoord._1, tileCoord._2, tileCoord._3 - 1)
+  protected def translateUp(tileCoord: TileCoord) = if (tms) (tileCoord._1, tileCoord._2, tileCoord._3 + 1) else (tileCoord._1, tileCoord._2, tileCoord._3 - 1)
 
-  def translateDown(tileCoord: TileCoord) = if (tms) (tileCoord._1, tileCoord._2, tileCoord._3 - 1) else (tileCoord._1, tileCoord._2, tileCoord._3 + 1)
+  protected def translateDown(tileCoord: TileCoord) = if (tms) (tileCoord._1, tileCoord._2, tileCoord._3 - 1) else (tileCoord._1, tileCoord._2, tileCoord._3 + 1)
 
-  def isTileCoordValid(tileCoord: TileCoord) = (tileCoord._2 >= 0) && (tileCoord._3 >= 0) && (tileCoord._2 <= (1 << tileCoord._1) - 1) && (tileCoord._3 <= (1 << tileCoord._1) - 1)
+  protected def isTileCoordValid(tileCoord: TileCoord) = {
+    val maxTilesInX = (1 << tileCoord._1) - 1
+    val maxTilesInY = (1 << tileCoord._2) - 1
+    (tileCoord._2 >= 0) && (tileCoord._3 >= 0) && (tileCoord._2 <= maxTilesInX) && (tileCoord._3 <= maxTilesInY)
+  }
 
-  def isBinCoordValid(binCoord: BC): Boolean
+  protected def isBinCoordValid(binCoord: BC): Boolean
 }
 
 class GaussianBlurSpreadingFunction2D(radius: Int, sigma: Double, maxBins: Bin2DCoord, tms: Boolean = true)
   extends GaussianBlurSpreadingFunction[Bin2DCoord](radius: Int, sigma: Double, tms: Boolean) {
 
-  def calcKernelCoord(tileCoord: TileCoord, binCoord: Bin2DCoord, kernelIndex: (Int, Int)): (TileCoord, Bin2DCoord) = {
+  protected def calcKernelCoord(tileCoord: TileCoord, binCoord: Bin2DCoord, kernelIndex: (Int, Int)): (TileCoord, Bin2DCoord) = {
     var kernelBinCoordX = binCoord._1 + kernelIndex._1 - Math.floor(kernelDimension / 2).toInt
     var kernelBinCoordY = binCoord._2 + kernelIndex._2 - Math.floor(kernelDimension / 2).toInt
     var kernelBinCoord = (kernelBinCoordX, kernelBinCoordY)
@@ -120,21 +124,21 @@ class GaussianBlurSpreadingFunction2D(radius: Int, sigma: Double, maxBins: Bin2D
     (kernelTileCoord, kernelBinCoord)
   }
 
-  def calcBinCoordInLeftTile(kernelBinCoord: Bin2DCoord) = (maxBins._1 + kernelBinCoord._1 + 1, kernelBinCoord._2)
+  private def calcBinCoordInLeftTile(kernelBinCoord: Bin2DCoord) = (maxBins._1 + kernelBinCoord._1 + 1, kernelBinCoord._2)
 
-  def calcBinCoordInRightTile(kernelBinCoord: Bin2DCoord) = (kernelBinCoord._1 - maxBins._1 - 1, kernelBinCoord._2)
+  private def calcBinCoordInRightTile(kernelBinCoord: Bin2DCoord) = (kernelBinCoord._1 - maxBins._1 - 1, kernelBinCoord._2)
 
-  def calcBinCoordInTopTile(kernelBinCoord: Bin2DCoord) = (kernelBinCoord._1, maxBins._2 + kernelBinCoord._2 + 1)
+  private def calcBinCoordInTopTile(kernelBinCoord: Bin2DCoord) = (kernelBinCoord._1, maxBins._2 + kernelBinCoord._2 + 1)
 
-  def calcBinCoordInBottomTile(kernelBinCoord: Bin2DCoord) = (kernelBinCoord._1, kernelBinCoord._2 - maxBins._2 - 1)
+  private def calcBinCoordInBottomTile(kernelBinCoord: Bin2DCoord) = (kernelBinCoord._1, kernelBinCoord._2 - maxBins._2 - 1)
 
-  def isBinCoordValid(binCoord: Bin2DCoord) = (binCoord._1 >= 0) && (binCoord._2 >= 0) && (binCoord._1 <= maxBins._1) && (binCoord._2 <= maxBins._2)
+  protected def isBinCoordValid(binCoord: Bin2DCoord) = (binCoord._1 >= 0) && (binCoord._2 >= 0) && (binCoord._1 <= maxBins._1) && (binCoord._2 <= maxBins._2)
 }
 
 class GaussianBlurSpreadingFunction3D(radius: Int, sigma: Double, maxBins: Bin3DCoord, tms: Boolean = true)
   extends GaussianBlurSpreadingFunction[Bin3DCoord](radius: Int, sigma: Double, tms: Boolean) {
 
-  def calcKernelCoord(tileCoord: TileCoord, binCoord: Bin3DCoord, kernelIndex: (Int, Int)): (TileCoord, Bin3DCoord) = {
+  protected def calcKernelCoord(tileCoord: TileCoord, binCoord: Bin3DCoord, kernelIndex: (Int, Int)): (TileCoord, Bin3DCoord) = {
     var kernelBinCoordX = binCoord._1 + kernelIndex._1 - Math.floor(kernelDimension / 2).toInt
     var kernelBinCoordY = binCoord._2 + kernelIndex._2 - Math.floor(kernelDimension / 2).toInt
     var kernelBinCoord = (kernelBinCoordX, kernelBinCoordY, binCoord._3)
@@ -160,15 +164,15 @@ class GaussianBlurSpreadingFunction3D(radius: Int, sigma: Double, maxBins: Bin3D
     (kernelTileCoord, kernelBinCoord)
   }
 
-  def calcBinCoordInLeftTile(kernelBinCoord: Bin3DCoord) = (maxBins._1 + kernelBinCoord._1 + 1, kernelBinCoord._2, kernelBinCoord._3)
+  private def calcBinCoordInLeftTile(kernelBinCoord: Bin3DCoord) = (maxBins._1 + kernelBinCoord._1 + 1, kernelBinCoord._2, kernelBinCoord._3)
 
-  def calcBinCoordInRightTile(kernelBinCoord: Bin3DCoord) = (kernelBinCoord._1 - maxBins._1 - 1, kernelBinCoord._2, kernelBinCoord._3)
+  private def calcBinCoordInRightTile(kernelBinCoord: Bin3DCoord) = (kernelBinCoord._1 - maxBins._1 - 1, kernelBinCoord._2, kernelBinCoord._3)
 
-  def calcBinCoordInTopTile(kernelBinCoord: Bin3DCoord) = (kernelBinCoord._1, maxBins._2 + kernelBinCoord._2 + 1, kernelBinCoord._3)
+  private def calcBinCoordInTopTile(kernelBinCoord: Bin3DCoord) = (kernelBinCoord._1, maxBins._2 + kernelBinCoord._2 + 1, kernelBinCoord._3)
 
-  def calcBinCoordInBottomTile(kernelBinCoord: Bin3DCoord) = (kernelBinCoord._1, kernelBinCoord._2 - maxBins._2 - 1, kernelBinCoord._3)
+  private def calcBinCoordInBottomTile(kernelBinCoord: Bin3DCoord) = (kernelBinCoord._1, kernelBinCoord._2 - maxBins._2 - 1, kernelBinCoord._3)
 
-  def isBinCoordValid(binCoord: Bin3DCoord) = binCoord._1 >= 0 && binCoord._2 >= 0 && binCoord._1 <= maxBins._1 && binCoord._2 <= maxBins._2
+  protected def isBinCoordValid(binCoord: Bin3DCoord) = binCoord._1 >= 0 && binCoord._2 >= 0 && binCoord._1 <= maxBins._1 && binCoord._2 <= maxBins._2
 }
 
 object GaussianBlurSpreadingFunction {
@@ -176,7 +180,7 @@ object GaussianBlurSpreadingFunction {
   type Bin2DCoord = (Int, Int)
   type Bin3DCoord = (Int, Int, Int)
 
-  def makeGaussianKernel(radius: Int, sigma: Double): Array[Array[Double]] = {
+  protected def makeGaussianKernel(radius: Int, sigma: Double): Array[Array[Double]] = {
     val kernelDimension = calcKernelDimension(radius)
     val kernel = Array.ofDim[Double](kernelDimension, kernelDimension)
     var sum = 0.0
@@ -202,5 +206,5 @@ object GaussianBlurSpreadingFunction {
     kernel
   }
 
-  def calcKernelDimension(radius: Int) = 2 * radius + 1
+  protected def calcKernelDimension(radius: Int) = 2 * radius + 1
 }
