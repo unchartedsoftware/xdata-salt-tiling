@@ -192,22 +192,18 @@ object GaussianBlurSpreadingFunction {
     val kernel = Array.ofDim[Double](kernelDimension, kernelDimension)
     var sum = 0.0
 
-    for (y <- 0 until kernelDimension) {
-      for (x <- 0 until kernelDimension) {
-        val uc = y - (kernel.length - 1) / 2
-        val vc = x - (kernel(0).length - 1) / 2
-        // Calculate and save
-        val g = Math.exp(-(uc * uc + vc * vc) / (2 * sigma * sigma))
-        sum += g
-        kernel(y)(x) = g
-      }
+    for (y <- 0 until kernelDimension; x <- 0 until kernelDimension) {
+      val uc = y - (kernel.length - 1) / 2
+      val vc = x - (kernel(0).length - 1) / 2
+      // Calculate and save
+      val g = Math.exp(-(uc * uc + vc * vc) / (2 * sigma * sigma))
+      sum += g
+      kernel(y)(x) = g
     }
 
     // Normalize the kernel
-    for (y <- 0 until kernel.length) {
-      for (x <- 0 until kernel(0).length) {
-        kernel(y)(x) /= sum
-      }
+    for (y <- 0 until kernelDimension; x <- 0 until kernelDimension) {
+      kernel(y)(x) /= sum
     }
 
     kernel
