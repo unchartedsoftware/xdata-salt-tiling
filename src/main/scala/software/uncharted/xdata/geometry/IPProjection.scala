@@ -18,46 +18,64 @@ import software.uncharted.salt.core.projection.Projection
 import software.uncharted.salt.core.projection.numeric.{CartesianProjection, NumericProjection}
 
 import scala.util.Try
+import IPProjection._  // scalastyle:ignore
 
 
 
 /**
   * A projection from IP space to 2-d cartesian space
   */
-class IPProjection (zoomLevels: Seq[Int]) extends Projection[String, (Int, Int, Int), (Int, Int)] {
-  import IPProjection._
-  type TileCoordinate = (Int, Int, Int)
-  type BinCoordinate = (Int, Int)
-
+class IPProjection (zoomLevels: Seq[Int]) extends Projection[String, TC, BC] {
   private val cartesian = new CartesianProjection(zoomLevels, MIN_DATA_COORDS, MAX_DATA_COORDS)
 
 
-  override def project(rawCoordinate: Option[String], maxBin: BinCoordinate): Option[Traversable[(TileCoordinate, BinCoordinate)]] = {
-    val coords = (
-      parseIPv4(rawCoordinate).map { ipv4coords =>
-        arrayToSpaceFillingCurve(4, 8, (0.0, 1.0))(ipv4coords)
-      }
-      ).map(Some(_)).getOrElse(
-      parseIPv6(rawCoordinate).map { ipv6coords =>
-        arrayToSpaceFillingCurve(6, 16, (0.0, 1.0))(ipv6coords)
-      }
-    )
+  override def project(rawCoordinate: Option[String], maxBin: BC): Option[Traversable[(TC, BC)]] = {
+    val coords = ipToCartesian(rawCoordinate, maxBin)
     cartesian.project(coords, maxBin)
   }
 
-  override def binTo1D(bin: BinCoordinate, maxBin: BinCoordinate): Int = {
+  override def binTo1D(bin: BC, maxBin: BC): Int = {
     cartesian.binTo1D(bin, maxBin)
   }
 }
+
+
+class IPSegmentProjection (zoomLevels: Seq[Int],
+                           segmentProjection: Projection[(Double, Double, Double, Double), TC, BC])
+  extends Projection[(String, String), (Int, Int, Int), (Int, Int)]
+{
+  private val cartesian = new CartesianProjection(zoomLevels, MIN_DATA_COORDS, MAX_DATA_COORDS)
+
+  override def project(endpoints: Option[(String, String)], maxBin: BC)
+  : Option[Traversable[(TC, BC)]] = {
+    val coords = endpoints.flatMap{case (fromIP, toIP) =>
+      val fromCoords = ipToCartesian(Some(fromIP), maxBin)
+      val toCoords = ipToCartesian(Some(toIP), maxBin)
+
+      fromCoords.flatMap(f => toCoords.map(t => (f._1, f._2, t._1, t._2)))
+    }
+    segmentProjection.project(coords, maxBin)
+  }
+
+  override def binTo1D(bin: BC, maxBin: BC): Int = {
+    segmentProjection.binTo1D(bin, maxBin)
+  }
+}
+
+
 object IPProjection {
+  private[geometry] type TC = (Int, Int, Int)
+  private[geometry] type BC = (Int, Int)
+
   private val IPV4_PARTS = 4
   private val MIN_IPV4 = 0
   private val MAX_IPV4 = 0x100
   private val IPV6_PARTS = 6
   private val MIN_IPV6 = 0
   private val MAX_IPV6 = 0x10000
-  private val MIN_DATA_COORDS = (0.0, 0.0)
-  private val MAX_DATA_COORDS = (1.0, 1.0)
+  private val HEXADECIMAL_BASE = 16
+  private[geometry] val MIN_DATA_COORDS = (0.0, 0.0)
+  private[geometry] val MAX_DATA_COORDS = (1.0, 1.0)
 
   private def inRange(lowInclusive: Int, highExclusive: Int)(value: Int): Boolean = {
     lowInclusive <= value && value < highExclusive
@@ -81,7 +99,7 @@ object IPProjection {
   def isIPv6 (value: String): Boolean = {
     // Needs up to 6 parts, each blank or a hex int 0-ffff
     val entryValidity = value.split(":").map(entry =>
-      "" == entry || Try(Integer.valueOf(entry, 16).intValue()).toOption.map(inRange(MIN_IPV6, MAX_IPV6)(_)).getOrElse(false)
+      "" == entry || Try(Integer.valueOf(entry, HEXADECIMAL_BASE).intValue()).toOption.map(inRange(MIN_IPV6, MAX_IPV6)(_)).getOrElse(false)
     ).toList
     (entryValidity.length == 6 || value.endsWith("::")) &&
       entryValidity.length <= 6 && entryValidity.fold(true)(_ && _)
@@ -92,7 +110,7 @@ object IPProjection {
         if (entry.isEmpty) {
           Some(0)
         } else {
-          Try(Integer.valueOf(entry, 16).intValue).toOption
+          Try(Integer.valueOf(entry, HEXADECIMAL_BASE).intValue).toOption
         }
       }
       if (
@@ -113,7 +131,7 @@ object IPProjection {
       0
     }
 
-  private[geometry] def splitNum (numBits: Int)(value: Int): (Int, Int) = {
+  private[geometry] def splitNum (numBits: Int)(value: Int): BC = {
     val vCAR = value & 3
     val rCAR = ((vCAR & 1), (vCAR & 2) >> 1)
     if (numBits > 2) {
@@ -130,7 +148,7 @@ object IPProjection {
     *
     * @param arraySize The number of elements in the array
     * @param bitsPerEntry The number of bits per entry in the array
-    * @param outputRange The total output range into which to scale the result
+    * @param outputRange The total output range into which to scale the result (maxX, maxY - minimum is assumed to be 0)
     * @param value The value to project
     * @return A projected cartesian value
     */
@@ -145,6 +163,20 @@ object IPProjection {
     val x = xValues.foldLeft(0L)(entryBound * _ + _)
     val y = yValues.foldLeft(0L)(entryBound * _ + _)
 
-    (x * outputRange._1 / totalBound, y * outputRange._1 / totalBound)
+    (x * outputRange._1 / totalBound, y * outputRange._2 / totalBound)
+  }
+
+
+
+  def ipToCartesian (ip: Option[String], maxBin: BC): Option[(Double, Double)] = {
+    (
+      parseIPv4(ip).map { ipv4coords =>
+        arrayToSpaceFillingCurve(4, 8, (1.0, 1.0))(ipv4coords)
+      }
+      ).map(Some(_)).getOrElse(
+      parseIPv6(ip).map { ipv6coords =>
+        arrayToSpaceFillingCurve(6, 16, (1.0, 1.0))(ipv6coords)
+      }
+    )
   }
 }

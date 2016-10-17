@@ -14,6 +14,7 @@ package software.uncharted.xdata.geometry
 
 import org.scalactic.TolerantNumerics
 import org.scalatest.FunSuite
+import software.uncharted.xdata.ops.salt.SimpleLineProjection
 
 class IPProjectionTests extends FunSuite {
   implicit val doubleEquality = TolerantNumerics.tolerantDoubleEquality(1E-12)
@@ -93,5 +94,48 @@ class IPProjectionTests extends FunSuite {
     assert((0.5, 0.0) === arrayToSpaceFillingCurve(6, 16, (1.0, 1.0))(Array(0x4000, 0, 0, 0, 0, 0)))
     assert((0.0, 0.5) === arrayToSpaceFillingCurve(6, 16, (1.0, 1.0))(Array(0x8000, 0, 0, 0, 0, 0)))
     assert((0.5, 0.5) === arrayToSpaceFillingCurve(6, 16, (1.0, 1.0))(Array(0xc000, 0, 0, 0, 0, 0)))
+  }
+
+  test("point projection from IP addresses") {
+    val projection = new IPProjection(Seq(4))
+
+    // 172.168.0.1 is:
+    // ac.a8.0.1 is:
+    // 10101100.10101000.00000000.00000001
+    // which splits to
+    //  0 0 1 0. 0 0 0 0. 0 0 0 0. 0 0 0 1 and
+    // 1 1 1 0 .1 1 1 0 .0 0 0 0 .0 0 0 0
+    // or (0x2001, 0xee00) = (8193, 60928) = (0.1250152587890625, 0.9296875)
+    // level 4 has 16 x 16 tiles, each with 4 x 4 bins, so this falls in bin (8, 59), or tile (4, 2, 14), in bin (0, 3)
+    // However, y axis is reversed for bins, so this becomes ((4, 2, 14)(0, 0))
+    assert(((4, 2, 14), (0, 0)) === projection.project(Some("172.168.0.1"), (3, 3)).get.toList.apply(0))
+  }
+
+  test("segment projection from IP addresses") {
+    val projection = new IPSegmentProjection(Seq(4), new SimpleLineProjection(Seq(4), (0.0, 0.0), (1.0, 1.0), tms=true))
+    // we want a segment from (4, 4, 2)(0, 2) to (4, 4, 2)(3, 3)
+    // reverse bin Y's to get (4, 4, 2)(0, 1) to (4, 4, 2)(3, 0)
+    // becomes universal bins (16, 9) to (19, 8)
+    // put in middle of bins: (16.5, 9.5) to (19.5, 8.5)
+    // scale to [0, 1): (0.2578125 0.1484375) to (0.3046875 0.1328125)
+    // in split IP coords, this is (16896 9728) to (19968 8704) or (0x4200, 0x2600) to (0x4e00, 0x2200)
+    // interleaved, this becomes:
+    // 0x4200 =  0 1 0 0. 0 0 1 0. 0 0 0 0. 0 0 0 0
+    // 0x2600 = 0 0 1 0 .0 1 1 0 .0 0 0 0 .0 0 0 0
+    //       == 00011000.00101100.00000000.00000000
+    //        = 0x18.0x2a.0.0
+    //        = 24.42.0.0
+    // 0x4e00 =  0 1 0 0. 1 1 1 0. 0 0 0 0. 0 0 0 0
+    // 0x2200 = 0 0 1 0 .0 0 1 0 .0 0 0 0 .0 0 0 0
+    //       == 00011000.01011100.00000000.00000000
+    //        = 0x18.0x5c.0.0
+    //        = 24.90.0.0
+
+    val result = projection.project(Some(("24.42.0.0", "24.90.0.0")), (3, 3)).get.toList
+    assert(4 === result.length)
+    assert(((4, 4, 2), (0, 2)) === result(0))
+    assert(((4, 4, 2), (1, 2)) === result(1))
+    assert(((4, 4, 2), (2, 3)) === result(2))
+    assert(((4, 4, 2), (3, 3)) === result(3))
   }
 }
