@@ -214,6 +214,6 @@ object GaussianBlurSpreadingFunction {
 
 case class TileCoord(z: Int, x: Int, y: Int)
 
-case class Bin2DCoord(x: Int, y: Int) extends BinCoord
+case class Bin2DCoord(x: Int, y: Int)
 
-case class Bin3DCoord(x: Int, y: Int, z: Int) extends BinCoord
+case class Bin3DCoord(x: Int, y: Int, z: Int)
