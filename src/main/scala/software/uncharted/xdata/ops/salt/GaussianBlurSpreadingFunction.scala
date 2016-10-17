@@ -21,7 +21,8 @@ import software.uncharted.salt.core.spreading.SpreadingFunction
   *
   * @param radius The radius of the kernel to applied
   * @param sigma  The sigma value for the gaussian distribution
-  * @param tms    if true, the Y axis for tile coordinates only is flipped
+  * @param tms    If true, the Y axis for tile coordinates only is flipped
+  * @tparam BC    The type of bin coordinate, either 2 dimensional (x, y) or 3 dimensional (x, y, z).
   */
 abstract class GaussianBlurSpreadingFunction[BC](radius: Int, sigma: Double, tms: Boolean = true)
   extends SpreadingFunction[TileCoord, BC, Double] {
@@ -103,7 +104,7 @@ abstract class GaussianBlurSpreadingFunction[BC](radius: Int, sigma: Double, tms
   * @param radius  The radius of the kernel to applied
   * @param sigma   The sigma value for the gaussian distribution
   * @param maxBins The maximum number of bins in the x and y direction
-  * @param tms     if true, the Y axis for tile coordinates only is flipped
+  * @param tms     If true, the Y axis for tile coordinates only is flipped
   */
 class GaussianBlurSpreadingFunction2D(radius: Int, sigma: Double, maxBins: Bin2DCoord, tms: Boolean = true)
   extends GaussianBlurSpreadingFunction[Bin2DCoord](radius: Int, sigma: Double, tms: Boolean) {
@@ -159,7 +160,7 @@ class GaussianBlurSpreadingFunction2D(radius: Int, sigma: Double, maxBins: Bin2D
   * @param radius  The radius of the kernel to applied
   * @param sigma   The sigma value for the gaussian distribution
   * @param maxBins The maximum number of bins in the x and y direction
-  * @param tms     if true, the Y axis for tile coordinates only is flipped
+  * @param tms     If true, the Y axis for tile coordinates only is flipped
   */
 class GaussianBlurSpreadingFunction3D(radius: Int, sigma: Double, maxBins: Bin2DCoord, tms: Boolean = true)
   extends GaussianBlurSpreadingFunction[Bin3DCoord](radius: Int, sigma: Double, tms: Boolean) {
