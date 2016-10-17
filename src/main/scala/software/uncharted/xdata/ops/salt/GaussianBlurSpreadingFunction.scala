@@ -97,9 +97,9 @@ class GaussianBlurSpreadingFunction2D(radius: Int, sigma: Double, maxBins: Bin2D
   extends GaussianBlurSpreadingFunction[Bin2DCoord](radius: Int, sigma: Double, tms: Boolean) {
 
   def spread(coordsTraversable: Traversable[((Int, Int, Int), (Int, Int))], value: Option[Double]): Traversable[((Int, Int, Int), (Int, Int), Option[Double])] = {
-    val typedCoordsTraversable = coordsTraversable.map(coord => (TileCoord.fromTuple(coord._1), Bin2DCoord.fromTuple(coord._2)))
+    val typedCoordsTraversable = coordsTraversable.map(coord => (TileCoord.tupled(coord._1), Bin2DCoord.tupled(coord._2)))
     val spreadValues = super.spread(typedCoordsTraversable, value)
-    spreadValues.map(value => (value._1.toTuple(), value._2.toTuple(), value._3))
+    spreadValues.map(value => (TileCoord.unapply(value._1).get, Bin2DCoord.unapply(value._2).get, value._3))
   }
 
   protected def calcKernelCoord(tileCoord: TileCoord, binCoord: Bin2DCoord, kernelIndex: (Int, Int)): (TileCoord, Bin2DCoord) = {
@@ -143,9 +143,9 @@ class GaussianBlurSpreadingFunction3D(radius: Int, sigma: Double, maxBins: Bin3D
   extends GaussianBlurSpreadingFunction[Bin3DCoord](radius: Int, sigma: Double, tms: Boolean) {
 
   def spread(coordsTraversable: Traversable[((Int, Int, Int), (Int, Int, Int))], value: Option[Double]): Traversable[((Int, Int, Int), (Int, Int, Int), Option[Double])] = {
-    val typedCoordsTraversable = coordsTraversable.map(coord => (TileCoord.fromTuple(coord._1), Bin3DCoord.fromTuple(coord._2)))
+    val typedCoordsTraversable = coordsTraversable.map(coord => (TileCoord.tupled(coord._1), Bin3DCoord.tupled(coord._2)))
     val spreadValues = super.spread(typedCoordsTraversable, value)
-    spreadValues.map(value => (value._1.toTuple(), value._2.toTuple(), value._3))
+    spreadValues.map(value => (TileCoord.unapply(value._1).get, Bin3DCoord.unapply(value._2).get, value._3))
   }
 
   protected def calcKernelCoord(tileCoord: TileCoord, binCoord: Bin3DCoord, kernelIndex: (Int, Int)): (TileCoord, Bin3DCoord) = {
@@ -212,38 +212,8 @@ object GaussianBlurSpreadingFunction {
   protected def calcKernelDimension(radius: Int) = 2 * radius + 1
 }
 
-case class TileCoord(z: Int, x: Int, y: Int) {
-  def toTuple(): (Int, Int, Int) = {
-    (z, x, y)
-  }
-}
+case class TileCoord(z: Int, x: Int, y: Int)
 
-case class Bin2DCoord(x: Int, y: Int) {
-  def toTuple(): (Int, Int) = {
-    (x, y)
-  }
-}
+case class Bin2DCoord(x: Int, y: Int) extends BinCoord
 
-case class Bin3DCoord(x: Int, y: Int, z: Int) {
-  def toTuple(): (Int, Int, Int) = {
-    (x, y, z)
-  }
-}
-
-case object TileCoord {
-  def fromTuple(tileCoord: (Int, Int, Int)): TileCoord = {
-    TileCoord(tileCoord._1, tileCoord._2, tileCoord._3)
-  }
-}
-
-case object Bin2DCoord {
-  def fromTuple(tileCoord: (Int, Int)): Bin2DCoord = {
-    Bin2DCoord(tileCoord._1, tileCoord._2)
-  }
-}
-
-case object Bin3DCoord {
-  def fromTuple(tileCoord: (Int, Int, Int)): Bin3DCoord = {
-    Bin3DCoord(tileCoord._1, tileCoord._2, tileCoord._3)
-  }
-}
+case class Bin3DCoord(x: Int, y: Int, z: Int) extends BinCoord
