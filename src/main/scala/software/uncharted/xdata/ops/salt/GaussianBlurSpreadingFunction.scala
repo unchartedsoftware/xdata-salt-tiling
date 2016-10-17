@@ -38,7 +38,7 @@ abstract class GaussianBlurSpreadingFunction[BC](radius: Int, sigma: Double, tms
   }
 
   private def addNeighbouringBins(value: Double)
-                         (coords: (TileCoord, BC)): Map[(TileCoord, BC), Double] = {
+                                 (coords: (TileCoord, BC)): Map[(TileCoord, BC), Double] = {
     val tileCoord = coords._1
     val binCoord = coords._2
     var result = Map(((tileCoord, binCoord) -> value))
@@ -57,7 +57,7 @@ abstract class GaussianBlurSpreadingFunction[BC](radius: Int, sigma: Double, tms
   }
 
   private def applyKernel(coordsValueMapTraversable: Map[(TileCoord, BC), Double])
-                 (coordsValueMap: ((TileCoord, BC), Double)): (TileCoord, BC, Option[Double]) = {
+                         (coordsValueMap: ((TileCoord, BC), Double)): (TileCoord, BC, Option[Double]) = {
     val coords = coordsValueMap._1
     val data = coordsValueMap._2
     val tileCoord = coords._1
@@ -213,37 +213,37 @@ object GaussianBlurSpreadingFunction {
 }
 
 case class TileCoord(z: Int, x: Int, y: Int) {
-  def toTuple() : (Int, Int, Int) = {
+  def toTuple(): (Int, Int, Int) = {
     (z, x, y)
   }
 }
 
 case class Bin2DCoord(x: Int, y: Int) {
-  def toTuple() : (Int, Int) = {
+  def toTuple(): (Int, Int) = {
     (x, y)
   }
 }
 
 case class Bin3DCoord(x: Int, y: Int, z: Int) {
-  def toTuple() : (Int, Int, Int) = {
+  def toTuple(): (Int, Int, Int) = {
     (x, y, z)
   }
 }
 
 case object TileCoord {
-  def fromTuple(tileCoord: (Int, Int, Int)) : TileCoord = {
+  def fromTuple(tileCoord: (Int, Int, Int)): TileCoord = {
     TileCoord(tileCoord._1, tileCoord._2, tileCoord._3)
   }
 }
 
 case object Bin2DCoord {
-  def fromTuple(tileCoord: (Int, Int)) : Bin2DCoord = {
+  def fromTuple(tileCoord: (Int, Int)): Bin2DCoord = {
     Bin2DCoord(tileCoord._1, tileCoord._2)
   }
 }
 
 case object Bin3DCoord {
-  def fromTuple(tileCoord: (Int, Int, Int)) : Bin3DCoord = {
+  def fromTuple(tileCoord: (Int, Int, Int)): Bin3DCoord = {
     Bin3DCoord(tileCoord._1, tileCoord._2, tileCoord._3)
   }
 }
