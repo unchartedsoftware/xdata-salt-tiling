@@ -32,8 +32,6 @@ import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOper
   * Simple job to do ordinary 2-d tiling
   */
 object XYHeatmapJob extends AbstractJob {
-  this.debug = true
-
   /**
     * This function actually executes the task the job describes
     *

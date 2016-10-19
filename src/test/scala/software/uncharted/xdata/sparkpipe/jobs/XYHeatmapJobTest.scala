@@ -13,7 +13,9 @@
 package software.uncharted.xdata.sparkpipe.jobs
 
 
+import java.io.File
 
+import org.apache.commons.io.FileUtils
 import org.scalatest.FunSpec
 
 
@@ -48,6 +50,7 @@ class XYHeatmapJobTest extends FunSpec {
           assertResult((Set(), Set()))((expected diff files, files diff expected))
         } finally {
           System.setProperty("user.dir", oldDir)
+          FileUtils.deleteDirectory(new File(testOutputDir))
         }
       }
     }
