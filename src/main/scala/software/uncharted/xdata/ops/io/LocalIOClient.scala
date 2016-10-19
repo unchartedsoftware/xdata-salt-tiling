@@ -29,13 +29,13 @@ trait LocalIOClient[T] {
     * @param dataSet  A set of data to write
     * @tparam T The type of index used to differentiate betwee data
     */
-  def write[T](datasetName: String, dataSet: RDD[(T, Array[Byte])], indexFcn: (String, T) => String): Unit = {
+  def write[T](datasetName: String, dataSet: RDD[(T, Array[Byte])], indexFcn: (T) => String): Unit = {
     assert("local" == dataSet.context.master)
 
     val setInfo = prepare(datasetName)
     val localWriteRaw = writeRaw
     dataSet.foreach { case (key, data) =>
-      localWriteRaw(setInfo, indexFcn(datasetName, key), data)
+      localWriteRaw(setInfo, indexFcn(key), data)
     }
     finalize(setInfo)
   }
