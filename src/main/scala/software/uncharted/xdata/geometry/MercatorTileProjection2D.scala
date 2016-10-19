@@ -21,6 +21,18 @@ trait MercatorBinning {
     */
   protected def tms: Boolean
 
+  /**
+    * Change from a (tile, bin) coordinate to a (universal bin) coordinate
+    *
+    * Generally, the upper left corner is taken as (0, 0).  If TMS is specified, then the tile Y coordinate is
+    * flipped (i.e., lower left is (0, 0)), but the bin coordinates (both tile-bin and universal-bin) are not.
+    *
+    * @param tile   the tile coordinate
+    * @param bin    the bin coordinate
+    * @param maxBin the maximum bin index within each tile
+    * @return The universal bin coordinate of the target cell, with (0, 0) being the upper left corner of the whole
+    *         space
+    */
   private def tileBinIndexToUniversalBinIndex(tile: (Int, Int, Int), bin: (Int, Int), maxBin: (Int, Int)): (Int, Int) = {
     val pow2 = 1 << tile._1
 
@@ -34,6 +46,17 @@ trait MercatorBinning {
     (tileLeft + bin._1, tileTop + bin._2)
   }
 
+  /**
+    * Change from a (universal bin) coordinate to a (tile, bin) coordinate.
+    *
+    * Generally, the upper left corner is taken as (0, 0).  If TMS is specified, then the tile Y coordinate is
+    * flipped (i.e., lower left is (0, 0)), but the bin coordinates (both tile-bin and universal-bin) are not.
+    *
+    * @param z            The zoom level of the point in question
+    * @param ubin The universal bin coordinate of the input point
+    * @param maxBin       the maximum bin index within each tile
+    * @return The tile and bin at the given level of the given universal bin
+    */
   private def universalBinIndexToTileIndex(z: Int, ubin: (Int, Int), maxBin: (Int, Int)) = {
     val pow2 = 1 << z
 

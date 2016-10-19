@@ -26,19 +26,38 @@ object CartesianSegmentOp {
 
   val defaultTileSize = 256
 
-  def apply[T, U, V, W, X] (arcType: ArcTypes.Value, // scalastyle:ignore
-                            minSegLen: Option[Int],
-                            maxSegLen: Option[Int],
-                            x1Col: String,
-                            y1Col: String,
-                            x2Col: String,
-                            y2Col: String,
-                            valueCol: Option[String],
-                            xyBounds: (Double, Double, Double, Double),
-                            zoomLevels: Seq[Int],
-                            tileSize: Int,
-                            tms: Boolean = true)
-                           (input: DataFrame): RDD[SeriesData[(Int, Int, Int), (Int, Int), Double, (Double, Double)]] = {
+  /**
+    * Segment operation using cartesian projection
+    *
+    * @param arcType    The type of line projection specified by the ArcType enum
+    * @param minSegLen  The minimum length threshold for a segment to be drawn
+    * @param maxSegLen  The maximum length threshold for a segment to be drawn
+    * @param x1Col      The start x coordinate
+    * @param y1Col      The start y coordinate
+    * @param x2Col      The end x coordinate
+    * @param y2Col      The end y coordinate
+    * @param valueCol   The name of the column which holds the value for a given row
+    * @param xyBounds   The min/max x and y bounds (minX, minY, maxX, maxY)
+    * @param zoomLevels The zoom levels onto which to project
+    * @param tileSize   The size of a tile in bins
+    * @param tms        If true, the Y axis for tile coordinates only is flipped
+    * @param input      The input data
+    * @return An RDD of tiles
+    */
+  // scalastyle:off parameter.number
+  def apply(arcType: ArcTypes.Value, // scalastyle:ignore
+            minSegLen: Option[Int],
+            maxSegLen: Option[Int],
+            x1Col: String,
+            y1Col: String,
+            x2Col: String,
+            y2Col: String,
+            valueCol: Option[String],
+            xyBounds: (Double, Double, Double, Double),
+            zoomLevels: Seq[Int],
+            tileSize: Int,
+            tms: Boolean = true)
+           (input: DataFrame): RDD[SeriesData[(Int, Int, Int), (Int, Int), Double, (Double, Double)]] = {
     val valueExtractor: (Row) => Option[Double] = valueCol match {
       case Some(colName: String) => (r: Row) => {
         val rowIndex = r.schema.fieldIndex(colName)
@@ -55,7 +74,7 @@ object CartesianSegmentOp {
     val x2Pos = input.schema.zipWithIndex.find(_._1.name == x2Col).map(_._2).getOrElse(-1)
     val y2Pos = input.schema.zipWithIndex.find(_._1.name == y2Col).map(_._2).getOrElse(-1)
     val coordinateExtractor = (row: Row) =>
-        Try((row.getDouble(x1Pos), row.getDouble(y1Pos), row.getDouble(x2Pos), row.getDouble(y2Pos))).toOption
+      Try((row.getDouble(x1Pos), row.getDouble(y1Pos), row.getDouble(x2Pos), row.getDouble(y2Pos))).toOption
 
     // Figure out our projection
     val minBounds = (xyBounds._1, xyBounds._2)

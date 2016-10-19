@@ -423,13 +423,11 @@ class SimpleLeaderArcProjection(zoomLevels: Seq[Int],
 /**
   * A projection for lines into 2D mercator (lon,lat) space
   *
-  * @param maxLineLength the maximum length of a line in bins before we drop it
   * @param min           the minimum value of a data-space coordinate (minLon, minLat)
   * @param max           the maximum value of a data-space coordinate (maxLon, maxLat)
   * @param zoomLevels    the TMS/WMS zoom levels to project into
   */
-class MercatorLineProjection(maxLineLength: Int = 1024,
-                             zoomLevels: Seq[Int],
+class MercatorLineProjection(zoomLevels: Seq[Int],
                              min: (Double, Double) = (-180, -85.05112878),
                              max: (Double, Double) = (180, 85.05112878),
                              tms: Boolean = true)

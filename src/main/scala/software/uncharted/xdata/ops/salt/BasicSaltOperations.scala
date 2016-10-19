@@ -96,6 +96,19 @@ object BasicSaltOperations {
     )(input)
   }
 
+  /**
+    * Tile a dataset with segments using a cartesian projection
+    *
+    * @param x1Col The column in which to find the start X coordinate of the data
+    * @param y1Col The column in which to find the start Y coordinate of the data
+    * @param x2Col The column in which to find the end X coordinate of the data
+    * @param y2Col The column in which to find the end Y coordinate of the data
+    * @param levels The levels to tile
+    * @param boundsOpt The data bounds (minX, maxX, minY, maxY), or None to auto-detect data bounds
+    * @param tileSize The size, in bins, of one output tile
+    * @param input The input data
+    * @return An RDD of tiles
+    */
   // scalastyle:off parameter.number
   def segmentTiling (x1Col: String, y1Col: String, x2Col: String, y2Col: String, levels: Seq[Int],
                      arcType: ArcTypes.Value,

@@ -20,13 +20,21 @@ import org.apache.spark.rdd.RDD
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.xdata.ops.salt.{CartesianSegmentOp, MercatorSegmentOp}
-import software.uncharted.xdata.sparkpipe.config._
+import software.uncharted.xdata.sparkpipe.config.{Schema, TilingConfig, XYSegmentConfig, SparkConfig}
 import software.uncharted.xdata.ops.io.serializeBinArray
 import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOperation, createTileOutputOperation, dataframeFromSparkCsv}
 
 import scala.util.parsing.json.JSONObject
 
-
+/**
+  * Executes the a segment job configured given a path to a configuration file
+  *
+  * Takes a csv input of pickup points [e.g (lat,lon)] and dropoff points and draws a line between them
+  *
+  * Outputs tiles in binary format to specified output directory using z/x/y format
+  *
+  * Refer to resources/xysegment/xysegment.conf for an example configuration file of all the options available
+  */
 // scalastyle:off method.length
 object XYSegmentJob extends Logging {
 
@@ -106,7 +114,9 @@ object XYSegmentJob extends Logging {
     }
   }
 
-  private def writeMetadata[BC, V](baseConfig: Config)(tiles: RDD[SeriesData[(Int, Int, Int), BC, V, (Double, Double)]]): RDD[SeriesData[(Int, Int, Int), BC, V, (Double, Double)]] = {
+  private def writeMetadata[BC, V](baseConfig: Config)
+                                  (tiles: RDD[SeriesData[(Int, Int, Int), BC, V, (Double, Double)]]):
+  RDD[SeriesData[(Int, Int, Int), BC, V, (Double, Double)]] = {
     import net.liftweb.json.JsonDSL._ // scalastyle:ignore
     import net.liftweb.json.JsonAST._ // scalastyle:ignore
 
