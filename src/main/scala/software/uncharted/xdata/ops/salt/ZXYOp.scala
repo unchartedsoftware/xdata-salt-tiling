@@ -22,7 +22,7 @@ import software.uncharted.salt.core.projection.numeric.NumericProjection
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.castColumns
 
-object ZXYOp {
+object ZXYOp extends ZXYOp {
   final val TILE_SIZE_DEFAULT = 256
 }
 /**

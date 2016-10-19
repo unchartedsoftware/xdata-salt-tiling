@@ -37,31 +37,15 @@ class IPHeatmapJob extends AbstractJob {
   override def execute(sqlc: SQLContext, config: Config): Unit = {
     config.resolve
 
-    // parse the schema, and exit on any errors
-    val schema = Schema(config).getOrElse {
-      error("Couldn't create schema - exiting")
-      sys.exit(-1)
-    }
-
-    // Parse tiling parameters out of supplied config
-    val tilingConfig = TilingConfig(config).getOrElse {
-      logger.error("Invalid tiling config")
-      sys.exit(-1)
-    }
+    val schema = parseSchema(config)
+    val tilingConfig = parseTilingParameters(config)
+    val outputOperation = parseOutputOperation(config)
 
     // Parse IP tiling parameters out of supplied config
     val ipConfig = IPHeatmapConfig(config).getOrElse {
       logger.error("Invalid heatmap op config")
       sys.exit(-1)
     }
-
-    // Parse output parameters out of supplied config
-    val outputOperation = createTileOutputOperation(config).getOrElse {
-      logger.error("Output operation config")
-      sys.exit(-1)
-    }
-
-
 
     // Create the dataframe from the input config
     val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc)

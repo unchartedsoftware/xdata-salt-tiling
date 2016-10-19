@@ -14,9 +14,7 @@ package software.uncharted.xdata.sparkpipe.jobs
 
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
-import org.apache.spark.sql.DataFrame
 import software.uncharted.sparkpipe.Pipe
-import software.uncharted.sparkpipe.ops.core.dataframe.temporal.parseDate
 import software.uncharted.xdata.ops.io.serializeBinArray
 import software.uncharted.xdata.ops.salt.{CartesianTimeHeatmap, MercatorTimeHeatmap}
 import software.uncharted.xdata.sparkpipe.config.{Schema, SparkConfig, TilingConfig, XYTimeHeatmapConfig}

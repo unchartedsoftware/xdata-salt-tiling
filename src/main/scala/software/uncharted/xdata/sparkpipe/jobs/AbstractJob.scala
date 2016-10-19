@@ -21,8 +21,11 @@ import scala.collection.JavaConverters._ // scalastyle:ignore
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
 import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.types.StructType
+import software.uncharted.xdata.sparkpipe.config.{Schema, SparkConfig, TilingConfig}
+import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createTileOutputOperation, OutputOperation}
 
-import software.uncharted.xdata.sparkpipe.config.SparkConfig
+import scala.util.Try
 
 
 
@@ -31,6 +34,44 @@ import software.uncharted.xdata.sparkpipe.config.SparkConfig
   */
 trait AbstractJob extends Logging {
   var debug = false
+
+
+  /**
+    * Parse the schema, and exit on any errors
+    * @param config The configuration from which to determine the schema
+    * @return A fully determined schema
+    */
+  protected def parseSchema (config: Config): StructType = {
+    Schema(config).getOrElse {
+      error("Couldn't create schema - exiting")
+      sys.exit(-1)
+    }
+  }
+
+  /**
+    * Parse tiling parameters from supplied config
+    * @param config The configuration from which to determine tiling parameters
+    * @return A fully determined set of tiling parameters
+    */
+  protected def parseTilingParameters (config: Config): TilingConfig = {
+    TilingConfig(config).getOrElse {
+      logger.error("Invalid tiling config")
+      sys.exit(-1)
+    }
+  }
+
+  /**
+    * Parse configuration parameters to determine a tiling output operation
+    * @param config The configuration from which to determine the output operation
+    * @return A fully determined output operation
+    */
+  protected def parseOutputOperation (config: Config): OutputOperation = {
+    createTileOutputOperation(config).getOrElse {
+      logger.error("Output operation config")
+      sys.exit(-1)
+    }
+  }
+
   /**
     * This function actually executes the task the job describes
     *
