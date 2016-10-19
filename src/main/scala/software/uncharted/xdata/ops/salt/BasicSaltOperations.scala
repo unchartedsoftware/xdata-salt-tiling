@@ -96,13 +96,26 @@ object BasicSaltOperations {
     )(input)
   }
 
+  /**
+    * Tile a dataset with segments using a cartesian projection
+    *
+    * @param x1Col The column in which to find the start X coordinate of the data
+    * @param y1Col The column in which to find the start Y coordinate of the data
+    * @param x2Col The column in which to find the end X coordinate of the data
+    * @param y2Col The column in which to find the end Y coordinate of the data
+    * @param levels The levels to tile
+    * @param boundsOpt The data bounds (minX, maxX, minY, maxY), or None to auto-detect data bounds
+    * @param tileSize The size, in bins, of one output tile
+    * @param input The input data
+    * @return An RDD of tiles
+    */
   // scalastyle:off parameter.number
   def segmentTiling (x1Col: String, y1Col: String, x2Col: String, y2Col: String, levels: Seq[Int],
                      arcType: ArcTypes.Value,
                      minSegLen: Option[Int] = None,
                      maxSegLen: Option[Int] = None,
                      boundsOpt: Option[(Double, Double, Double, Double)] = None,
-                     tileSize: Int = ZXYOp.TILE_SIZE_DEFAULT)(input: DataFrame): RDD[SeriesData[(Int, Int, Int), (Int, Int), Double, Double]] = {
+                     tileSize: Int = ZXYOp.TILE_SIZE_DEFAULT)(input: DataFrame): RDD[SeriesData[(Int, Int, Int), (Int, Int), Double, (Double, Double)]] = {
     val bounds = boundsOpt.getOrElse {
       val columnBounds = getBounds(x1Col, x2Col, y1Col, y2Col)(input)
       val (minX1, maxX1) = columnBounds(0)
@@ -122,19 +135,20 @@ object BasicSaltOperations {
       (minX, minY, maxX + rangeX * epsilon, maxY + rangeY * epsilon)
     }
 
-    val getLevel: ((Int, Int, Int)) => Int = tileIndex => tileIndex._1
     val tileAggregation: Option[Aggregator[Double, Double, Double]] = None
 
     CartesianSegmentOp(
-      arcType, minSegLen, maxSegLen,
-      x1Col, y1Col, x2Col, y2Col,
-      bounds, (levels.min, levels.max),
-      row => Some(1),
-      CountAggregator,
-      tileAggregation,
+      arcType,
+      minSegLen,
+      maxSegLen,
+      x1Col,
+      y1Col,
+      x2Col,
+      y2Col,
+      None,
+      bounds,
+      levels.min to levels.max,
       tileSize
-    )(
-      new TileLevelRequest[(Int, Int, Int)](levels, getLevel)
     )(input)
   }
 }

@@ -36,12 +36,14 @@ object SparkConfig {
 
 
 // Parse tiling parameter and store results
-case class TilingConfig(levels: List[Int], source: String, bins: Option[Int] = None)
+case class TilingConfig(levels: List[Int], source: String, bins: Option[Int] = None, tms: Boolean)
 object TilingConfig extends Logging {
   val tilingKey= "tiling"
   val levelsKey = "levels"
   val binsKey = "bins"
   val sourceKey = "source"
+  val tmsKey = "tms"
+  val defaultTMS = false
 
   def apply(config: Config): Option[TilingConfig] = {
     try {
@@ -49,7 +51,8 @@ object TilingConfig extends Logging {
       Some(TilingConfig(
         tilingConfig.getIntList(levelsKey).asScala.map(_.asInstanceOf[Int]).toList,
         tilingConfig.getString(sourceKey),
-        if (tilingConfig.hasPath(binsKey)) Some(tilingConfig.getInt(binsKey)) else None))
+        if (tilingConfig.hasPath(binsKey)) Some(tilingConfig.getInt(binsKey)) else None,
+        if (tilingConfig.hasPath(tmsKey)) tilingConfig.getBoolean(tmsKey) else defaultTMS))
     } catch {
       case e: ConfigException =>
         error(s"Failure parsing arguments from [$tilingKey]", e)
