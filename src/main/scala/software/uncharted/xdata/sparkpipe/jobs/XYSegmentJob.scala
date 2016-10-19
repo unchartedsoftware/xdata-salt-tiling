@@ -68,7 +68,8 @@ object XYSegmentJob extends Logging {
         None,
         segmentConfig.xyBounds,
         tilingConfig.levels,
-        segmentConfig.tileSize)(_)
+        segmentConfig.tileSize,
+        tms = tilingConfig.tms)(_)
       case Some("mercator") => MercatorSegmentOp(
         segmentConfig.minSegLen,
         segmentConfig.maxSegLen,
@@ -79,7 +80,8 @@ object XYSegmentJob extends Logging {
         None,
         segmentConfig.xyBounds,
         tilingConfig.levels,
-        segmentConfig.tileSize)(_)
+        segmentConfig.tileSize,
+        tms = tilingConfig.tms)(_)
       case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
     }
 
@@ -96,7 +98,6 @@ object XYSegmentJob extends Logging {
         .to(segmentOperation)
         .to(writeMetadata(config))
         .to(serializeBinArray)
-        .to(flipYAxis)
         .to(outputOperation)
         .run()
 
@@ -122,13 +123,6 @@ object XYSegmentJob extends Logging {
     createMetadataOutputOperation(baseConfig).foreach(_("metadata.json", jsonBytes))
 
     tiles
-  }
-
-  private def flipYAxis(input: RDD[((Int, Int, Int), Seq[Byte])]): RDD[((Int, Int, Int), Seq[Byte])] = {
-    input.map { case (index, data) => {
-      val limit = (1 << index._1) - 1
-      ((index._1, index._2, limit - index._3), data)
-    }}
   }
 
   def main(args: Array[String]): Unit = {

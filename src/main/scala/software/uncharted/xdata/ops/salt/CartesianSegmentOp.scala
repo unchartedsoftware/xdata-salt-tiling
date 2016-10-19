@@ -36,7 +36,8 @@ object CartesianSegmentOp {
                             valueCol: Option[String],
                             xyBounds: (Double, Double, Double, Double),
                             zoomLevels: Seq[Int],
-                            tileSize: Int)
+                            tileSize: Int,
+                            tms: Boolean = true)
                            (input: DataFrame): RDD[SeriesData[(Int, Int, Int), (Int, Int), Double, (Double, Double)]] = {
     val valueExtractor: (Row) => Option[Double] = valueCol match {
       case Some(colName: String) => (r: Row) => {
@@ -63,16 +64,16 @@ object CartesianSegmentOp {
     val projection = arcType match {
       case ArcTypes.FullLine =>
         new SimpleLineProjection(zoomLevels, minBounds, maxBounds,
-          minLengthOpt = minSegLen, maxLengthOpt = maxSegLen, tms = true)
+          minLengthOpt = minSegLen, maxLengthOpt = maxSegLen, tms = tms)
       case ArcTypes.LeaderLine =>
         new SimpleLeaderLineProjection(zoomLevels, minBounds, maxBounds, leaderLineLength,
-          minLengthOpt = minSegLen, maxLengthOpt = maxSegLen, tms = true)
+          minLengthOpt = minSegLen, maxLengthOpt = maxSegLen, tms = tms)
       case ArcTypes.FullArc =>
         new SimpleArcProjection(zoomLevels, minBounds, maxBounds,
-          minLengthOpt = minSegLen, maxLengthOpt = maxSegLen, tms = true)
+          minLengthOpt = minSegLen, maxLengthOpt = maxSegLen, tms = tms)
       case ArcTypes.LeaderArc =>
         new SimpleLeaderArcProjection(zoomLevels, minBounds, maxBounds, leaderLineLength,
-          minLengthOpt = minSegLen, maxLengthOpt = maxSegLen, tms = true)
+          minLengthOpt = minSegLen, maxLengthOpt = maxSegLen, tms = tms)
     }
 
     val request = new TileLevelRequest(zoomLevels, (tc: (Int, Int, Int)) => tc._1)
