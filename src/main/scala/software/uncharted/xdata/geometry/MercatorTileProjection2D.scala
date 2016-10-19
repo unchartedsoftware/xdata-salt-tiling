@@ -27,11 +27,11 @@ trait MercatorBinning {
   private def tileBinIndexToUniversalBinIndex(tile: (Int, Int, Int), bin: (Int, Int), maxBin: (Int, Int)): (Int, Int) = {
     val pow2 = 1 << tile._1
 
-    val tileLeft = tile._2 * (maxBin._1+1)
+    val tileLeft = tile._2 * (maxBin._1 + 1)
 
     val tileTop = tms match {
-      case true => (pow2 - tile._3 - 1)*(maxBin._2+1)
-      case false => tile._3*(maxBin._2+1)
+      case true => (pow2 - tile._3 - 1) * (maxBin._2 + 1)
+      case false => tile._3 * (maxBin._2 + 1)
     }
 
     (tileLeft + bin._1, tileTop + bin._2)
@@ -40,17 +40,16 @@ trait MercatorBinning {
   private def universalBinIndexToTileIndex(z: Int, ubin: (Int, Int), maxBin: (Int, Int)) = {
     val pow2 = 1 << z
 
-    val xBins = (maxBin._1+1)
-    val yBins = (maxBin._2+1)
+    val xBins = (maxBin._1 + 1)
+    val yBins = (maxBin._2 + 1)
 
-    val tileX = ubin._1/xBins
+    val tileX = ubin._1 / xBins
     val binX = ubin._1 - tileX * xBins;
 
     val tileY = tms match {
-      case true => pow2 - (ubin._2/yBins) - 1;
-      case false => ubin._2/yBins
+      case true => pow2 - (ubin._2 / yBins) - 1;
+      case false => ubin._2 / yBins
     }
-
     val binY = tms match {
       case true => ubin._2 - ((pow2 - tileY - 1) * yBins)
       case false => ubin._2 - (tileY) * yBins
