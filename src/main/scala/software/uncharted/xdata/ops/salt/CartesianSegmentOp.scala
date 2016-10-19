@@ -30,8 +30,8 @@ object CartesianSegmentOp {
     * Segment operation using cartesian projection
     *
     * @param arcType    The type of line projection specified by the ArcType enum
-    * @param minSegLen  The minimum length threshold for a segment to be drawn
-    * @param maxSegLen  The maximum length threshold for a segment to be drawn
+    * @param minSegLen  The minimum length of line (in bins) to project
+    * @param maxSegLen  The maximum length of line (in bins) to project
     * @param x1Col      The start x coordinate
     * @param y1Col      The start y coordinate
     * @param x2Col      The end x coordinate
