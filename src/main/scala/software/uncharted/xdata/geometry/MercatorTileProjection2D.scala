@@ -15,6 +15,9 @@ package software.uncharted.xdata.geometry
 
 import software.uncharted.salt.core.projection.Projection
 
+/**
+  * Trait with implementations converting to and from universal bin indexes
+  */
 trait MercatorBinning {
   /**
     * Specify whether the Y axis is flipped for tile coordinates
