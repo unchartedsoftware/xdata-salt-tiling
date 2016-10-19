@@ -84,7 +84,7 @@ object MercatorSegmentOp {
     val minBounds = (xyBounds._1, xyBounds._2)
     val maxBounds = (xyBounds._3, xyBounds._4)
 
-    val projection = new MercatorLineProjection(zoomLevels, minBounds, maxBounds, tms = tms)
+    val projection = new MercatorLineProjection(zoomLevels, minBounds, maxBounds, minSegLen, maxSegLen, tms = tms)
 
     val request = new TileLevelRequest(zoomLevels, (tc: (Int, Int, Int)) => tc._1)
 

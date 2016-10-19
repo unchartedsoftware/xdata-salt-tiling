@@ -423,17 +423,19 @@ class SimpleLeaderArcProjection(zoomLevels: Seq[Int],
 /**
   * A projection for lines into 2D mercator (lon,lat) space
   *
-  * @param min           the minimum value of a data-space coordinate (minLon, minLat)
-  * @param max           the maximum value of a data-space coordinate (maxLon, maxLat)
-  * @param zoomLevels    the TMS/WMS zoom levels to project into
+  * @param minBounds  the minimum value of a data-space coordinate (minLon, minLat)
+  * @param maxBounds  the maximum value of a data-space coordinate (maxLon, maxLat)
+  * @param zoomLevels the TMS/WMS zoom levels to project into
   */
 class MercatorLineProjection(zoomLevels: Seq[Int],
-                             min: (Double, Double) = (-180, -85.05112878),
-                             max: (Double, Double) = (180, 85.05112878),
+                             minBounds: (Double, Double) = (-180, -85.05112878),
+                             maxBounds: (Double, Double) = (180, 85.05112878),
+                             minLengthOpt: Option[Int] = None,
+                             maxLengthOpt: Option[Int] = None,
                              tms: Boolean = true)
-  extends MercatorTileProjection2D[(Double, Double, Double, Double), (Int, Int)](min, max, tms) {
+  extends MercatorTileProjection2D[(Double, Double, Double, Double), (Int, Int)](minBounds, maxBounds, tms) {
 
-  private val mercatorProjection = new MercatorProjection(zoomLevels, min, max, tms)
+  private val mercatorProjection = new MercatorProjection(zoomLevels, minBounds, maxBounds, tms)
 
   override def project(coordinates: Option[(Double, Double, Double, Double)], maxBin: (Int, Int)): Option[Seq[((Int, Int, Int), (Int, Int))]] = {
     val xBins = maxBin._1 + 1
@@ -449,23 +451,20 @@ class MercatorLineProjection(zoomLevels: Seq[Int],
       val end = mercatorProjection.project(Some(enddc), maxBin)
 
       if (start.isDefined && end.isDefined) {
-        // we'll use Bresenham's algorithm to turn our line into a series of points
-        // and append those points to this buffer
-        val result = new ArrayBuffer[((Int, Int, Int), (Int, Int))]()
-
-        for (i <- Range(0, zoomLevels.length)) {
-          // convert start and end points of line into universal bin coordinates for use in EndPointsToLine
-          val startUniversalBin = tileBinIndexToUniversalBinIndex(start.get(i)._1, start.get(i)._2, maxBin)
-          val endUniversalBin = tileBinIndexToUniversalBinIndex(end.get(i)._1, end.get(i)._2, maxBin)
+        zoomLevels.map { level =>
+          // convert start and end points of line into universal bin coordinates for use in LineToPoints
+          val startUniversalBin = tileBinIndexToUniversalBinIndex(start.get(level)._1, start.get(level)._2, maxBin)
+          val endUniversalBin = tileBinIndexToUniversalBinIndex(end.get(level)._1, end.get(level)._2, maxBin)
 
           val line2point = new LineToPoints(startUniversalBin, endUniversalBin)
 
-          result.appendAll(line2point.rest().map(ub => {
-            //convert universal bin index back into tile coordinate and tile-relative bin index
-            universalBinIndexToTileIndex(zoomLevels(i), ub, maxBin)
-          }))
-        }
-        Some(result)
+          if (minLengthOpt.map(minLength => line2point.totalLength >= minLength).getOrElse(true) &&
+            maxLengthOpt.map(maxLength => line2point.totalLength <= maxLength).getOrElse(true)) {
+            Some(line2point.rest().map { uBin => universalBinIndexToTileIndex(level, uBin, maxBin) }.toSeq)
+          } else {
+            None
+          }
+        }.reduce((a, b) => (a ++ b).reduceLeftOption(_ ++ _))
       } else {
         None
       }
