@@ -37,8 +37,8 @@ object ProjectionConfig {
         case "cartesian" =>
           val minX = config.getDouble(MIN_X_KEY)
           val minY = config.getDouble(MIN_Y_KEY)
-          val maxX = config.getDouble(MIN_X_KEY)
-          val maxY = config.getDouble(MIN_Y_KEY)
+          val maxX = config.getDouble(MAX_X_KEY)
+          val maxY = config.getDouble(MAX_Y_KEY)
           new CartesianProjectionConfig(minX, minY, maxX, maxY)
       }
     }
@@ -50,7 +50,7 @@ object ProjectionConfig {
 case class XYHeatmapConfig(xCol: String,
                            yCol: String,
                            valueCol: String,
-                           projection: Try[ProjectionConfig])
+                           projection: ProjectionConfig)
 // Parse config for geoheatmap sparkpipe op
 object XYHeatmapConfig {
   val CATEGORY_KEY = "xyHeatmap"
@@ -66,7 +66,7 @@ object XYHeatmapConfig {
         heatmapConfig.getString(X_COLUMN_KEY),
         heatmapConfig.getString(Y_COLUMN_KEY),
         heatmapConfig.getString(VALUE_COLUMN_KEY),
-        ProjectionConfig(heatmapConfig.getConfig(PROJECTION_KEY))
+        ProjectionConfig(heatmapConfig.getConfig(PROJECTION_KEY)).toOption.get
       )
     }
   }

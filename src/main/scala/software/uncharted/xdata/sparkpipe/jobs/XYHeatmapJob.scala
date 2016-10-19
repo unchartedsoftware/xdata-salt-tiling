@@ -11,6 +11,9 @@
   * with Uncharted Software Inc.
   */
 package software.uncharted.xdata.sparkpipe.jobs
+
+
+
 import com.typesafe.config.Config
 import org.apache.spark.sql.SQLContext
 import software.uncharted.salt.core.analytic.numeric.{MinMaxAggregator, SumAggregator}
@@ -19,15 +22,18 @@ import software.uncharted.salt.core.projection.numeric.{CartesianProjection, Mer
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.xdata.ops.io.serializeBinArray
 import software.uncharted.xdata.ops.salt.ZXYOp
+import software.uncharted.xdata.ops.util.DebugOperations
 import software.uncharted.xdata.sparkpipe.config.{CartesianProjectionConfig, MercatorProjectionConfig, TilingConfig, XYHeatmapConfig}
 import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOperation, dataframeFromSparkCsv}
 
-import scala.util.Success
+
 
 /**
   * Simple job to do ordinary 2-d tiling
   */
 object XYHeatmapJob extends AbstractJob {
+  this.debug = true
+
   /**
     * This function actually executes the task the job describes
     *
@@ -47,16 +53,16 @@ object XYHeatmapJob extends AbstractJob {
 
     // create the heatmap operation based on the projection
     val projection = heatmapConfig.projection match {
-      case p: Success[MercatorProjectionConfig] =>
+      case p: MercatorProjectionConfig =>
         new MercatorProjection(tilingConfig.levels)
-      case sp: Success[CartesianProjectionConfig] =>
-        val p = sp.get
+      case p: CartesianProjectionConfig =>
         new CartesianProjection(tilingConfig.levels, (p.minX, p.minY), (p.maxX, p.maxY))
     }
+    val tileSize = tilingConfig.bins.getOrElse(ZXYOp.TILE_SIZE_DEFAULT)
 
     val heatmapOperation = ZXYOp(
       projection,
-      tilingConfig.bins.getOrElse(ZXYOp.TILE_SIZE_DEFAULT),
+      tileSize,
       heatmapConfig.xCol,
       heatmapConfig.yCol,
       heatmapConfig.valueCol,
@@ -73,14 +79,13 @@ object XYHeatmapJob extends AbstractJob {
       .run()
 
     // create and save extra level metadata - the tile x,y dimensions in this case
-    writeMetadata(config, tilingConfig, heatmapConfig)
+    writeMetadata(config, tileSize)
   }
 
-  private def writeMetadata(baseConfig: Config, tilingConfig: TilingConfig, heatmapConfig: XYHeatmapConfig): Unit = {
+  private def writeMetadata(baseConfig: Config, binCount: Int): Unit = {
     import net.liftweb.json.JsonDSL._ // scalastyle:ignore
     import net.liftweb.json.JsonAST._ // scalastyle:ignore
 
-    val binCount = tilingConfig.bins.getOrElse(ZXYOp.TILE_SIZE_DEFAULT)
     val levelMetadata = ("bins" -> binCount)
     val jsonBytes = compactRender(levelMetadata).getBytes.toSeq
     createMetadataOutputOperation(baseConfig).foreach(_("metadata.json", jsonBytes))
