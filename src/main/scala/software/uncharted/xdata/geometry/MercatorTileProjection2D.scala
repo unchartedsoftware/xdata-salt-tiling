@@ -36,7 +36,7 @@ trait MercatorBinning {
     * @return The universal bin coordinate of the target cell, with (0, 0) being the upper left corner of the whole
     *         space
     */
-  private def tileBinIndexToUniversalBinIndex(tile: (Int, Int, Int), bin: (Int, Int), maxBin: (Int, Int)): (Int, Int) = {
+  protected def tileBinIndexToUniversalBinIndex(tile: (Int, Int, Int), bin: (Int, Int), maxBin: (Int, Int)): (Int, Int) = {
     val pow2 = 1 << tile._1
 
     val tileLeft = tile._2 * (maxBin._1 + 1)
@@ -60,7 +60,7 @@ trait MercatorBinning {
     * @param maxBin       the maximum bin index within each tile
     * @return The tile and bin at the given level of the given universal bin
     */
-  private def universalBinIndexToTileIndex(z: Int, ubin: (Int, Int), maxBin: (Int, Int)) = {
+  protected def universalBinIndexToTileIndex(z: Int, ubin: (Int, Int), maxBin: (Int, Int)) = {
     val pow2 = 1 << z
 
     val xBins = (maxBin._1 + 1)
