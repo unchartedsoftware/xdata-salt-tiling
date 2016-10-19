@@ -31,7 +31,58 @@ object ZXYOp extends ZXYOp {
   */
 trait ZXYOp {
   // scalastyle:off parameter.number
+  private val DOUBLE_TYPE = "double"
 
+  def testCoordinateProjection[T, U, V, W, X](message: String,
+                                              projection: NumericProjection[(Double, Double), (Int, Int, Int), (Int, Int)],
+                                              tileSize: Int,
+                                              xCol: String,
+                                              yCol: String,
+                                              vCol: String
+                                             )(input: DataFrame): DataFrame = {
+
+    val selectCols = Seq(xCol, yCol, vCol).map(new Column(_))
+
+    // Use the pipeline to convert x/y cols to doubles, and select them along with v col first
+    val frame = Pipe(input)
+      .to(castColumns(Map(xCol -> DOUBLE_TYPE, yCol -> DOUBLE_TYPE)))
+      .to(_.select(selectCols: _*))
+      .run()
+
+
+    // x and y will always be columns 0 and 1 respectively
+    val cExtractor = (r: Row) => {
+      if (!r.isNullAt(0) && !r.isNullAt(1)) {
+        Some((r.getDouble(0), r.getDouble(1)))
+      } else {
+        None
+      }
+    }
+
+    // v will always be column 2
+    val vExtractor = (r: Row) => {
+      if (!r.isNullAt(2)) {
+        Some(r.getAs[T](2))
+      } else {
+        None
+      }
+    }
+
+    val partials = frame.take(10)
+    val maxBin = (tileSize - 1, tileSize - 1)
+
+    // scalastyle:off regex
+    println(message)
+    partials.foreach { row =>
+      val coords = cExtractor(row)
+      val value = vExtractor(row)
+      val projected = projection.project(coords, maxBin)
+      println(s"Coordinates: $coords\t\tvalue: $value\t\tprojected coordinates: $projected") // scalastyle:ignore
+    }
+    // scalastyle:on regex
+
+    input
+  }
   /**
     * Main tiling operation.
     *
@@ -56,7 +107,7 @@ trait ZXYOp {
 
     // Use the pipeline to convert x/y cols to doubles, and select them along with v col first
     val frame = Pipe(input)
-      .to(castColumns(Map(xCol -> "double", yCol -> "double")))
+      .to(castColumns(Map(xCol -> DOUBLE_TYPE, yCol -> DOUBLE_TYPE)))
       .to(_.select(selectCols: _*))
       .run()
 
