@@ -17,7 +17,7 @@ import grizzled.slf4j.Logging
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.{SparkConf, SparkContext}
 
-import scala.collection.JavaConverters._ //scalastyle:ignore
+import scala.collection.JavaConverters._      // scalastyle:ignore
 
 // scalastyle:off multiple.string.literals
 
@@ -113,5 +113,25 @@ object S3OutputConfig extends Logging {
   }
 }
 
+case class HBaseOutputConfig (configFiles: Seq[String], layer: String, qualifier: String)
+object HBaseOutputConfig extends Logging {
+  val hBaseOutputKey = "hbaseOutput"
+  val configFilesKey = "configFiles"
+  val layerKey = "layer"
+  val qualifierKey = "qualifier"
 
-
+  def apply (config: Config): Option[HBaseOutputConfig] = {
+    try {
+      val hbaseConfig = config.getConfig(hBaseOutputKey)
+      val configFilesList = hbaseConfig.getStringList(configFilesKey)
+      val configFiles = configFilesList.toArray(new Array[String](configFilesList.size()))
+      val layer = hbaseConfig.getString(layerKey)
+      val qualifier = hbaseConfig.getString(qualifierKey)
+      Some(HBaseOutputConfig(configFiles, layer, qualifier))
+    } catch {
+      case e: ConfigException =>
+        error(s"Failure parsing arguments from [$hBaseOutputKey]", e)
+        None
+    }
+  }
+}
