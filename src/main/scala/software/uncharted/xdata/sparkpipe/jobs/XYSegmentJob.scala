@@ -94,10 +94,10 @@ object XYSegmentJob extends Logging {
     }
 
     // Create the spark context from the supplied config
-    val sqlc = SparkConfig(config)
+    val sparkSession = SparkConfig(config)
     try {
       // Create the dataframe from the input config
-      val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc)
+      val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, sparkSession)
 
       // Pipe the dataframe
       Pipe(df)
@@ -110,7 +110,7 @@ object XYSegmentJob extends Logging {
         .run()
 
     } finally {
-      sqlc.sparkContext.stop()
+      sparkSession.sparkContext.stop()
     }
   }
 

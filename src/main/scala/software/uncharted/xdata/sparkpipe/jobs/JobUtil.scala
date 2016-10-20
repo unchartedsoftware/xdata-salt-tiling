@@ -15,7 +15,7 @@ package software.uncharted.xdata.sparkpipe.jobs
 import com.typesafe.config.Config
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, SQLContext}
+import org.apache.spark.sql.{DataFrame, SQLContext, SparkSession}
 import software.uncharted.xdata.ops.io.{writeBytesToFile, writeBytesToS3, writeToFile, writeToS3}
 import software.uncharted.xdata.sparkpipe.config.{FileOutputConfig, S3OutputConfig}
 
@@ -24,14 +24,14 @@ import scala.collection.JavaConverters._ // scalastyle:ignore
 object JobUtil {
   type OutputOperation = (RDD[((Int, Int, Int), Seq[Byte])]) => RDD[((Int, Int, Int), Seq[Byte])]
 
-  def dataframeFromSparkCsv(config: Config, source: String, schema: StructType, sqlc: SQLContext): DataFrame = {
+  def dataframeFromSparkCsv(config: Config, source: String, schema: StructType, sparkSession: SparkSession): DataFrame = {
     val sparkCsvConfig = config.getConfig("sparkCsv")
       .entrySet()
       .asScala
       .map(e => e.getKey -> e.getValue.unwrapped().toString)
       .toMap
 
-    sqlc.read
+    sparkSession.read
       .format("com.databricks.spark.csv")
       .options(sparkCsvConfig)
       .schema(schema)

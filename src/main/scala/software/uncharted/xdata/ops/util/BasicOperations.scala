@@ -15,7 +15,7 @@ package software.uncharted.xdata.ops.util
 
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{Column, DataFrame, SQLContext}
+import org.apache.spark.sql.{Column, DataFrame, SQLContext, SparkSession}
 
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
@@ -95,25 +95,25 @@ object BasicOperations {
   /**
     * Convert an RDD of objects that are products (e.g. case classes) into a dataframe
     *
-    * @param sqlc A SQL context into which to set the dataframe
+    * @param sparkSession A spark session into which to set the dataframe
     * @param input The input data
     * @tparam T The type of input data
     * @return A dataframe representing the same data
     */
-  def toDataFrame[T <: Product : TypeTag](sqlc: SQLContext)(input: RDD[T]): DataFrame = {
-    sqlc.createDataFrame(input)
+  def toDataFrame[T <: Product : TypeTag](sparkSession: SparkSession)(input: RDD[T]): DataFrame = {
+    sparkSession.createDataFrame(input)
   }
 
   /**
     * Convert an RDD of strings into a dataframe
     *
-    * @param sqlc A SQL context into which to set the dataframe.
+    * @param sparkSession A spark session into which to set the dataframe.
     * @param settings Settings to control CSV parsing.
     * @param schemaOpt The schema into which to parse the data (if null, inferSchema must be true)
     * @param input The input data
     * @return A dataframe representing the same data, but parsed into proper typed rows.
     */
-  def toDataFrame (sqlc: SQLContext, settings: Map[String, String], schemaOpt: Option[StructType])(input: RDD[String]): DataFrame = {
+  def toDataFrame(sparkSession: SparkSession, settings: Map[String, String], schemaOpt: Option[StructType])(input: RDD[String]): DataFrame = {
     val parser = new CsvParser
 
     // Move settings to our parser
@@ -142,6 +142,6 @@ object BasicOperations {
 
     schemaOpt.map(schema => parser.withSchema(schema))
 
-    parser.csvRdd(sqlc, input)
+    parser.csvRdd(sparkSession.sqlContext, input)
   }
 }
