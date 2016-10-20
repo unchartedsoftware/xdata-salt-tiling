@@ -48,7 +48,7 @@ package object io extends Logging {
       throw new Exception("writeToFile() not permitted on non-local Spark instance")
     }
     val tileIndexTranslator = (index: (Int, Int, Int)) => {
-      mkRowId(None, slash, binExtension)(index._1, index._2, index._3)
+      mkRowId("", slash, binExtension)(index._1, index._2, index._3)
     }
     new FileSystemClient(baseFilePath, Some(extension)).write[(Int, Int, Int)](layerName, input.map { case (index, data) => (index, data.toArray) }, tileIndexTranslator)
     input
@@ -80,7 +80,7 @@ package object io extends Logging {
     val zipDirectory = new File(baseZipDirectory)
     zipDirectory.mkdirs()
     val tileIndexTranslator = (index: (Int, Int, Int)) => {
-      mkRowId(None, slash, binExtension)(index._1, index._2, index._3)
+      mkRowId("", slash, binExtension)(index._1, index._2, index._3)
     }
     new ZipFileClient(zipDirectory).write(layerName + ".zip", input.map { case (index, data) => (index, data.toArray) }, tileIndexTranslator)
     input
@@ -126,7 +126,7 @@ package object io extends Logging {
       tileDataIter.foreach { tileData =>
         val coord = tileData._1
         // store tile in bucket as layerName/level-xIdx-yIdx.bin
-        val key = mkRowId(Some(layerName), slash, binExtension)(coord._1, coord._2, coord._3)
+        val key = mkRowId(s"${layerName}/", slash, binExtension)(coord._1, coord._2, coord._3)
         s3Client.upload(tileData._2.toArray, bucketName, key)
       }
     }
@@ -165,7 +165,7 @@ package object io extends Logging {
     val results = input.mapPartitions { tileDataIter =>
       tileDataIter.map { tileData =>
         val coord = tileData._1
-        val rowID = mkRowId(Some(layerName), slash, binExtension)(coord._1, coord._2, coord._3)
+        val rowID = mkRowId(s"${layerName}/", slash, binExtension)(coord._1, coord._2, coord._3)
         (rowID, tileData._2)
       }
     }
@@ -175,10 +175,9 @@ package object io extends Logging {
     input
   }
 
-  private def mkRowId(prefix: Option[String], separator: String, suffix: String)(level: Int, x: Int, y: Int): String = {
+  private def mkRowId(prefix: String, separator: String, suffix: String)(level: Int, x: Int, y: Int): String = {
     val digits = math.log10(1 << level).floor.toInt + 1
-    val prefixFormatted = if (prefix.isDefined) prefix.get + separator else ""
-    (prefixFormatted + "%02d" + separator + "%0" + digits + "d" + separator + "%0" + digits + "d" + suffix).format(level, x, y)
+    (prefix + "%02d" + separator + "%0" + digits + "d" + separator + "%0" + digits + "d" + suffix).format(level, x, y)
   }
 
   /**
