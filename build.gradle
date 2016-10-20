@@ -59,7 +59,7 @@ check.dependsOn "scalaStyle"
 
 // task to update the gradle wrapper
 task wrapper(type: Wrapper) {
-  gradleVersion = '2.9'
+  gradleVersion = '2.13'
 }
 
 // extra configurations
