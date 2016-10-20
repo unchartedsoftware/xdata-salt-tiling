@@ -31,6 +31,7 @@ package object io extends Logging {
   //to remove scalastyle:string literal error
   val slash = "/"
 
+  val binExtension = ".bin"
 
   /**
     * Write binary array data to the file system.  Folder structure is
@@ -47,7 +48,7 @@ package object io extends Logging {
       throw new Exception("writeToFile() not permitted on non-local Spark instance")
     }
     val tileIndexTranslator = (index: (Int, Int, Int)) => {
-      mkRowId(None, slash, ".bin")(index._1, index._2, index._3)
+      mkRowId(None, slash, binExtension)(index._1, index._2, index._3)
     }
     new FileSystemClient(baseFilePath, Some(extension)).write[(Int, Int, Int)](layerName, input.map { case (index, data) => (index, data.toArray) }, tileIndexTranslator)
     input
@@ -79,7 +80,7 @@ package object io extends Logging {
     val zipDirectory = new File(baseZipDirectory)
     zipDirectory.mkdirs()
     val tileIndexTranslator = (index: (Int, Int, Int)) => {
-      mkRowId(None, slash, ".bin")(index._1, index._2, index._3)
+      mkRowId(None, slash, binExtension)(index._1, index._2, index._3)
     }
     new ZipFileClient(zipDirectory).write(layerName + ".zip", input.map { case (index, data) => (index, data.toArray) }, tileIndexTranslator)
     input
@@ -125,7 +126,7 @@ package object io extends Logging {
       tileDataIter.foreach { tileData =>
         val coord = tileData._1
         // store tile in bucket as layerName/level-xIdx-yIdx.bin
-        val key = mkRowId(Some(layerName), slash, ".bin")(coord._1, coord._2, coord._3)
+        val key = mkRowId(Some(layerName), slash, binExtension)(coord._1, coord._2, coord._3)
         s3Client.upload(tileData._2.toArray, bucketName, key)
       }
     }
@@ -164,7 +165,7 @@ package object io extends Logging {
     val results = input.mapPartitions { tileDataIter =>
       tileDataIter.map { tileData =>
         val coord = tileData._1
-        val rowID = mkRowId(Some(layerName), slash, ".bin")(coord._1, coord._2, coord._3)
+        val rowID = mkRowId(Some(layerName), slash, binExtension)(coord._1, coord._2, coord._3)
         (rowID, tileData._2)
       }
     }
