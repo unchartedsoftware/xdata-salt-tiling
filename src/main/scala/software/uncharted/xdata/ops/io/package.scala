@@ -12,17 +12,16 @@
  */
 package software.uncharted.xdata.ops
 
-import java.io.{BufferedOutputStream, File, FileOutputStream}
+import java.io.{File, FileOutputStream}
 import java.nio.{ByteBuffer, ByteOrder, DoubleBuffer}
-import java.util.ArrayList
 import java.util.zip.ZipOutputStream
 
 import grizzled.slf4j.Logging
 import org.apache.spark.rdd.RDD
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.util.SparseArray
-
-import scala.util.parsing.json.JSONObject
+import net.liftweb.json.JsonAST.compactRender
+import net.liftweb.json.Extraction.decompose
 
 package object io extends Logging {
 
@@ -220,8 +219,10 @@ package object io extends Logging {
   RDD[(TC, Seq[Byte])] =
     serializeTiles(scoreListToByteArray)(tiles)
 
-  def scoreListToByteArray: SparseArray[List[(String, Int)]] => Seq[Byte] = sparseData =>
-    new JSONObject(sparseData.head.toMap).toString().getBytes
+  def scoreListToByteArray: SparseArray[List[(String, Int)]] => Seq[Byte] = {
+    implicit val formats = net.liftweb.json.DefaultFormats
+    sparseData => compactRender(decompose(sparseData.head.toMap)).toString().getBytes
+  }
 
   /**
     * Serializes tile bins according to an arbitrarily specified serialization function
