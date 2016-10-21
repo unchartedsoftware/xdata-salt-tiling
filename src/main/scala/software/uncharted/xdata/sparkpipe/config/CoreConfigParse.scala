@@ -66,7 +66,7 @@ object FileOutputConfig extends Logging {
   val pathKey = "dest"
   val layerKey = "layer"
   val extensionKey = "ext"
-  val defaultExtensionKey = "bin"
+  val defaultExtensionKey = ".bin"
 
   def apply(config: Config): Option[FileOutputConfig] = {
     try {

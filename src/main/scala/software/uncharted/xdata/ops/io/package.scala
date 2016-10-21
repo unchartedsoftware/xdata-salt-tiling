@@ -48,7 +48,7 @@ package object io extends Logging {
       throw new Exception("writeToFile() not permitted on non-local Spark instance")
     }
     val tileIndexTranslator = (index: (Int, Int, Int)) => {
-      mkRowId("", slash, binExtension)(index._1, index._2, index._3)
+      mkRowId("", slash, extension)(index._1, index._2, index._3)
     }
     new FileSystemClient(baseFilePath, Some(extension)).write[(Int, Int, Int)](layerName, input.map { case (index, data) => (index, data.toArray) }, tileIndexTranslator)
     input
