@@ -23,7 +23,7 @@ class BasicSaltOperationsTest extends SparkFunSpec {
   describe("BasicSaltOperations") {
     describe("#getBounds") {
       it("should return the proper bounds of a set of coordinates") {
-        val data = toDataFrame(sqlc)(sc.parallelize(Seq(
+        val data = toDataFrame(sparkSession)(sc.parallelize(Seq(
           Coordinates(0.0, 0.0, 0.0, 0.0),
           Coordinates(1.0, 4.0, 3.0, 5.0),
           Coordinates(2.0, 2.0, 1.0, 0.0),
@@ -38,7 +38,7 @@ class BasicSaltOperationsTest extends SparkFunSpec {
 
     describe("#cartesianTiling") {
       it("should properly tile without autobounds") {
-        val data = toDataFrame(sqlc)(sc.parallelize(Seq(
+        val data = toDataFrame(sparkSession)(sc.parallelize(Seq(
           Coordinates(0.0,-1.0, 0.0, 0.0),
           Coordinates(0.0, 0.0, -1.0, 0.0),
           Coordinates(0.0, 0.0, 0.0, 0.0),
@@ -55,7 +55,7 @@ class BasicSaltOperationsTest extends SparkFunSpec {
       }
 
       it("should properly tile with autobounds") {
-        val data = toDataFrame(sqlc)(sc.parallelize(Seq(
+        val data = toDataFrame(sparkSession)(sc.parallelize(Seq(
           Coordinates(0.0, 0.0, 0.0, 0.0),
           Coordinates(0.0, 0.5, 0.5, 0.0),
           Coordinates(0.0, 1.5, 3.5, 0.0),
