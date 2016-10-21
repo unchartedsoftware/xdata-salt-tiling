@@ -21,8 +21,6 @@ import software.uncharted.salt.core.util.SparseArray
 import software.uncharted.xdata.ops.salt.MercatorTimeProjection
 import software.uncharted.xdata.spark.SparkFunSpec
 
-import scala.util.parsing.json.JSONObject
-
 import org.apache.hadoop.hbase.client._;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
@@ -277,7 +275,7 @@ class PackageTest extends SparkFunSpec {
           TestSeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (4, 5, 6), arr1, None)
         ))
 
-      val json = List(compactRender(decompose((Map("aa" -> 1, "bb" -> 2)))).toString().getBytes, new JSONObject(Map("cc" -> 3, "dd" -> 4)).toString().getBytes)
+      val json = List(compactRender(decompose((Map("aa" -> 1, "bb" -> 2)))).toString().getBytes, compactRender(decompose(Map("cc" -> 3, "dd" -> 4))).toString().getBytes)
 
       val result = serializeElementScore(series).collect()
       assertResult(2)(result.length)

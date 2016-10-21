@@ -24,8 +24,6 @@ import software.uncharted.xdata.sparkpipe.config.{Schema, TilingConfig, XYSegmen
 import software.uncharted.xdata.ops.io.serializeBinArray
 import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOperation, createTileOutputOperation, dataframeFromSparkCsv}
 
-import scala.util.parsing.json.JSONObject
-
 /**
   * Executes the a segment job configured given a path to a configuration file
   *
