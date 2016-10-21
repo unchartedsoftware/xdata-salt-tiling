@@ -29,7 +29,7 @@ package object io extends Logging {
 
   //to remove scalastyle:string literal error
   val slash = "/"
-
+  implicit val formats = net.liftweb.json.DefaultFormats
 
   /**
     * Write binary array data to the file system.  Folder structure is
@@ -220,7 +220,6 @@ package object io extends Logging {
     serializeTiles(scoreListToByteArray)(tiles)
 
   def scoreListToByteArray: SparseArray[List[(String, Int)]] => Seq[Byte] = {
-    implicit val formats = net.liftweb.json.DefaultFormats
     sparseData => compactRender(decompose(sparseData.head.toMap)).toString().getBytes
   }
 
