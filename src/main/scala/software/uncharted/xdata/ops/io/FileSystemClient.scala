@@ -28,15 +28,6 @@ import scala.util.{Failure, Success, Try}
   * @param extension    The extension to use for all tiles in the tile set
   */
 class FileSystemClient(baseFilePath: String, extension: Option[String]) extends LocalIOClient[String] with Logging {
-  override val standardTileIndexTranslator: (String, (Int, Int, Int)) => String = {
-    val localExtension = extension.map("." + _).getOrElse("")
-    (tileSetName, index) => {
-      val (level, x, y) = index
-      val digits = math.log10(1 << level).floor.toInt + 1
-      s"""%02d/%0${digits}d/%0${digits}d${localExtension}""".format(level, x, y)
-    }
-  }
-
   /**
     * Prepare a dataset for writing
     *

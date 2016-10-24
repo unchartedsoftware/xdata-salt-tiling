@@ -25,14 +25,6 @@ import org.apache.spark.rdd.RDD
   * @param baseZipLocation The directory into which to drop zip files
   */
 class ZipFileClient(baseZipLocation: File) extends LocalIOClient[ZipOutputStream] {
-
-  override val standardTileIndexTranslator: (String, (Int, Int, Int)) => String = (tileSetName, index) => {
-    val (level, x, y) = index
-    val digits = math.log10(1 << level).floor.toInt + 1
-    s"%02d/%0${digits}d/%0${digits}d".format(level, x, y)
-  }
-
-
   /**
     * Prepare a dataset for writing
     *
