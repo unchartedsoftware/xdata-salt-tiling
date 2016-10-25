@@ -24,12 +24,16 @@ import scala.collection.JavaConverters._      // scalastyle:ignore
 // Parse spark configuration and instantiate context from it
 object SparkConfig {
   val sparkKey = "spark"
+  val checkpointDirectoryKey = "checkpoint-directory"
 
   def apply(config: Config): SQLContext = {
     val sparkConfig = config.getConfig(sparkKey)
     val conf = new SparkConf()
     sparkConfig.entrySet().asScala.foreach(e => conf.set(s"spark.${e.getKey}", e.getValue.unwrapped().asInstanceOf[String]))
     val sc = new SparkContext(conf)
+    if (sparkConfig.hasPath(checkpointDirectoryKey)) {
+      sc.setCheckpointDir(sparkConfig.getString(checkpointDirectoryKey))
+    }
     new SQLContext(sc)
   }
 }
