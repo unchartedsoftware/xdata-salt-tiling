@@ -73,7 +73,8 @@ object LDAOp {
     * @param input The dataframe containing the data to analyze
     * @return The topics for each document
     */
-  def lda(idCol: String, textCol: String, numTopics: Int, wordsPerTopic: Int, topicsPerDocument: Int)(input: DataFrame): DataFrame = {
+  def lda(idCol: String, textCol: String, numTopics: Int, wordsPerTopic: Int, topicsPerDocument: Int,
+          maxRounds: Option[Int], chkptRounds: Option[Int])(input: DataFrame): DataFrame = {
     val sqlc = input.sqlContext
 
     // Get the indexed documents
@@ -84,7 +85,7 @@ object LDAOp {
     }
 
     // Perform our LDA analysis
-    val rawResults = lda(numTopics, wordsPerTopic, topicsPerDocument)(textRDD)
+    val rawResults = lda(numTopics, wordsPerTopic, topicsPerDocument, maxRounds, chkptRounds)(textRDD)
     // Mutate to dataframe form for joining with original data
     val dfResults = sqlc.createDataFrame(rawResults.map{case (index, scores) => DocumentTopics(index, scores)})
 
@@ -102,14 +103,21 @@ object LDAOp {
     *         row should be read as Seq[(topic, topicScoreForDocument)], where the topic is
     *         Seq[(word, wordScoreForTopic)]
     */
-  def lda (numTopics: Int, wordsPerTopic: Int, topicsPerDocument: Int)
+  def lda (numTopics: Int, wordsPerTopic: Int, topicsPerDocument: Int,
+           maxRounds: Option[Int], chkptRounds: Option[Int])
           (input: RDD[(Long, String)]): RDD[(Long, Seq[TopicScore])] = {
     val sc = input.context
 
     // Figure out our dictionary
     val (dictionary, documents) = textToWordCount(input)
 
-    val model = getDistributedModel(sc, new LDA().setK(numTopics).setOptimizer("em").run(documents))
+    val ldaEngine = new LDA()
+      .setK(numTopics)
+      .setOptimizer("em")
+    chkptRounds.map(r => ldaEngine.setCheckpointInterval(r))
+    maxRounds.map(r => ldaEngine.setMaxIterations(r))
+
+    val model = getDistributedModel(sc, ldaEngine.run(documents))
 
     // Unwind the topics matrix using our dictionary (but reversed)
     val allTopics = getTopics(model, dictionary, wordsPerTopic)

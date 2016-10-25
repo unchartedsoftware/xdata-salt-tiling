@@ -50,7 +50,7 @@ class LDAOperationTests extends SparkFunSpec {
         new LDATestData(index, text)
       }
       val data = toDataFrame(sqlc)(rddData)
-      val results = lda("index", "text", 4, 2, 4)(data)
+      val results = lda("index", "text", 4, 2, 4, None, None)(data)
 
       printResults(data, results)
     }
@@ -87,7 +87,7 @@ class LDAOperationTests extends SparkFunSpec {
       }
 
       val data = toDataFrame(sqlc)(rddData)
-      val results = lda("index", "text", 2, 20, 2)(data)
+      val results = lda("index", "text", 2, 20, 2, None, None)(data)
 
       printResults(data, results)
     }

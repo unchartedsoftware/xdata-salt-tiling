@@ -27,6 +27,8 @@ import scala.util.Try
   * @param scoreSeparator A separator to use between a word and its score when outputting LDA results
   */
 case class LDAConfig (numTopics: Int, wordsPerTopic: Int, topicsPerDocument: Int,
+                      chkptInterval: Option[Int],
+                      maxIterations: Option[Int],
                       topicSeparator: String,
                       wordSeparator: String,
                       scoreSeparator: String)
@@ -35,6 +37,8 @@ object LDAConfig {
   val NUM_TOPICS_KEY = "topics"
   val WORDS_PER_TOPIC_KEY = "words-per-topic"
   val TOPICS_PER_DOC_KEY = "topics-per-document"
+  val CHECKPOINT_INTERVAL_KEY = "checkpoint-interval"
+  val MAX_ITERATIONS_KEY = "maximum-iterations"
   val SEPARATOR_TOPIC_KEY = "output-separators"
   val TOPIC_SEPARATOR_KEY = "topic"
   val WORD_SEPARATOR_KEY = "word"
@@ -60,6 +64,8 @@ object LDAConfig {
         topicsNode.getInt(NUM_TOPICS_KEY),
         topicsNode.getInt(WORDS_PER_TOPIC_KEY),
         topicsNode.getInt(TOPICS_PER_DOC_KEY),
+        getIntOption(topicsNode, CHECKPOINT_INTERVAL_KEY),
+        getIntOption(topicsNode, MAX_ITERATIONS_KEY),
         topicSeparator, wordSeparator, scoreSeparator
       )
     }
@@ -77,6 +83,13 @@ object LDAConfig {
       config.getString(key)
     } else {
       defaultValue
+    }
+  }
+  private def getIntOption (config: Config, key: String): Option[Int] = {
+    if (config.hasPath(key)) {
+      Some(config.getInt(key))
+    } else {
+      None
     }
   }
 }
