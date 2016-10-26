@@ -42,10 +42,10 @@ object IPHeatmapJob extends AbstractJob {
     val outputOperation = parseOutputOperation(config)
 
     // Parse IP tiling parameters out of supplied config
-    val ipConfig = IPHeatmapConfig(config).getOrElse {
-      logger.error("Invalid heatmap op config")
+    val ipConfig = IPHeatmapConfig(config).recover { case err: Exception =>
+      logger.error("Invalid heatmap op config", err)
       sys.exit(-1)
-    }
+    }.get
 
     // Create the dataframe from the input config
     val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc)

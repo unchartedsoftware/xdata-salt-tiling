@@ -42,10 +42,10 @@ trait AbstractJob extends Logging {
     * @return A fully determined schema
     */
   protected def parseSchema (config: Config): StructType = {
-    Schema(config).getOrElse {
-      error("Couldn't create schema - exiting")
+    Schema(config).recover { case err: Exception =>
+      error("Couldn't create schema - exiting", err)
       sys.exit(-1)
-    }
+    }.get
   }
 
   /**
@@ -54,10 +54,10 @@ trait AbstractJob extends Logging {
     * @return A fully determined set of tiling parameters
     */
   protected def parseTilingParameters (config: Config): TilingConfig = {
-    TilingConfig(config).getOrElse {
-      logger.error("Invalid tiling config")
+    TilingConfig(config).recover { case err: Exception =>
+      logger.error("Invalid tiling config", err)
       sys.exit(-1)
-    }
+    }.get
   }
 
   /**
@@ -66,10 +66,10 @@ trait AbstractJob extends Logging {
     * @return A fully determined output operation
     */
   protected def parseOutputOperation (config: Config): OutputOperation = {
-    createTileOutputOperation(config).getOrElse {
-      logger.error("Output operation config")
+    createTileOutputOperation(config).recover { case err: Exception =>
+      logger.error("Output operation config", err)
       sys.exit(-1)
-    }
+    }.get
   }
 
   /**

@@ -20,6 +20,9 @@ import software.uncharted.xdata.ops.io.{writeBytesToFile, writeBytesToS3, writeB
 import software.uncharted.xdata.sparkpipe.config.{HBaseOutputConfig, FileOutputConfig, S3OutputConfig}
 
 import scala.collection.JavaConverters._ // scalastyle:ignore
+import scala.util.{Failure, Try}
+
+
 
 object JobUtil {
   type OutputOperation = (RDD[((Int, Int, Int), Seq[Byte])]) => RDD[((Int, Int, Int), Seq[Byte])]
@@ -39,7 +42,7 @@ object JobUtil {
   }
 
 
-  def createTileOutputOperation(config: Config): Option[OutputOperation] = {
+  def createTileOutputOperation(config: Config): Try[OutputOperation] = {
     if (config.hasPath(FileOutputConfig.fileOutputKey)) {
       FileOutputConfig(config).map(c => writeToFile(c.destPath, c.layer, c.extension))
     } else if (config.hasPath(S3OutputConfig.s3OutputKey)) {
@@ -47,11 +50,11 @@ object JobUtil {
     } else if (config.hasPath(HBaseOutputConfig.hBaseOutputKey)) {
       HBaseOutputConfig(config).map(c => writeToHBase(c.configFiles, c.layer, c.qualifier))
     } else {
-      None
+      Failure(new Exception("No output operation given"))
     }
   }
 
-  def createMetadataOutputOperation(config: Config): Option[(String, Seq[Byte]) => Unit] = {
+  def createMetadataOutputOperation(config: Config): Try[(String, Seq[Byte]) => Unit] = {
     if (config.hasPath(FileOutputConfig.fileOutputKey)) {
       FileOutputConfig(config).map(c => writeBytesToFile(c.destPath, c.layer))
     } else if (config.hasPath(S3OutputConfig.s3OutputKey)) {
@@ -59,7 +62,7 @@ object JobUtil {
     } else if (config.hasPath(HBaseOutputConfig.hBaseOutputKey)) {
       HBaseOutputConfig(config).map(c => writeBytesToHBase(c.configFiles, c.layer, c.qualifier))
     } else {
-      None
+      Failure(new Exception("No metadata output operation given"))
     }
   }
 }
