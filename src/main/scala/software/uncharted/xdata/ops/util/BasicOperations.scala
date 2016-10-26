@@ -13,7 +13,7 @@
 package software.uncharted.xdata.ops.util
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{Column, DataFrame, SQLContext, SparkSession}
+import org.apache.spark.sql.{Column, DataFrame, SparkSession}
 
 import scala.reflect.ClassTag
 import com.databricks.spark.csv.CsvParser
@@ -101,7 +101,7 @@ object BasicOperations {
   def toDataFrame[T <: Product : TypeTag](sparkSession: SparkSession)(input: RDD[T]): DataFrame = {
     sparkSession.createDataFrame(input)
   }
-
+  // TODO: This should be uncommented when dependency for databricks can be dropped
   /**
     * Convert an RDD of strings into a dataframe
     *
@@ -111,35 +111,35 @@ object BasicOperations {
     * @param input The input data
     * @return A dataframe representing the same data, but parsed into proper typed rows.
     */
-  def toDataFrame(sparkSession: SparkSession, settings: Map[String, String], schemaOpt: Option[StructType])(input: RDD[String]): DataFrame = {
-    val parser = new CsvParser
-
-    // Move settings to our parser
-    def setParserValue (key: String, setFcn: String => Unit): Unit =
-    settings.get(key).foreach(strValue => setFcn(strValue))
-    def setParserBoolean (key: String, setFcn: Boolean => Unit): Unit =
-      setParserValue(key, value => setFcn(value.trim.toLowerCase.toBoolean))
-    // scalastyle:off null
-    def setParserCharacter (key: String, setFcn: Character => Unit): Unit =
-    setParserValue(key, value => setFcn(if (null == value) null else value.charAt(0)))
-    // scalastyle:on null
-
-    setParserBoolean("useHeader", parser.withUseHeader(_))
-    setParserBoolean("ignoreLeadingWhiteSpace", parser.withIgnoreLeadingWhiteSpace(_))
-    setParserBoolean("ignoreTrailingWhiteSpace", parser.withIgnoreTrailingWhiteSpace(_))
-    setParserBoolean("treatEmptyValuesAsNull", parser.withTreatEmptyValuesAsNulls(_))
-    setParserBoolean("inferSchema", parser.withInferSchema(_))
-    setParserCharacter("delimiter", parser.withDelimiter(_))
-    setParserCharacter("quote", parser.withQuoteChar(_))
-    setParserCharacter("escape", parser.withEscape(_))
-    setParserCharacter("comment", parser.withComment(_))
-    setParserValue("parseMode", parser.withParseMode(_))
-    setParserValue("parserLib", parser.withParserLib(_))
-    setParserValue("charset", parser.withCharset(_))
-    setParserValue("codec", parser.withCompression(_))
-
-    schemaOpt.map(schema => parser.withSchema(schema))
-
-    parser.csvRdd(sparkSession.sqlContext, input)
-  }
+//  def toDataFrame(sparkSession: SparkSession, settings: Map[String, String], schemaOpt: Option[StructType])(input: RDD[String]): DataFrame = {
+//    val parser = new CsvParser
+//
+//    // Move settings to our parser
+//    def setParserValue (key: String, setFcn: String => Unit): Unit =
+//    settings.get(key).foreach(strValue => setFcn(strValue))
+//    def setParserBoolean (key: String, setFcn: Boolean => Unit): Unit =
+//      setParserValue(key, value => setFcn(value.trim.toLowerCase.toBoolean))
+//    // scalastyle:off null
+//    def setParserCharacter (key: String, setFcn: Character => Unit): Unit =
+//    setParserValue(key, value => setFcn(if (null == value) null else value.charAt(0)))
+//    // scalastyle:on null
+//
+//    setParserBoolean("useHeader", parser.withUseHeader(_))
+//    setParserBoolean("ignoreLeadingWhiteSpace", parser.withIgnoreLeadingWhiteSpace(_))
+//    setParserBoolean("ignoreTrailingWhiteSpace", parser.withIgnoreTrailingWhiteSpace(_))
+//    setParserBoolean("treatEmptyValuesAsNull", parser.withTreatEmptyValuesAsNulls(_))
+//    setParserBoolean("inferSchema", parser.withInferSchema(_))
+//    setParserCharacter("delimiter", parser.withDelimiter(_))
+//    setParserCharacter("quote", parser.withQuoteChar(_))
+//    setParserCharacter("escape", parser.withEscape(_))
+//    setParserCharacter("comment", parser.withComment(_))
+//    setParserValue("parseMode", parser.withParseMode(_))
+//    setParserValue("parserLib", parser.withParserLib(_))
+//    setParserValue("charset", parser.withCharset(_))
+//    setParserValue("codec", parser.withCompression(_))
+//
+//    schemaOpt.map(schema => parser.withSchema(schema))
+//
+//    parser.csvRdd(sparkSession.sqlContext, input)
+//  }
 }

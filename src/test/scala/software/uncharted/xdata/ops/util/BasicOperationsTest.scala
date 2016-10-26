@@ -62,6 +62,23 @@ class BasicOperationsTest extends SparkFunSpec {
         assertResult(List(1.0, 2.0, 3.0, 4.0))(converted.select("b").rdd.map(_(0).asInstanceOf[Double]).collect.toList)
         assertResult(List("one", "two", "three", "four"))(converted.select("c").rdd.map(_(0).asInstanceOf[String]).collect.toList)
       }
+// TODO: This should be uncommented when dependency for databricks can be dropped
+//      it("should work with a .csv with auto-schema") {
+//        val data = sc.parallelize(Seq("1,1.0,one", "2,2.0,two", "3,3.0,three", "4,4.0,four"))
+//        val converted = toDataFrame(sparkSession, Map("inferSchema" -> "true"), None)(data)
+//        assertResult(List(1, 2, 3, 4))(converted.select("C0").rdd.map(_(0).asInstanceOf[Int]).collect.toList)
+//        assertResult(List(1.0, 2.0, 3.0, 4.0))(converted.select("C1").rdd.map(_(0).asInstanceOf[Double]).collect.toList)
+//        assertResult(List("one", "two", "three", "four"))(converted.select("C2").rdd.map(_(0).asInstanceOf[String]).collect.toList)
+//      }
+//
+//      it("should work with a .csv with an explicit schema") {
+//        val data = sc.parallelize(Seq("1,1.0,one", "2,2.0,two", "3,3.0,three", "4,4.0,four"))
+//        val schema = StructType(Seq(StructField("a", IntegerType), StructField("b", DoubleType), StructField("c", StringType)))
+//        val converted = toDataFrame(sparkSession, Map[String, String](), Some(schema))(data)
+//        assertResult(List(1, 2, 3, 4))(converted.select("a").rdd.map(_(0).asInstanceOf[Int]).collect.toList)
+//        assertResult(List(1.0, 2.0, 3.0, 4.0))(converted.select("b").rdd.map(_(0).asInstanceOf[Double]).collect.toList)
+//        assertResult(List("one", "two", "three", "four"))(converted.select("c").rdd.map(_(0).asInstanceOf[String]).collect.toList)
+//      }
     }
   }
 }
