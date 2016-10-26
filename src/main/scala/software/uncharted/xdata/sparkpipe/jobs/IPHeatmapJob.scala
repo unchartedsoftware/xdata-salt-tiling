@@ -27,7 +27,7 @@ import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOper
 /**
   * A basic job to do standard IP tiling
   */
-class IPHeatmapJob extends AbstractJob {
+object IPHeatmapJob extends AbstractJob {
   /**
     * This function actually executes the task the job describes
     *
