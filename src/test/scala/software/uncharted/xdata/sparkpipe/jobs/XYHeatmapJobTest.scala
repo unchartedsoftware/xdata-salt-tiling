@@ -26,7 +26,7 @@ class XYHeatmapJobTest extends FunSpec {
 
   describe("XYHeatmapJobTest") {
     describe("#execute") {
-      it("should create tiles from source csv data with time filter applied", FileIOTest) {
+      it("should create tiles from source csv data", FileIOTest) {
         // When test are run from another project that includes this project, the current working directory is set such
         // that the data files referenced in tiling-file-io.conf can't be found.  We reset the CWD to the
         // xdata-pipeline-ops directory, and reset it afterwards, to get around this problem.
