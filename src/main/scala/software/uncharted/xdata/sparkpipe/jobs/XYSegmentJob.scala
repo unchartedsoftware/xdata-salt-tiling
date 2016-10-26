@@ -79,19 +79,15 @@ object XYSegmentJob extends AbstractJob {
       case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
     }
 
-    try {
-      // Pipe the dataframe
-      Pipe(dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc))
-        .to(_.select(segmentConfig.x1Col, segmentConfig.y1Col, segmentConfig.x2Col, segmentConfig.y2Col))
-        .to(_.cache())
-        .to(segmentOperation)
-        .to(writeMetadata(config))
-        .to(serializeBinArray)
-        .to(outputOperation)
-        .run()
-    } finally {
-      sqlc.sparkContext.stop()
-    }
+    // Pipe the dataframe
+    Pipe(dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc))
+      .to(_.select(segmentConfig.x1Col, segmentConfig.y1Col, segmentConfig.x2Col, segmentConfig.y2Col))
+      .to(_.cache())
+      .to(segmentOperation)
+      .to(writeMetadata(config))
+      .to(serializeBinArray)
+      .to(outputOperation)
+      .run()
   }
 
   private def writeMetadata[BC, V](baseConfig: Config)

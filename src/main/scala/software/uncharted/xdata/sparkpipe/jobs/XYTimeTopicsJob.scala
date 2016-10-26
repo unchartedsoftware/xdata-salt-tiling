@@ -48,22 +48,18 @@ object XYTimeTopicsJob extends AbstractJob {
       case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
     }
 
-    try {
-      // Pipe the dataframe
-      Pipe(dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc))
-        .to(split(topicsConfig.textCol, "\\b+"))
-        .to(includeTermFilter(topicsConfig.textCol, topicsConfig.termList.keySet))
-        .to(_.select(topicsConfig.xCol, topicsConfig.yCol, topicsConfig.timeCol, topicsConfig.textCol))
-        .to(_.cache())
-        .to(topicsOp)
-        .to(serializeElementScore)
-        .to(outputOperation)
-        .run()
+    // Pipe the dataframe
+    Pipe(dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc))
+      .to(split(topicsConfig.textCol, "\\b+"))
+      .to(includeTermFilter(topicsConfig.textCol, topicsConfig.termList.keySet))
+      .to(_.select(topicsConfig.xCol, topicsConfig.yCol, topicsConfig.timeCol, topicsConfig.textCol))
+      .to(_.cache())
+      .to(topicsOp)
+      .to(serializeElementScore)
+      .to(outputOperation)
+      .run()
 
-      writeMetadata(config, tilingConfig, topicsConfig)
-    } finally {
-      sqlc.sparkContext.stop()
-    }
+    writeMetadata(config, tilingConfig, topicsConfig)
   }
 
   private def writeMetadata(baseConfig: Config, tilingConfig: TilingConfig, topicsConfig: XYTimeTopicsConfig): Unit = {

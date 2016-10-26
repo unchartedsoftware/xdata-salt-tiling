@@ -48,21 +48,17 @@ object XYTimeHeatmapJob extends AbstractJob {
       case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
     }
 
-    try {
-      // Pipe the dataframe
-      Pipe(dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc))
-        .to(_.select(heatmapConfig.xCol, heatmapConfig.yCol, heatmapConfig.timeCol))
-        .to(_.cache())
-        .to(heatmapOperation)
-        .to(serializeBinArray)
-        .to(outputOperation)
-        .run()
+    // Pipe the dataframe
+    Pipe(dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc))
+      .to(_.select(heatmapConfig.xCol, heatmapConfig.yCol, heatmapConfig.timeCol))
+      .to(_.cache())
+      .to(heatmapOperation)
+      .to(serializeBinArray)
+      .to(outputOperation)
+      .run()
 
-      // create and save extra level metadata - the tile x,y,z dimensions in this case
-      writeMetadata(config, tilingConfig, heatmapConfig)
-    } finally {
-      sqlc.sparkContext.stop()
-    }
+    // create and save extra level metadata - the tile x,y,z dimensions in this case
+    writeMetadata(config, tilingConfig, heatmapConfig)
   }
 
   private def writeMetadata(baseConfig: Config, tilingConfig: TilingConfig, heatmapConfig: XYTimeHeatmapConfig): Unit = {
