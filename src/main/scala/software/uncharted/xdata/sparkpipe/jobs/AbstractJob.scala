@@ -116,6 +116,7 @@ trait AbstractJob extends Logging {
         }
       }.fold(environmentalConfig)((base, fallback) => base.withFallback(fallback))
 
+    config.resolve()
     if (debug) {
       debugConfig(config)
     }

@@ -14,6 +14,7 @@ package software.uncharted.xdata.sparkpipe.jobs
 
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
+import org.apache.spark.sql.SQLContext
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.xdata.ops.io.serializeElementDoubleScore
 import software.uncharted.xdata.ops.salt.text.TFIDFWordCloud
@@ -52,9 +53,14 @@ object XYTileTFIDFJob extends AbstractJob {
     }
   }
 
-  def execute (config: Config): Unit = {
-    config.resolve()
 
+  /**
+    * This function actually executes the task the job describes
+    *
+    * @param sqlc   An SQL context in which to run spark processes in our job
+    * @param config The job configuration
+    */
+  override def execute(sqlc: SQLContext, config: Config): Unit = {
     val schema = parseSchema(config)
     val tilingConfig = parseTilingParameters(config)
     val outputOperation = parseOutputOperation(config)
@@ -63,35 +69,15 @@ object XYTileTFIDFJob extends AbstractJob {
     val TFOperation = createProjection(tfidfConfig, tilingConfig)
     val IDFOperation = TFIDFWordCloud.doTFIDF(tfidfConfig.wordsToKeep)(_)
 
-    // Create the spark context from the supplied config
-    val sqlc = SparkConfig(config)
-    try {
-      // Create the dataframe from the input config
-      val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc)
+    // Create the dataframe from the input config
+    val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc)
 
-      // Process our data
-      Pipe(df)
-        .to(TFOperation)
-        .to(IDFOperation)
-        .to(serializeElementDoubleScore)
-        .to(outputOperation)
-        .run
-    }
-  }
-
-  def execute(args: Array[String]): Unit = {
-    // get the properties file path
-    if (args.length < 1) {
-      logger.error("Path to conf file required")
-      sys.exit(-1)
-    }
-
-    // load properties file from supplied URI
-    val config = ConfigFactory.parseReader(scala.io.Source.fromFile(args(0)).bufferedReader()).resolve()
-    execute(config)
-  }
-
-  def main (args: Array[String]): Unit = {
-    execute(args)
+    // Process our data
+    Pipe(df)
+      .to(TFOperation)
+      .to(IDFOperation)
+      .to(serializeElementDoubleScore)
+      .to(outputOperation)
+      .run
   }
 }
