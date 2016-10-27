@@ -13,43 +13,34 @@
 package software.uncharted.xdata.ops.salt
 
 
-
-import scala.collection.mutable.{Buffer => MutableBuffer}
-
+import scala.collection.mutable.{ArrayBuffer, Buffer => MutableBuffer}
 import software.uncharted.salt.core.spreading.SpreadingFunction
-import software.uncharted.xdata.geometry.ArcBinner
-import software.uncharted.xdata.geometry.CartesianBinning
-import software.uncharted.xdata.geometry.CartesianTileProjection2D
-import software.uncharted.xdata.geometry.DoubleTuple
-import software.uncharted.xdata.geometry.Line
-import Line.intPointToDoublePoint
-import software.uncharted.xdata.geometry.LineToPoints
-
-
+import software.uncharted.salt.core.projection.numeric.MercatorProjection
+import software.uncharted.xdata.geometry.{CartesianTileProjection2D, LineToPoints, Line, CartesianBinning, ArcBinner, MercatorTileProjection2D}
+import software.uncharted.xdata.geometry.Line.intPointToDoublePoint
 
 /**
   * A line projection that projects straight from lines to raster bins in one pass.
   *
-  * @param zoomLevels The zoom levels onto which to project
-  * @param min The minimum coordinates of the data space
-  * @param max The maximum coordinates of the data space
+  * @param zoomLevels   The zoom levels onto which to project
+  * @param min          The minimum coordinates of the data space
+  * @param max          The maximum coordinates of the data space
   * @param minLengthOpt The minimum length of line (in bins) to project
   * @param maxLengthOpt The maximum length of line (in bins) to project
-  * @param tms if true, the Y axis for tile coordinates only is flipped     *
+  * @param tms          if true, the Y axis for tile coordinates only is flipped     *
   */
-class SimpleLineProjection (zoomLevels: Seq[Int],
-                            min: (Double, Double),
-                            max: (Double, Double),
-                            minLengthOpt: Option[Int] = None,
-                            maxLengthOpt: Option[Int] = None,
-                            tms: Boolean = false)
-  extends CartesianTileProjection2D[(Double, Double, Double, Double), (Int, Int)] (min, max, tms)
-{
+class SimpleLineProjection(zoomLevels: Seq[Int],
+                           min: (Double, Double),
+                           max: (Double, Double),
+                           minLengthOpt: Option[Int] = None,
+                           maxLengthOpt: Option[Int] = None,
+                           tms: Boolean = true)
+  extends CartesianTileProjection2D[(Double, Double, Double, Double), (Int, Int)](min, max, tms) {
   /**
     * Project a data-space coordinate into the corresponding tile coordinate and bin coordinate
     *
     * @param coordinates the endpoints of a line (x0, y0, x1, y1)
-    * @param maxBin The maximum possible bin index (i.e. if your tile is 256x256, this would be (255,255))
+    * @param maxBin      The maximum possible bin index (i.e. if your tile is 256x256, this would be (255,255))
     * @return All the bins representing the given line if the given source row is within the bounds of the
     *         viz. None otherwise.
     */
@@ -91,28 +82,26 @@ class SimpleLineProjection (zoomLevels: Seq[Int],
 }
 
 
-
 /**
   * A line projection that projects straight from lines to raster bins in one pass, emitting only a leader of
   * predefined length on each end of the line.
   *
-  * @param zoomLevels The zoom levels onto which to project
-  * @param min The minimum coordinates of the data space
-  * @param max The maximum coordinates of the data space
+  * @param zoomLevels       The zoom levels onto which to project
+  * @param min              The minimum coordinates of the data space
+  * @param max              The maximum coordinates of the data space
   * @param leaderLineLength The number of bins to keep near each end of the line
-  * @param minLengthOpt The minimum length of line (in bins) to project
-  * @param maxLengthOpt The maximum length of line (in bins) to project
-  * @param tms if true, the Y axis for tile coordinates only is flipped     *
+  * @param minLengthOpt     The minimum length of line (in bins) to project
+  * @param maxLengthOpt     The maximum length of line (in bins) to project
+  * @param tms              if true, the Y axis for tile coordinates only is flipped     *
   */
-class SimpleLeaderLineProjection (zoomLevels: Seq[Int],
-                                  min: (Double, Double),
-                                  max: (Double, Double),
-                                  leaderLineLength: Int = 1024, // scalastyle:ignore
-                                  minLengthOpt: Option[Int] = None,
-                                  maxLengthOpt: Option[Int] = None,
-                                  tms: Boolean = false)
-  extends CartesianTileProjection2D[(Double, Double, Double, Double), (Int, Int)] (min, max, tms)
-{
+class SimpleLeaderLineProjection(zoomLevels: Seq[Int],
+                                 min: (Double, Double),
+                                 max: (Double, Double),
+                                 leaderLineLength: Int = 1024, // scalastyle:ignore
+                                 minLengthOpt: Option[Int] = None,
+                                 maxLengthOpt: Option[Int] = None,
+                                 tms: Boolean = false)
+  extends CartesianTileProjection2D[(Double, Double, Double, Double), (Int, Int)](min, max, tms) {
   private val leaderLineLengthSquared = leaderLineLength * leaderLineLength
 
   // scalastyle:off method.length
@@ -120,7 +109,7 @@ class SimpleLeaderLineProjection (zoomLevels: Seq[Int],
     * Project a data-space coordinate into the corresponding tile coordinate and bin coordinate
     *
     * @param coordinates The data-space coordinate
-    * @param maxBin The maximum possible bin index (i.e. if your tile is 256x256, this would be (255,255))
+    * @param maxBin      The maximum possible bin index (i.e. if your tile is 256x256, this would be (255,255))
     * @return A series of tile coordinate/bin index pairs if the given source row is within the bounds of the viz.
     *         None otherwise.
     */
@@ -195,6 +184,7 @@ class SimpleLeaderLineProjection (zoomLevels: Seq[Int],
       }.reduce((a, b) => (a ++ b).reduceLeftOption(_ ++ _))
     }
   }
+
   // scalastyle:ofn method.length
 
   /**
@@ -214,17 +204,16 @@ class SimpleLeaderLineProjection (zoomLevels: Seq[Int],
   * Fade the ends of a line (as produced by the SimpleLeaderLineProjection) so they are bright near the endpoints,
   * and dull near the middle.
   */
-class FadingSpreadingFunction (leaderLineLength: Int, maxBin: (Int, Int), _tms: Boolean)
+class FadingSpreadingFunction(leaderLineLength: Int, maxBin: (Int, Int), _tms: Boolean)
   extends SpreadingFunction[(Int, Int, Int), (Int, Int), Double]
-  with CartesianBinning
-{
+    with CartesianBinning {
   override protected def tms: Boolean = _tms
 
   /**
     * Spread a single value over multiple visualization-space coordinates
     *
     * @param coordsTraversable the visualization-space coordinates
-    * @param value  the value to spread
+    * @param value             the value to spread
     * @return Seq[(TC, BC, Option[T])] A sequence of tile coordinates, with the spread values
     */
   override def spread(coordsTraversable: Traversable[((Int, Int, Int), (Int, Int))],
@@ -267,33 +256,31 @@ class FadingSpreadingFunction (leaderLineLength: Int, maxBin: (Int, Int), _tms: 
 }
 
 
-
 /**
   * A line projection that projects straight from arcs to raster bins in one pass.  All arcs are drawn with the same
   * curvature, and go clockwise from source to destination.
   *
-  * @param zoomLevels The zoom levels onto which to project
-  * @param min The minimum coordinates of the data space
-  * @param max The maximum coordinates of the data space
-  * @param arcLength The curvature of the arcs drawn, in radians
+  * @param zoomLevels   The zoom levels onto which to project
+  * @param min          The minimum coordinates of the data space
+  * @param max          The maximum coordinates of the data space
+  * @param arcLength    The curvature of the arcs drawn, in radians
   * @param minLengthOpt The minimum length of line (in bins) to project
   * @param maxLengthOpt The maximum length of line (in bins) to project
-  * @param tms if true, the Y axis for tile coordinates only is flipped     *
+  * @param tms          if true, the Y axis for tile coordinates only is flipped     *
   */
-class SimpleArcProjection (zoomLevels: Seq[Int],
-                           min: (Double, Double),
-                           max: (Double, Double),
-                           arcLength: Double = math.Pi / 3,
-                           minLengthOpt: Option[Int] = Some(4),
-                           maxLengthOpt: Option[Int] = Some(1024),  // scalastyle:ignore
-                           tms: Boolean = false)
-  extends CartesianTileProjection2D[(Double, Double, Double, Double), (Int, Int)](min, max, tms)
-{
+class SimpleArcProjection(zoomLevels: Seq[Int],
+                          min: (Double, Double),
+                          max: (Double, Double),
+                          arcLength: Double = math.Pi / 3,
+                          minLengthOpt: Option[Int] = Some(4),
+                          maxLengthOpt: Option[Int] = Some(1024), // scalastyle:ignore
+                          tms: Boolean = false)
+  extends CartesianTileProjection2D[(Double, Double, Double, Double), (Int, Int)](min, max, tms) {
   /**
     * Project a data-space coordinate into the corresponding tile coordinate and bin coordinate
     *
-    * @param coordinates     the data-space coordinate
-    * @param maxBin The maximum possible bin index (i.e. if your tile is 256x256, this would be (255,255))
+    * @param coordinates the data-space coordinate
+    * @param maxBin      The maximum possible bin index (i.e. if your tile is 256x256, this would be (255,255))
     * @return An optional sequence of points on the arc between the input coordinates, if the given input coordinates
     *         are within the bounds of the viz. None otherwise.
     */
@@ -338,24 +325,22 @@ class SimpleArcProjection (zoomLevels: Seq[Int],
 }
 
 
-
 // scalastyle:off cyclomatic.complexity
 // scalastyle:off method.length
-class SimpleLeaderArcProjection (zoomLevels: Seq[Int],
-                                 min: (Double, Double),
-                                 max: (Double, Double),
-                                 leaderLength: Int,
-                                 arcLength: Double = math.Pi / 3,
-                                 minLengthOpt: Option[Int] = Some(4),
-                                 maxLengthOpt: Option[Int] = Some(1024),  // scalastyle:ignore
-                                 tms: Boolean = false)
-  extends CartesianTileProjection2D[(Double, Double, Double, Double), (Int, Int)](min, max, tms)
-{
+class SimpleLeaderArcProjection(zoomLevels: Seq[Int],
+                                min: (Double, Double),
+                                max: (Double, Double),
+                                leaderLength: Int,
+                                arcLength: Double = math.Pi / 3,
+                                minLengthOpt: Option[Int] = Some(4),
+                                maxLengthOpt: Option[Int] = Some(1024), // scalastyle:ignore
+                                tms: Boolean = false)
+  extends CartesianTileProjection2D[(Double, Double, Double, Double), (Int, Int)](min, max, tms) {
   /**
     * Project a data-space coordinate into the corresponding tile coordinate and bin coordinate
     *
     * @param coordinates The endpoints of an arc (x0, y0, x1, y1)
-    * @param maxBin The maximum possible bin index (i.e. if your tile is 256x256, this would be (255,255))
+    * @param maxBin      The maximum possible bin index (i.e. if your tile is 256x256, this would be (255,255))
     * @return The bins near the endpoins of the given arc, if within data space bounds. None otherwise.
     */
   override def project(coordinates: Option[(Double, Double, Double, Double)], maxBin: (Int, Int)): Option[Seq[((Int, Int, Int), (Int, Int))]] = {
@@ -419,7 +404,7 @@ class SimpleLeaderArcProjection (zoomLevels: Seq[Int],
         } else {
           None: Option[Seq[((Int, Int, Int), (Int, Int))]]
         }
-      }.reduce ((a, b) => (a ++ b).reduceLeftOption(_ ++ _))
+      }.reduce((a, b) => (a ++ b).reduceLeftOption(_ ++ _))
     }
   }
 
@@ -434,5 +419,70 @@ class SimpleLeaderArcProjection (zoomLevels: Seq[Int],
     bin._1 + bin._2 * (maxBin._1 + 1)
   }
 }
+
+
+object MercatorLineProjection {
+  val mercatorMin = (-180.0, -85.05112878)
+  val mercatorMax = (180.0, 85.05112878)
+}
+
+/**
+  * A projection for lines into 2D mercator (lon,lat) space
+  *
+  * @param minBounds    the minimum value of a data-space coordinate (minLon, minLat)
+  * @param maxBounds    the maximum value of a data-space coordinate (maxLon, maxLat)
+  * @param minLengthOpt The minimum length of line (in bins) to project
+  * @param maxLengthOpt The maximum length of line (in bins) to project
+  * @param zoomLevels   the TMS/WMS zoom levels to project into
+  */
+class MercatorLineProjection(zoomLevels: Seq[Int],
+                             minBounds: (Double, Double) = MercatorLineProjection.mercatorMin,
+                             maxBounds: (Double, Double) = MercatorLineProjection.mercatorMax,
+                             minLengthOpt: Option[Int] = None,
+                             maxLengthOpt: Option[Int] = None,
+                             tms: Boolean = true)
+  extends MercatorTileProjection2D[(Double, Double, Double, Double), (Int, Int)](minBounds, maxBounds, tms) {
+
+  private val mercatorProjection = new MercatorProjection(zoomLevels, minBounds, maxBounds, tms)
+
+  override def project(coordinates: Option[(Double, Double, Double, Double)], maxBin: (Int, Int)): Option[Seq[((Int, Int, Int), (Int, Int))]] = {
+    val xBins = maxBin._1 + 1
+    val yBins = maxBin._2 + 1
+
+    if (!coordinates.isDefined) {
+      None
+    } else {
+      // compute start and end-points of the line in WMS/TMS mercator space, for each zoomLevel
+      val startdc = (coordinates.get._1, coordinates.get._2)
+      val enddc = (coordinates.get._3, coordinates.get._4)
+      val start = mercatorProjection.project(Some(startdc), maxBin)
+      val end = mercatorProjection.project(Some(enddc), maxBin)
+
+      if (start.isDefined && end.isDefined) {
+        zoomLevels.map { level =>
+          // convert start and end points of line into universal bin coordinates for use in LineToPoints
+          val startUniversalBin = tileBinIndexToUniversalBinIndex(start.get(level)._1, start.get(level)._2, maxBin)
+          val endUniversalBin = tileBinIndexToUniversalBinIndex(end.get(level)._1, end.get(level)._2, maxBin)
+
+          val line2point = new LineToPoints(startUniversalBin, endUniversalBin)
+
+          if (minLengthOpt.map(minLength => line2point.totalLength >= minLength).getOrElse(true) &&
+            maxLengthOpt.map(maxLength => line2point.totalLength <= maxLength).getOrElse(true)) {
+            Some(line2point.rest().map { uBin => universalBinIndexToTileIndex(level, uBin, maxBin) }.toSeq)
+          } else {
+            None
+          }
+        }.reduce((a, b) => (a ++ b).reduceLeftOption(_ ++ _))
+      } else {
+        None
+      }
+    }
+  }
+
+  override def binTo1D(bin: (Int, Int), maxBin: (Int, Int)): Int = {
+    bin._1 + bin._2 * (maxBin._1 + 1)
+  }
+}
+
 // scalastyle:on method.length
 // scalastyle:on cyclomatic.complexity

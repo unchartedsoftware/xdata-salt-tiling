@@ -36,7 +36,7 @@ class PackageTest extends SparkFunSpec {
   private val testDir = "build/tmp/test_file_output/test_data"
   private val testLayer = "test_layer"
   private val testBucket = "uncharted-s3-client-test"
-  private val extension = "tst"
+  private val extension = ".tst"
 
   lazy val awsAccessKey = sys.env("AWS_ACCESS_KEY")
   lazy val awsSecretKey = sys.env("AWS_SECRET_KEY")

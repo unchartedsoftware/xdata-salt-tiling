@@ -12,24 +12,29 @@
   */
 package software.uncharted.xdata.ops.salt
 
+import java.io.{File, FileOutputStream, PrintWriter}
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row}
 import software.uncharted.salt.core.analytic.numeric.{MinMaxAggregator, SumAggregator}
 import software.uncharted.salt.core.generation.Series
 import software.uncharted.salt.core.generation.output.SeriesData
-import software.uncharted.salt.core.generation.request.{TileLevelRequest, TileRequest}
+import software.uncharted.salt.core.generation.request.TileLevelRequest
 
 import scala.util.Try
+import scala.util.parsing.json.JSONObject
 
-
-object CartesianSegmentOp {
+/**
+  * Segment operation using the mercator projection
+  */
+object MercatorSegmentOp {
 
   val defaultTileSize = 256
+  val defaultMaxSegLen = 1024
 
   /**
-    * Segment operation using cartesian projection
+    * Segment operation using the mercator projection
     *
-    * @param arcType    The type of line projection specified by the ArcType enum
     * @param minSegLen  The minimum length of line (in bins) to project
     * @param maxSegLen  The maximum length of line (in bins) to project
     * @param x1Col      The start x coordinate
@@ -45,9 +50,8 @@ object CartesianSegmentOp {
     * @return An RDD of tiles
     */
   // scalastyle:off parameter.number
-  def apply(arcType: ArcTypes.Value, // scalastyle:ignore
-            minSegLen: Option[Int],
-            maxSegLen: Option[Int],
+  def apply(minSegLen: Option[Int],
+            maxSegLen: Option[Int] = Some(defaultMaxSegLen),
             x1Col: String,
             y1Col: String,
             x2Col: String,
@@ -79,25 +83,11 @@ object CartesianSegmentOp {
     // Figure out our projection
     val minBounds = (xyBounds._1, xyBounds._2)
     val maxBounds = (xyBounds._3, xyBounds._4)
-    val leaderLineLength = 1024
-    val projection = arcType match {
-      case ArcTypes.FullLine =>
-        new SimpleLineProjection(zoomLevels, minBounds, maxBounds,
-          minLengthOpt = minSegLen, maxLengthOpt = maxSegLen, tms = tms)
-      case ArcTypes.LeaderLine =>
-        new SimpleLeaderLineProjection(zoomLevels, minBounds, maxBounds, leaderLineLength,
-          minLengthOpt = minSegLen, maxLengthOpt = maxSegLen, tms = tms)
-      case ArcTypes.FullArc =>
-        new SimpleArcProjection(zoomLevels, minBounds, maxBounds,
-          minLengthOpt = minSegLen, maxLengthOpt = maxSegLen, tms = tms)
-      case ArcTypes.LeaderArc =>
-        new SimpleLeaderArcProjection(zoomLevels, minBounds, maxBounds, leaderLineLength,
-          minLengthOpt = minSegLen, maxLengthOpt = maxSegLen, tms = tms)
-    }
+
+    val projection = new MercatorLineProjection(zoomLevels, minBounds, maxBounds, minSegLen, maxSegLen, tms = tms)
 
     val request = new TileLevelRequest(zoomLevels, (tc: (Int, Int, Int)) => tc._1)
 
-    // Put together a series object to encapsulate our tiling job
     val series = new Series(
       // Maximum bin indices
       (tileSize - 1, tileSize - 1),
@@ -110,8 +100,4 @@ object CartesianSegmentOp {
 
     BasicSaltOperations.genericTiling(series)(request)(input.rdd)
   }
-}
-
-object ArcTypes extends Enumeration {
-  val FullLine, LeaderLine, FullArc, LeaderArc = Value
 }
