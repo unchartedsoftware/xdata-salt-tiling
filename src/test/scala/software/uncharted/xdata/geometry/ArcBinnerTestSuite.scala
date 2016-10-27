@@ -12,11 +12,13 @@
   */
 package software.uncharted.xdata.geometry
 
+
+
 import org.scalatest.FunSuite
 import org.scalatest.Matchers._
 import org.scalatest.matchers.{BeMatcher, MatchResult}
 
-import scala.languageFeature.implicitConversions
+import scala.language.implicitConversions
 
 
 

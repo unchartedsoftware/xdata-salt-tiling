@@ -14,7 +14,7 @@ package software.uncharted.xdata.geometry
 
 
 
-import scala.languageFeature.implicitConversions
+import scala.language.implicitConversions
 
 
 
