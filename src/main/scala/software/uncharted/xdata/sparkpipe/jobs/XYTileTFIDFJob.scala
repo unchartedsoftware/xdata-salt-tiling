@@ -57,15 +57,11 @@ object XYTileTFIDFJob extends AbstractJob {
 
     val schema = parseSchema(config)
     val tilingConfig = parseTilingParameters(config)
+    val outputOperation = parseOutputOperation(config)
     val tfidfConfig = parseTFIDFConfig(config)
 
     val TFOperation = createProjection(tfidfConfig, tilingConfig)
     val IDFOperation = TFIDFWordCloud.doTFIDF(tfidfConfig.wordsToKeep)(_)
-
-    val outputOperation = createTileOutputOperation(config).getOrElse {
-      logger.error("Output operation config")
-      sys.exit(-1)
-    }
 
     // Create the spark context from the supplied config
     val sqlc = SparkConfig(config)
