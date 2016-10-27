@@ -22,25 +22,9 @@ import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createTileOutputOperatio
 
 import scala.util.{Failure, Success}
 
-object XYTileTFIDFJob extends Logging {
-  // parse the schema, and exit on any errors
-  private def getSchema (config: Config) = {
-    Schema(config).getOrElse {
-      error("Couldn't create schema - exiting")
-      sys.exit(-1)
-    }
-  }
-
-  // Parse tiling parameters out of supplied config
-  private def getTilingConfig (config: Config) = {
-    TilingConfig(config).getOrElse {
-      logger.error("Invalid tiling config")
-      sys.exit(-1)
-    }
-  }
-
+object XYTileTFIDFJob extends AbstractJob {
   // Parse TF/IDF parameters out of supplied config
-  private def getTFIDFConfig (config: Config) = {
+  private def parseTFIDFConfig (config: Config) = {
     XYTileTFIDFConfig(config) match {
       case Success(c) => c
       case Failure(e) =>
@@ -71,9 +55,9 @@ object XYTileTFIDFJob extends Logging {
   def execute (config: Config): Unit = {
     config.resolve()
 
-    val schema = getSchema(config)
-    val tilingConfig = getTilingConfig(config)
-    val tfidfConfig = getTFIDFConfig(config)
+    val schema = parseSchema(config)
+    val tilingConfig = parseTilingParameters(config)
+    val tfidfConfig = parseTFIDFConfig(config)
 
     val TFOperation = createProjection(tfidfConfig, tilingConfig)
     val IDFOperation = TFIDFWordCloud.doTFIDF(tfidfConfig.wordsToKeep)(_)
