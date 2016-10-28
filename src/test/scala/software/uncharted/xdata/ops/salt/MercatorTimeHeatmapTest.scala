@@ -50,7 +50,7 @@ class MercatorTimeHeatmapTest extends SparkFunSpec {
         TestData(-179, 84.0, 0.1, 301L),
         TestData(-179, 84.0, 0.1, 301L))
 
-    val tsqlc = sqlc
+    val tsqlc = sparkSession
     import tsqlc.implicits._ // scalastyle:ignore
 
     sc.parallelize(testData).toDF()

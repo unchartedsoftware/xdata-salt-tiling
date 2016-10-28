@@ -27,7 +27,7 @@ class TextTest extends SparkFunSpec {
         TFIDFData(5, "this is the final test i did it".split(" "))
       ))
 
-      val dfData = sqlc.createDataFrame(rddData)
+      val dfData = sparkSession.createDataFrame(rddData)
 
       val result = text.tfidf("text", "tfidfs")(dfData)
 

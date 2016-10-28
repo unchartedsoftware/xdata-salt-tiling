@@ -20,7 +20,7 @@ import scala.io.Source
 import scala.collection.JavaConverters._ // scalastyle:ignore
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
-import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.{SQLContext, SparkSession}
 import org.apache.spark.sql.types.StructType
 import software.uncharted.xdata.sparkpipe.config.{Schema, SparkConfig, TilingConfig}
 import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createTileOutputOperation, OutputOperation}
@@ -78,7 +78,7 @@ trait AbstractJob extends Logging {
     * @param sqlc An SQL context in which to run spark processes in our job
     * @param config The job configuration
     */
-  def execute(sqlc: SQLContext, config: Config): Unit
+  def execute(sparkSession: SparkSession, config: Config): Unit
 
   def execute(args: Array[String]): Unit = {
     // get the properties file path
@@ -120,11 +120,11 @@ trait AbstractJob extends Logging {
       debugConfig(config)
     }
 
-    val sqlc = SparkConfig(config)
+    val sparkSession = SparkConfig(config)
     try {
-      execute(sqlc, config)
+      execute(sparkSession, config)
     } finally {
-      sqlc.sparkContext.stop()
+      sparkSession.sparkContext.stop()
     }
   }
 
