@@ -12,21 +12,21 @@
  */
 package software.uncharted.xdata.sparkpipe.config
 
-import com.typesafe.config.{Config, ConfigException}
-import grizzled.slf4j.Logging
+import com.typesafe.config.Config
 import org.apache.spark.sql.types.{BooleanType, ByteType, DateType, DoubleType, FloatType, IntegerType, LongType, ShortType, StringType, StructField, StructType, TimestampType}
 
 import scala.collection.JavaConverters.asScalaSetConverter
 import scala.collection.{SortedMap, immutable}
+import scala.util.Try
 
-object Schema extends Logging {
+object Schema {
 
   case class FieldData(name: String, ftype: String, index: Int)
 
   case class FieldDataException(message: String) extends Exception(message)
 
-  def apply(config: Config): Option[StructType] = {
-    try {
+  def apply(config: Config): Try[StructType] = {
+    Try {
       // Extract and sort fields
       val fieldNames = config.getObject("csvSchema").keySet().asScala.filterNot(_ == "rowSize")
       val fieldData = fieldNames.map { f =>
@@ -52,14 +52,7 @@ object Schema extends Logging {
       }
 
       // Create spark sql field types from contiguous field data
-      Some(StructType(createStructFields(contiguousFields)))
-    } catch {
-      case e: ConfigException =>
-        error("Parse failure reading config file", e)
-        None
-      case fde: FieldDataException =>
-        error("Parse failure creating schema from config file", fde)
-        None
+      StructType(createStructFields(contiguousFields))
     }
   }
 

@@ -12,12 +12,13 @@
  */
 package software.uncharted.xdata.sparkpipe.config
 
-import com.typesafe.config.{Config, ConfigException}
-import grizzled.slf4j.Logging
+import com.typesafe.config.Config
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.{SparkConf, SparkContext}
 
-import scala.collection.JavaConverters._      // scalastyle:ignore
+import scala.collection.JavaConverters._ // scalastyle:ignore
+import scala.util.Try
+
 
 // scalastyle:off multiple.string.literals
 
@@ -37,7 +38,7 @@ object SparkConfig {
 
 // Parse tiling parameter and store results
 case class TilingConfig(levels: List[Int], source: String, bins: Option[Int] = None, tms: Boolean)
-object TilingConfig extends Logging {
+object TilingConfig {
   val tilingKey= "tiling"
   val levelsKey = "levels"
   val binsKey = "bins"
@@ -45,18 +46,15 @@ object TilingConfig extends Logging {
   val tmsKey = "tms"
   val defaultTMS = false
 
-  def apply(config: Config): Option[TilingConfig] = {
-    try {
+  def apply(config: Config): Try[TilingConfig] = {
+    Try {
       val tilingConfig = config.getConfig(tilingKey)
-      Some(TilingConfig(
+      TilingConfig(
         tilingConfig.getIntList(levelsKey).asScala.map(_.asInstanceOf[Int]).toList,
         tilingConfig.getString(sourceKey),
         if (tilingConfig.hasPath(binsKey)) Some(tilingConfig.getInt(binsKey)) else None,
-        if (tilingConfig.hasPath(tmsKey)) tilingConfig.getBoolean(tmsKey) else defaultTMS))
-    } catch {
-      case e: ConfigException =>
-        error(s"Failure parsing arguments from [$tilingKey]", e)
-        None
+        if (tilingConfig.hasPath(tmsKey)) tilingConfig.getBoolean(tmsKey) else defaultTMS
+      )
     }
   }
 }
@@ -64,24 +62,20 @@ object TilingConfig extends Logging {
 
 
 case class FileOutputConfig(destPath: String, layer: String, extension: String)
-object FileOutputConfig extends Logging {
+object FileOutputConfig {
   val fileOutputKey = "fileOutput"
   val pathKey = "dest"
   val layerKey = "layer"
   val extensionKey = "ext"
   val defaultExtensionKey = ".bin"
 
-  def apply(config: Config): Option[FileOutputConfig] = {
-    try {
+  def apply(config: Config): Try[FileOutputConfig] = {
+    Try {
       val fileConfig = config.getConfig(fileOutputKey)
       val path = fileConfig.getString(pathKey)
       val layer = fileConfig.getString(layerKey)
       val extension = if (fileConfig.hasPath(extensionKey)) fileConfig.getString(extensionKey) else defaultExtensionKey
-      Some(FileOutputConfig(path, layer, extension))
-    } catch {
-      case e: ConfigException =>
-        error(s"Failure parsing arguments from [$fileOutputKey]", e)
-        None
+      FileOutputConfig(path, layer, extension)
     }
   }
 }
@@ -90,7 +84,7 @@ object FileOutputConfig extends Logging {
 
 // parse S3 output config
 case class S3OutputConfig(accessKey: String, secretKey: String, bucket: String, layer: String, extension: String)
-object S3OutputConfig extends Logging {
+object S3OutputConfig {
   val s3OutputKey = "s3Output"
   val awsAccessKey = "awsAccessKey"
   val awsSecretKey = "awsSecretKey"
@@ -99,42 +93,34 @@ object S3OutputConfig extends Logging {
   val extensionKey = "ext"
   val defaultExtension = "bin"
 
-  def apply(config: Config): Option[S3OutputConfig] = {
-    try {
+  def apply(config: Config): Try[S3OutputConfig] = {
+    Try {
       val s3Config = config.getConfig(s3OutputKey)
       val awsAccess = s3Config.getString(awsAccessKey)
       val awsSecret = s3Config.getString(awsSecretKey)
       val bucket = s3Config.getString(bucketKey)
       val layer = s3Config.getString(layerKey)
       val extension = if (s3Config.hasPath(extensionKey)) s3Config.getString(extensionKey) else defaultExtension
-      Some(S3OutputConfig(awsAccess, awsSecret, bucket, layer, extension))
-    } catch {
-      case e: ConfigException =>
-        error(s"Failure parsing arguments from [$s3OutputKey]", e)
-        None
+      S3OutputConfig(awsAccess, awsSecret, bucket, layer, extension)
     }
   }
 }
 
 case class HBaseOutputConfig (configFiles: Seq[String], layer: String, qualifier: String)
-object HBaseOutputConfig extends Logging {
+object HBaseOutputConfig {
   val hBaseOutputKey = "hbaseOutput"
   val configFilesKey = "configFiles"
   val layerKey = "layer"
   val qualifierKey = "qualifier"
 
-  def apply (config: Config): Option[HBaseOutputConfig] = {
-    try {
+  def apply (config: Config): Try[HBaseOutputConfig] = {
+    Try {
       val hbaseConfig = config.getConfig(hBaseOutputKey)
       val configFilesList = hbaseConfig.getStringList(configFilesKey)
       val configFiles = configFilesList.toArray(new Array[String](configFilesList.size()))
       val layer = hbaseConfig.getString(layerKey)
       val qualifier = hbaseConfig.getString(qualifierKey)
-      Some(HBaseOutputConfig(configFiles, layer, qualifier))
-    } catch {
-      case e: ConfigException =>
-        error(s"Failure parsing arguments from [$hBaseOutputKey]", e)
-        None
+      HBaseOutputConfig(configFiles, layer, qualifier)
     }
   }
 }
