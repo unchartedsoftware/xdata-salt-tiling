@@ -16,10 +16,12 @@ import com.typesafe.config.Config
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SQLContext, SparkSession}
-import software.uncharted.xdata.ops.io.{writeBytesToFile, writeBytesToS3, writeToFile, writeToS3}
-import software.uncharted.xdata.sparkpipe.config.{FileOutputConfig, S3OutputConfig}
-
+import software.uncharted.xdata.ops.io.{writeBytesToFile, writeBytesToS3, writeBytesToHBase, writeToFile, writeToS3, writeToHBase}
+import software.uncharted.xdata.sparkpipe.config.{HBaseOutputConfig, FileOutputConfig, S3OutputConfig}
 import scala.collection.JavaConverters._ // scalastyle:ignore
+import scala.util.{Failure, Try}
+
+
 
 object JobUtil {
   type OutputOperation = (RDD[((Int, Int, Int), Seq[Byte])]) => RDD[((Int, Int, Int), Seq[Byte])]
@@ -39,23 +41,27 @@ object JobUtil {
   }
 
 
-  def createTileOutputOperation(config: Config): Option[OutputOperation] = {
+  def createTileOutputOperation(config: Config): Try[OutputOperation] = {
     if (config.hasPath(FileOutputConfig.fileOutputKey)) {
       FileOutputConfig(config).map(c => writeToFile(c.destPath, c.layer, c.extension))
     } else if (config.hasPath(S3OutputConfig.s3OutputKey)) {
       S3OutputConfig(config).map(c => writeToS3(c.accessKey, c.secretKey, c.bucket, c.layer))
+    } else if (config.hasPath(HBaseOutputConfig.hBaseOutputKey)) {
+      HBaseOutputConfig(config).map(c => writeToHBase(c.configFiles, c.layer, c.qualifier))
     } else {
-      None
+      Failure(new Exception("No output operation given"))
     }
   }
 
-  def createMetadataOutputOperation(config: Config): Option[(String, Seq[Byte]) => Unit] = {
+  def createMetadataOutputOperation(config: Config): Try[(String, Seq[Byte]) => Unit] = {
     if (config.hasPath(FileOutputConfig.fileOutputKey)) {
       FileOutputConfig(config).map(c => writeBytesToFile(c.destPath, c.layer))
     } else if (config.hasPath(S3OutputConfig.s3OutputKey)) {
       S3OutputConfig(config).map(c => writeBytesToS3(c.accessKey, c.secretKey, c.bucket, c.layer))
+    } else if (config.hasPath(HBaseOutputConfig.hBaseOutputKey)) {
+      HBaseOutputConfig(config).map(c => writeBytesToHBase(c.configFiles, c.layer, c.qualifier))
     } else {
-      None
+      Failure(new Exception("No metadata output operation given"))
     }
   }
 }

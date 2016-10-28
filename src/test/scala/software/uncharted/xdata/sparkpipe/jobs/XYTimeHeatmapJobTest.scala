@@ -20,7 +20,7 @@ import org.scalatest.FunSpec
 
 class XYTimeHeatmapJobTest extends FunSpec {
 
-  private val testOutputDir: String = "build/tmp/test_file_output/test_heatmap"
+  private val testOutputDir: String = "build/tmp/test_file_output/test_time_heatmap"
   private val suffix: String = "bin"
 
   describe("XYTimeHeatmapJobTest") {
@@ -34,7 +34,7 @@ class XYTimeHeatmapJobTest extends FunSpec {
         val oldDir = System.getProperty("user.dir")
         try {
           // run the job
-          val path = classOf[XYTimeHeatmapJobTest].getResource("/tiling-file-io.conf").toURI.getPath
+          val path = classOf[XYTimeHeatmapJobTest].getResource("/tiling-time-file-io.conf").toURI.getPath
           // Make sure to run the test from the correct directory
           val newDir = path.substring(0, path.indexOf("xdata-pipeline-ops") + 18)
           System.setProperty("user.dir", newDir)
@@ -78,7 +78,7 @@ class XYTimeHeatmapJobTest extends FunSpec {
 
           assertResult((Set(), Set()))((expected diff files, files diff expected))
         } finally {
-          FileUtils.deleteDirectory(new File(testOutputDir, suffix))
+          FileUtils.deleteDirectory(new File(testOutputDir))
         }
       }
     }

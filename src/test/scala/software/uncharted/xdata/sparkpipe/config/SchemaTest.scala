@@ -83,19 +83,19 @@ class SchemaTest extends FunSpec {
                        |}
                      """.stripMargin
         val config = ConfigFactory.parseString(csvSchema)
-        assertResult(None)(Schema(config))
+        assert(Schema(config).isFailure)
       }
 
       it("should fail on unsupported variable types") {
         val csvSchema = "csvSchema { a { type = blarg, index = 0} }"
         val config = ConfigFactory.parseString(csvSchema)
-        assertResult(None)(Schema(config))
+        assert(Schema(config).isFailure)
       }
 
       it("should fail on variables that don't have both type and index") {
         val csvSchema = "csvSchema { a { index = 0} } "
         val config = ConfigFactory.parseString(csvSchema)
-        assertResult(None)(Schema(config))
+        assert(Schema(config).isFailure)
       }
     }
   }

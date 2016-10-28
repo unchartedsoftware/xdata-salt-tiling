@@ -420,6 +420,12 @@ class SimpleLeaderArcProjection(zoomLevels: Seq[Int],
   }
 }
 
+
+object MercatorLineProjection {
+  val mercatorMin = (-180.0, -85.05112878)
+  val mercatorMax = (180.0, 85.05112878)
+}
+
 /**
   * A projection for lines into 2D mercator (lon,lat) space
   *
@@ -430,8 +436,8 @@ class SimpleLeaderArcProjection(zoomLevels: Seq[Int],
   * @param zoomLevels   the TMS/WMS zoom levels to project into
   */
 class MercatorLineProjection(zoomLevels: Seq[Int],
-                             minBounds: (Double, Double) = (-180, -85.05112878),
-                             maxBounds: (Double, Double) = (180, 85.05112878),
+                             minBounds: (Double, Double) = MercatorLineProjection.mercatorMin,
+                             maxBounds: (Double, Double) = MercatorLineProjection.mercatorMax,
                              minLengthOpt: Option[Int] = None,
                              maxLengthOpt: Option[Int] = None,
                              tms: Boolean = true)

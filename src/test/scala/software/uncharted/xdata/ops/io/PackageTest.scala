@@ -16,7 +16,7 @@ import java.io.File
 import java.nio.file.{Paths, Files}
 
 import org.apache.commons.io.FileUtils
-import software.uncharted.salt.core.generation.output.{TestSeriesData, SeriesData}
+import software.uncharted.salt.core.generation.output.TestSeriesData
 import software.uncharted.salt.core.util.SparseArray
 import software.uncharted.xdata.ops.salt.MercatorTimeProjection
 import software.uncharted.xdata.spark.SparkFunSpec
@@ -37,7 +37,7 @@ class PackageTest extends SparkFunSpec {
   private val testDir = "build/tmp/test_file_output/test_data"
   private val testLayer = "test_layer"
   private val testBucket = "uncharted-s3-client-test"
-  private val extension = "tst"
+  private val extension = ".tst"
 
   lazy val awsAccessKey = sys.env("AWS_ACCESS_KEY")
   lazy val awsSecretKey = sys.env("AWS_SECRET_KEY")
@@ -233,6 +233,19 @@ class PackageTest extends SparkFunSpec {
           0, 0, 0, 0, 0, 0, 20, 64,
           0, 0, 0, 0, 0, 0, 24, 64,
           0, 0, 0, 0, 0, 0, 28, 64))(result(1)._2)
+    }
+  }
+
+  describe("#mkRowId") {
+    it("should form proper IDs without suffix or prefix") {
+      assertResult("04,07,03")(mkRowId("", ",", "")(4, 7, 3))
+      assertResult("03:1:3")(mkRowId("", ":", "")(3, 1, 3))
+      assertResult("10--0045--0110")(mkRowId("", "--", "")(10,45,110))
+    }
+    it("should prepend and append prefix and suffix properly") {
+      assertResult("abc/04/07/03.bin")(mkRowId("abc/", "/", ".bin")(4, 7, 3))
+      assertResult("abc/03:1:3.bin")(mkRowId("abc/", ":", ".bin")(3, 1, 3))
+      assertResult("abc/10--0045--0110.bin")(mkRowId("abc/", "--", ".bin")(10,45,110))
     }
   }
 

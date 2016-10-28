@@ -14,11 +14,11 @@ package software.uncharted.xdata.sparkpipe.config
 
 import java.io.FileReader
 
-import com.typesafe.config.{Config, ConfigException}
-import grizzled.slf4j.Logging
+import com.typesafe.config.Config
 import org.apache.commons.csv.CSVFormat
 import software.uncharted.xdata.ops.salt.RangeDescription
 import scala.collection.JavaConverters._ // scalastyle:ignore
+import scala.util.Try
 
 
 
@@ -32,7 +32,7 @@ case class XYTimeTopicsConfig(xCol: String,
                               termList: Map[String, String],
                               projection: Option[String] = None)
 
-object XYTimeTopicsConfig extends Logging {
+object XYTimeTopicsConfig {
 
   val xyTimeTopicsKey = "xyTimeTopics"
   val timeFormatKey = "timeFormat"
@@ -47,11 +47,11 @@ object XYTimeTopicsConfig extends Logging {
   val topicLimitKey = "topicLimit"
   val termPathKey = "terms"
 
-  def apply(config: Config): Option[XYTimeTopicsConfig] = {
-    try {
+  def apply(config: Config): Try[XYTimeTopicsConfig] = {
+    Try {
       val topicConfig = config.getConfig(xyTimeTopicsKey)
 
-      Some(XYTimeTopicsConfig(
+      XYTimeTopicsConfig(
         topicConfig.getString(xColumnKey),
         topicConfig.getString(yColumnKey),
         topicConfig.getString(timeColumnKey),
@@ -59,12 +59,8 @@ object XYTimeTopicsConfig extends Logging {
         RangeDescription.fromMin(topicConfig.getLong(timeMinKey), topicConfig.getLong(timeStepKey), topicConfig.getInt(timeCountKey)),
         topicConfig.getInt(topicLimitKey),
         readTerms(topicConfig.getString(termPathKey)),
-        if (topicConfig.hasPath(projectionKey)) Some(topicConfig.getString(projectionKey)) else None)
+        if (topicConfig.hasPath(projectionKey)) Some(topicConfig.getString(projectionKey)) else None
       )
-    } catch {
-      case e: ConfigException =>
-        error(s"Failure parsing arguments from [$xyTimeTopicsKey]", e)
-        None
     }
   }
 
