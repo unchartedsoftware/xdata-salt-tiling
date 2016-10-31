@@ -12,10 +12,9 @@
  */
 package software.uncharted.xdata.sparkpipe.config
 
-import com.typesafe.config.Config
-import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.{SQLContext, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext}
-
+import com.typesafe.config.Config
 import scala.collection.JavaConverters._ // scalastyle:ignore
 import scala.util.Try
 
@@ -26,12 +25,14 @@ import scala.util.Try
 object SparkConfig {
   val sparkKey = "spark"
 
-  def apply(config: Config): SQLContext = {
-    val sparkConfig = config.getConfig(sparkKey)
+  def apply(config: Config): SparkSession = {
     val conf = new SparkConf()
-    sparkConfig.entrySet().asScala.foreach(e => conf.set(s"spark.${e.getKey}", e.getValue.unwrapped().asInstanceOf[String]))
-    val sc = new SparkContext(conf)
-    new SQLContext(sc)
+    config.getConfig(sparkKey)
+      .entrySet()
+      .asScala
+      .foreach(e => conf.set(s"spark.${e.getKey}", e.getValue.unwrapped().asInstanceOf[String]))
+
+    SparkSession.builder.config(conf).getOrCreate()
   }
 }
 

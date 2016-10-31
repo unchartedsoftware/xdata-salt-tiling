@@ -14,7 +14,7 @@ package software.uncharted.xdata.sparkpipe.jobs
 
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
-import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.{SQLContext, SparkSession}
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.xdata.ops.io.serializeBinArray
 import software.uncharted.xdata.ops.salt.{CartesianTimeHeatmap, MercatorTimeHeatmap}
@@ -26,7 +26,7 @@ object XYTimeHeatmapJob extends AbstractJob {
 
   private val convertedTime: String = "convertedTime"
 
-  def execute(sqlc: SQLContext, config: Config): Unit = {
+  def execute(sparkSession: SparkSession, config: Config): Unit = {
     val schema = parseSchema(config)
     val tilingConfig = parseTilingParameters(config)
     val outputOperation = parseOutputOperation(config)
@@ -49,7 +49,7 @@ object XYTimeHeatmapJob extends AbstractJob {
     }
 
     // Pipe the dataframe
-    Pipe(dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc))
+    Pipe(dataframeFromSparkCsv(config, tilingConfig.source, schema, sparkSession))
       .to(_.select(heatmapConfig.xCol, heatmapConfig.yCol, heatmapConfig.timeCol))
       .to(_.cache())
       .to(heatmapOperation)

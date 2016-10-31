@@ -22,7 +22,6 @@ import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.generation.request.TileLevelRequest
 
 import scala.util.Try
-import scala.util.parsing.json.JSONObject
 
 /**
   * Segment operation using the mercator projection

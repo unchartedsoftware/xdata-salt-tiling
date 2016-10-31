@@ -52,7 +52,7 @@ class MercatorTimeTopicTest extends SparkFunSpec {
         TopicTestData(-179, 84.0, 301L, createTestString(17, 1717)),
         TopicTestData(-179, 84.0, 301L, createTestString(18, 1818)))
 
-    val tsqlc = sqlc
+    val tsqlc = sparkSession
     import tsqlc.implicits._ // scalastyle:ignore
 
     sc.parallelize(testData).toDF()

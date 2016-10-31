@@ -55,7 +55,7 @@ class CartesianTimeHeatmapTest extends SparkFunSpec {
         CartesianTestData(0.01, 0.99, 0.1, 301L),
         CartesianTestData(0.01, 0.99, 0.1, 301L))
 
-    val tsqlc = sqlc
+    val tsqlc = sparkSession
     import tsqlc.implicits._ // scalastyle:ignore
 
     sc.parallelize(testData).toDF()

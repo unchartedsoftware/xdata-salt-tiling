@@ -17,15 +17,13 @@ import java.io.{File, FileOutputStream, PrintWriter}
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.SparkSession
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.xdata.ops.salt.{CartesianSegmentOp, MercatorSegmentOp}
 import software.uncharted.xdata.sparkpipe.config.{Schema, SparkConfig, TilingConfig, XYSegmentConfig}
 import software.uncharted.xdata.ops.io.serializeBinArray
 import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOperation, createTileOutputOperation, dataframeFromSparkCsv}
-
-import scala.util.parsing.json.JSONObject
 
 /**
   * Executes the a segment job configured given a path to a configuration file
@@ -38,7 +36,7 @@ import scala.util.parsing.json.JSONObject
   */
 // scalastyle:off method.length
 object XYSegmentJob extends AbstractJob {
-  def execute(sqlc: SQLContext, config: Config): Unit = {
+  def execute(sparkSession: SparkSession, config: Config): Unit = {
     val schema = parseSchema(config)
     val tilingConfig = parseTilingParameters(config)
     val outputOperation = parseOutputOperation(config)
@@ -80,7 +78,7 @@ object XYSegmentJob extends AbstractJob {
     }
 
     // Pipe the dataframe
-    Pipe(dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc))
+    Pipe(dataframeFromSparkCsv(config, tilingConfig.source, schema, sparkSession))
       .to(_.select(segmentConfig.x1Col, segmentConfig.y1Col, segmentConfig.x2Col, segmentConfig.y2Col))
       .to(_.cache())
       .to(segmentOperation)

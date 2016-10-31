@@ -14,7 +14,7 @@ package software.uncharted.xdata.sparkpipe.jobs
 
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
-import org.apache.spark.sql.{DataFrame, SQLContext}
+import org.apache.spark.sql.{DataFrame, SQLContext, SparkSession}
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.temporal.parseDate
 import software.uncharted.sparkpipe.ops.core.dataframe.text.{includeTermFilter, split}
@@ -28,7 +28,7 @@ object XYTimeTopicsJob extends AbstractJob {
 
   private val convertedTime = "convertedTime"
 
-  def execute(sqlc: SQLContext, config: Config): Unit = {
+  def execute(sparkSession: SparkSession, config: Config): Unit = {
     val schema = parseSchema(config)
     val tilingConfig = parseTilingParameters(config)
     val outputOperation = parseOutputOperation(config)
@@ -49,7 +49,7 @@ object XYTimeTopicsJob extends AbstractJob {
     }
 
     // Pipe the dataframe
-    Pipe(dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc))
+    Pipe(dataframeFromSparkCsv(config, tilingConfig.source, schema, sparkSession))
       .to(split(topicsConfig.textCol, "\\b+"))
       .to(includeTermFilter(topicsConfig.textCol, topicsConfig.termList.keySet))
       .to(_.select(topicsConfig.xCol, topicsConfig.yCol, topicsConfig.timeCol, topicsConfig.textCol))
