@@ -85,8 +85,7 @@ object LDAAugmentationJob extends AbstractJob {
     val texts = inputData.map { case (id, (rawRecord, text)) => (id, text) }
     dbg("(1) There are " + texts.count + " texts")
     // Perform LDA on the text column
-    val topics = LDAOp.lda(ldaConfig.numTopics, ldaConfig.wordsPerTopic, ldaConfig.topicsPerDocument,
-                           ldaConfig.maxIterations, ldaConfig.chkptInterval)(texts)
+    val topics = LDAOp.textLDA(ldaConfig, texts)
     dbg("(2) There are " + topics.count + " topic records")
     // Reformat topics for output
     val formattedTopics = topics.map { case (docId, topics) =>

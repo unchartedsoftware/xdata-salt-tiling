@@ -61,6 +61,8 @@ class BruteForceLeaderLineReducer (maxBin: (Int, Int),
     closeTiles.distinct
   }
 
+  // Just stub implementations of projection functions - we aren't testing those.
   override def project(dc: Option[(Int, Int, Int)], maxBin: ((Int, Int), (Int, Int))): Option[Seq[((Int, Int, Int), ((Int, Int), (Int, Int)))]] = None
   override def binTo1D(bin: ((Int, Int), (Int, Int)), maxBin: ((Int, Int), (Int, Int))): Int = 0
+  override def binFrom1D(index: Int, maxBin: ((Int, Int), (Int, Int))): ((Int, Int), (Int, Int)) = ((0, 0), (0, 0))
 }

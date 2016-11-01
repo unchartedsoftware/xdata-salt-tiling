@@ -22,8 +22,10 @@ import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.types.StructType
-import software.uncharted.xdata.sparkpipe.config.{Schema, SparkConfig, TilingConfig}
-import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createTileOutputOperation, OutputOperation}
+import software.uncharted.salt.core.projection.numeric.{CartesianProjection, MercatorProjection, NumericProjection}
+import software.uncharted.xdata.sparkpipe.config.{ProjectionConfig, CartesianProjectionConfig, MercatorProjectionConfig}
+import software.uncharted.xdata.sparkpipe.config.{TilingConfig, Schema, SparkConfig}
+import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{OutputOperation, createTileOutputOperation}
 
 import scala.util.Try
 
@@ -71,6 +73,19 @@ trait AbstractJob extends Logging {
       sys.exit(-1)
     }
   }
+
+  protected def createProjection (config: ProjectionConfig, levels: Seq[Int]):
+  NumericProjection[(Double, Double), (Int, Int, Int), (Int, Int)] =
+  {
+    config match {
+      case p: MercatorProjectionConfig =>
+        new MercatorProjection(levels)
+      case p: CartesianProjectionConfig =>
+        new CartesianProjection(levels, (p.minX, p.minY), (p.maxX, p.maxY))
+    }
+  }
+
+
 
   /**
     * This function actually executes the task the job describes

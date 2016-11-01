@@ -17,7 +17,7 @@ import grizzled.slf4j.Logging
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.{SparkConf, SparkContext}
 
-import scala.collection.JavaConverters._      // scalastyle:ignore
+import scala.collection.JavaConverters._ // scalastyle:ignore
 
 // scalastyle:off multiple.string.literals
 
@@ -37,6 +37,7 @@ object SparkConfig {
     new SQLContext(sc)
   }
 }
+
 
 
 // Parse tiling parameter and store results

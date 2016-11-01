@@ -25,7 +25,11 @@ import software.uncharted.xdata.sparkpipe.jobs.JobUtil.dataframeFromSparkCsv
 
 
 
-object XYTileTFIDFJob extends AbstractJob {
+/**
+  * A job that takes tsv data, breaks out a document from each entry as a word bag, tiles the documents into
+  * tile-based word bags, and runs Latent Dirichlet Allocation on those tile word bags
+  */
+class XYTileLDAJob extends AbstractJob {
   // Parse tile topic parameters out of supplied config
   private def parseTileTopicConfig (config: Config) = {
     TileTopicConfig(config) match {
@@ -56,13 +60,15 @@ object XYTileTFIDFJob extends AbstractJob {
       projection,
       tilingConfig.levels
     )(_)
+    val IDFOperation = WordCloudOperations.doTFIDFByTile[Nothing](tileTopicConfig.wordsToKeep)(_)
+
     // Create the dataframe from the input config
     val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc)
 
     // Process our data
     Pipe(df)
       .to(wordCloudTileOp)
-      .to(WordCloudOperations.doTFIDFByTile(tileTopicConfig.wordsToKeep))
+      .to(IDFOperation)
       .to(serializeElementDoubleScore)
       .to(outputOperation)
       .run

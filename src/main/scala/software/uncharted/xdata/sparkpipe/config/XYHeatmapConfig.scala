@@ -60,14 +60,16 @@ object XYHeatmapConfig {
   val VALUE_COLUMN_KEY = "valueColumn"
 
   def apply(config: Config): Try[XYHeatmapConfig] = {
-    Try {
-      val heatmapConfig = config.getConfig(CATEGORY_KEY)
+    for (
+      heatmapConfig <- Try(config.getConfig(CATEGORY_KEY));
+      projectionConfig <- Try(heatmapConfig.getConfig(PROJECTION_KEY));
+      projection <- ProjectionConfig(projectionConfig)
+    ) yield {
       XYHeatmapConfig(
         heatmapConfig.getString(X_COLUMN_KEY),
         heatmapConfig.getString(Y_COLUMN_KEY),
         heatmapConfig.getString(VALUE_COLUMN_KEY),
-        ProjectionConfig(heatmapConfig.getConfig(PROJECTION_KEY)).toOption.get
-      )
+        projection)
     }
   }
 }

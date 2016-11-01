@@ -47,8 +47,8 @@ class PackageTest extends SparkFunSpec {
 
   private val configFile = Seq("/home/asuri/Documents/hbase-site.xml")
 
-  def genHeatmapArray(in: Double*) = in.foldLeft(new SparseArray(0, 0.0))(_ += _)
-  def genTopicArray(in: List[(String, Int)]*) = in.foldLeft(new SparseArray(0, List[(String, Int)]()))(_ += _)
+  def genHeatmapArray(in: Double*) = SparseArray(in.length, 0.0)(in.zipWithIndex.map(_.swap):_*)
+  def genTopicArray(in: List[(String, Int)]*) = SparseArray(in.length, List[(String, Int)]())(in.zipWithIndex.map(_.swap):_*)
 
   describe("#writeToFile") {
     it("should create the folder directory structure if it's missing") {

@@ -121,4 +121,5 @@ class TestableMercatorSegmentProjection (tms: Boolean) extends MercatorTileProje
   // Just stub implementations of projection functions - we aren't testing those.
   override def project(dc: Option[Any], maxBin: Any): Option[Seq[((Int, Int, Int), Any)]] = None
   override def binTo1D(bin: Any, maxBin: Any): Int = 0
+  override def binFrom1D(index: Int, maxBin: Any): Any = 0
 }

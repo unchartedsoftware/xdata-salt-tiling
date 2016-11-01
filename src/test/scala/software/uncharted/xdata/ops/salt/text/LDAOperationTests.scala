@@ -15,6 +15,7 @@ package software.uncharted.xdata.ops.salt.text
 import org.apache.spark.sql.{DataFrame, Row}
 import software.uncharted.xdata.spark.SparkFunSpec
 import software.uncharted.xdata.ops.util.BasicOperations
+import software.uncharted.xdata.sparkpipe.config.LDAConfig
 
 /**
   * Created by nkronenfeld on 03/10/16.
@@ -50,7 +51,7 @@ class LDAOperationTests extends SparkFunSpec {
         new LDATestData(index, text)
       }
       val data = toDataFrame(sqlc)(rddData)
-      val results = lda("index", "text", 4, 2, 4, None, None)(data)
+      val results = textLDA("index", "text", LDAConfig(4, 2, 4, None, None, "", "", ""))(data)
 
       printResults(data, results)
     }
@@ -87,7 +88,7 @@ class LDAOperationTests extends SparkFunSpec {
       }
 
       val data = toDataFrame(sqlc)(rddData)
-      val results = lda("index", "text", 2, 20, 2, None, None)(data)
+      val results = textLDA("index", "text", LDAConfig(2, 20, 2, None, None, "", "", ""))(data)
 
       printResults(data, results)
     }

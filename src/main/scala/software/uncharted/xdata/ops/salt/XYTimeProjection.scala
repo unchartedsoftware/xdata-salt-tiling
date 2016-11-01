@@ -48,4 +48,15 @@ class XYTimeProjection(min: (Double, Double, Long) = (0.0, 0.0, 0),
     val result = (maxBin._1 + 1) * (maxBin._2 + 1) * bin._3 + (maxBin._1 + 1) * bin._2 + bin._1
     result
   }
+
+  override def binFrom1D(index: Int, maxBin: (Int, Int, Int)): (Int, Int, Int) = {
+    // i = xSize * ySize * z + xSize * y + x
+    val xSize = maxBin._1 + 1
+    val ySize = maxBin._2 + 1
+    val xy = index % (xSize * ySize)
+    val time = (index - xy) / (xSize * ySize)
+    val x = xy % xSize
+    val y = (xy - x) / xSize
+    (x, y, time)
+  }
 }

@@ -12,12 +12,31 @@
   */
 package software.uncharted.xdata.ops.salt.text
 
+
+
+import software.uncharted.salt.core.projection.numeric.CartesianProjection
 import software.uncharted.xdata.spark.SparkFunSpec
 
 import scala.collection.mutable.{Map => MutableMap}
-import org.scalatest.FunSuite
+import software.uncharted.salt.core.util.SparseArray
+
+
 
 class TFIDFWordCloudTest extends SparkFunSpec {
+  describe("Tile transformation") {
+    it("should transform sparse arrays correctly") {
+      val base = SparseArray(12, 0)(2 -> 4, 3 -> 9, 7 -> 49)
+      val transformed = base.map(n => n-1)
+      assert(transformed.isInstanceOf[SparseArray[Int]])
+
+      val output = transformed.asInstanceOf[SparseArray[Int]]
+      assert(output(2) === 3)
+      assert(output(3) === 8)
+      assert(output(7) == 48)
+      assert(output.density() === 0.25)
+    }
+  }
+
   describe("TF/IDF Word Cloud Test") {
     it("should count words correctly") {
       val input =
@@ -84,9 +103,10 @@ class TFIDFWordCloudTest extends SparkFunSpec {
       ))
       val data = sqlc.createDataFrame(rddData)
 
-      val termFrequencies = TFIDFWordCloud.cartesianTermFrequency("x", "y", "text", (0.0, 0.0, 8.0, 8.0), Seq(0, 1, 2))(data)
+      val projection = new CartesianProjection(Seq(0, 1, 2), (0.0, 0.0), (8.0, 8.0))
+      val termFrequencies = WordCloudOperations.termFrequencyOp("x", "y", "text", projection, Seq(0, 1, 2))(data)
 
-      val tfidf = TFIDFWordCloud.doTFIDF(10)(termFrequencies).collect.sortBy { r =>
+      val tfidf = WordCloudOperations.doTFIDFByTile[Nothing](10)(termFrequencies).collect.sortBy { r =>
         16 * r.coords._1 + 4 * r.coords._2 + r.coords._3
       }.map { r =>
         (r.coords, r.bins(0).toMap)

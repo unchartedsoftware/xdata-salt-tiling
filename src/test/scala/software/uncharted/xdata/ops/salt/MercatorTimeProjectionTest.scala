@@ -45,5 +45,12 @@ class MercatorTimeProjectionTest extends FunSpec {
         assertResult(8064)(proj.binTo1D((4, 8, 12), (30, 20, 10)))
       }
     }
+
+    describe("#binFrom1D()") {
+      it("should convert a linear coordinate into a (lon, lat, time) triple") {
+        val proj = new MercatorTimeProjection(Seq(0))
+        assertResult((4, 8, 12))(proj.binFrom1D(8064, (30, 20, 10)))
+      }
+    }
   }
 }

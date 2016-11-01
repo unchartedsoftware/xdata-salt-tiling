@@ -34,9 +34,8 @@ class IPProjection (zoomLevels: Seq[Int]) extends Projection[String, TC, BC] {
     cartesian.project(coords, maxBin)
   }
 
-  override def binTo1D(bin: BC, maxBin: BC): Int = {
-    cartesian.binTo1D(bin, maxBin)
-  }
+  override def binTo1D(bin: BC, maxBin: BC): Int = cartesian.binTo1D(bin, maxBin)
+  override def binFrom1D (index: Int, maxBin: BC): BC = cartesian.binFrom1D(index, maxBin)
 }
 
 
@@ -57,9 +56,8 @@ class IPSegmentProjection (zoomLevels: Seq[Int],
     segmentProjection.project(coords, maxBin)
   }
 
-  override def binTo1D(bin: BC, maxBin: BC): Int = {
-    segmentProjection.binTo1D(bin, maxBin)
-  }
+  override def binTo1D(bin: BC, maxBin: BC): Int = segmentProjection.binTo1D(bin, maxBin)
+  override def binFrom1D(index: Int, maxBin: BC): BC = segmentProjection.binFrom1D(index, maxBin)
 }
 
 
