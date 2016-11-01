@@ -37,7 +37,7 @@ object WordCloudOperations extends ZXYOp {
   RDD[SeriesData[(Int, Int, Int), (Int, Int), Map[String, Int], Nothing]] = {
     // Pull out term and document frequencies for each tile
     val request = new TileLevelRequest(zoomLevels, (tc: (Int, Int, Int)) => tc._1)
-      val binAggregator = new WordCounter
+    val binAggregator = new WordCounter
 
     super.apply(projection, 1, xCol, yCol, textCol, binAggregator, None)(request)(input)
   }
