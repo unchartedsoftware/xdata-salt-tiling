@@ -228,7 +228,7 @@ package object io extends Logging {
     serializeTiles(intScoreListToByteArray)(tiles)
 
   def intScoreListToByteArray: SparseArray[List[(String, Int)]] => Seq[Byte] = sparseData =>
-    new JSONObject(sparseData(0).toMap).toString().getBytes
+    sparseData(0).map { case (entry, score) => s""""$entry": $score""" }.mkString("{", ", ", "}").getBytes
 
   /**
     * Same thing, but with Doubles instead of Ints
@@ -241,7 +241,7 @@ package object io extends Logging {
     serializeTiles(doubleScoreListToByteArray)(tiles)
 
   def doubleScoreListToByteArray: SparseArray[List[(String, Double)]] => Seq[Byte] = sparseData =>
-    new JSONObject(sparseData(0).toMap).toString().getBytes
+    sparseData(0).map { case (entry, score) => s""""$entry": $score""" }.mkString("{", ", ", "}").getBytes
 
   /**
     * Serializes tile bins according to an arbitrarily specified serialization function
