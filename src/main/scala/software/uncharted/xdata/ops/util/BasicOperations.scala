@@ -21,6 +21,8 @@ import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 import org.apache.spark.sql.types.{StructField, StructType}
 
+import scala.util.Try
+
 
 
 /**
@@ -43,7 +45,7 @@ object BasicOperations {
 
 
 
-  // Basic RDD oeprations
+  // Basic RDD operations
   /**
     * Filter input based on a given test
     *
@@ -125,19 +127,25 @@ object BasicOperations {
       val parsedLines = rowStrings.map(str => csvParser.parseLine(str))
         .filter(s => s.length == schema.fields.length)
 
-      // Cast the values of each parsed row to the appropriate type.  The createDataFrame call fails if the
-      // the types in the row don't match the internal types associated with the fields defined in the schema.
-      parsedLines.map(_.zipWithIndex)
+      // Cast the values of each parsed row to the appropriate type, dropping any that
+      // contain bad data.  The createDataFrame call fails if the types in the row
+      // don't match the internal types associated with the fields defined in the schema.
+      val typedLines = parsedLines
+        .map(_.zipWithIndex)
         .map { line =>
-          val typedLine = line.map { t =>
+          line.map { t =>
             val field = schema.fields(t._2)
-            // cast parsed string value to datatype from
+            // cast parsed string value to datatype from schema.
             castFromSchema(t._1, field)
           }
-          Row.fromSeq(typedLine)
         }
+      // drop any casts that failed and create a sequence of rows from them
+      typedLines.filter(s => !s.isEmpty)
+        .map(t => Row.fromSeq(t.flatten.toSeq))
     }
 
+    // Parse the csv RDD into rows.  This is all wrapped in a closure
+    // and run against the partitions to avoid spark serialization errors.
     val rows = input.mapPartitions(p => parse(p))
     sparkSession.createDataFrame(rows, schema)
   }
@@ -173,19 +181,21 @@ object BasicOperations {
 
   // scalastyle:off cyclomatic.complexity
   // Casts a value to the type associated with its corresponding schema entry.
-  private def castFromSchema(value: String, schemaField: StructField): Any = {
-    schemaField.dataType.typeName match {
-      case "boolean" => value.toBoolean
-      case "byte" => value.toByte
-      case "short" => value.toShort
-      case "integer" => value.toInt
-      case "long" => value.toLong
-      case "float" => value.toFloat
-      case "double" => value.toDouble
-      case "string" => value
-      case "timestamp" => value.toLong
-      case "date" => value.toInt
-      case _ => ""
-    }
+  private def castFromSchema(value: String, schemaField: StructField): Option[Any]= {
+    Try(
+      schemaField.dataType.typeName match {
+        case "boolean" => Some(value.toBoolean)
+        case "byte" => Some(value.toByte)
+        case "short" => Some(value.toShort)
+        case "integer" => Some(value.toInt)
+        case "long" => Some(value.toLong)
+        case "float" => Some(value.toFloat)
+        case "double" => Some(value.toDouble)
+        case "string" => Some(value)
+        case "timestamp" => Some(value.toLong)
+        case "date" => Some(value.toInt)
+        case _ => None
+      }
+    ).getOrElse(None)
   }
 }
