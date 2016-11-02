@@ -12,13 +12,14 @@
   */
 package software.uncharted.xdata.ops.util
 
+import com.univocity.parsers.csv
+import com.univocity.parsers.csv.{CsvFormat, CsvParser, CsvParserSettings}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{Column, DataFrame, SparkSession}
+import org.apache.spark.sql.{Column, DataFrame, Row, SparkSession}
 
 import scala.reflect.ClassTag
-import com.databricks.spark.csv.CsvParser
 import scala.reflect.runtime.universe.TypeTag
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{StructField, StructType}
 
 
 
@@ -101,45 +102,90 @@ object BasicOperations {
   def toDataFrame[T <: Product : TypeTag](sparkSession: SparkSession)(input: RDD[T]): DataFrame = {
     sparkSession.createDataFrame(input)
   }
-  // TODO: This should be uncommented when dependency for databricks can be dropped
+
+
   /**
-    * Convert an RDD of strings into a dataframe
+    * Convert an RDD of strings into a dataframe.
     *
     * @param sparkSession A spark session into which to set the dataframe.
     * @param settings Settings to control CSV parsing.
-    * @param schemaOpt The schema into which to parse the data (if null, inferSchema must be true)
+    * @param schema The schema into which to parse the data
     * @param input The input data
     * @return A dataframe representing the same data, but parsed into proper typed rows.
     */
-//  def toDataFrame(sparkSession: SparkSession, settings: Map[String, String], schemaOpt: Option[StructType])(input: RDD[String]): DataFrame = {
-//    val parser = new CsvParser
-//
-//    // Move settings to our parser
-//    def setParserValue (key: String, setFcn: String => Unit): Unit =
-//    settings.get(key).foreach(strValue => setFcn(strValue))
-//    def setParserBoolean (key: String, setFcn: Boolean => Unit): Unit =
-//      setParserValue(key, value => setFcn(value.trim.toLowerCase.toBoolean))
-//    // scalastyle:off null
-//    def setParserCharacter (key: String, setFcn: Character => Unit): Unit =
-//    setParserValue(key, value => setFcn(if (null == value) null else value.charAt(0)))
-//    // scalastyle:on null
-//
-//    setParserBoolean("useHeader", parser.withUseHeader(_))
-//    setParserBoolean("ignoreLeadingWhiteSpace", parser.withIgnoreLeadingWhiteSpace(_))
-//    setParserBoolean("ignoreTrailingWhiteSpace", parser.withIgnoreTrailingWhiteSpace(_))
-//    setParserBoolean("treatEmptyValuesAsNull", parser.withTreatEmptyValuesAsNulls(_))
-//    setParserBoolean("inferSchema", parser.withInferSchema(_))
-//    setParserCharacter("delimiter", parser.withDelimiter(_))
-//    setParserCharacter("quote", parser.withQuoteChar(_))
-//    setParserCharacter("escape", parser.withEscape(_))
-//    setParserCharacter("comment", parser.withComment(_))
-//    setParserValue("parseMode", parser.withParseMode(_))
-//    setParserValue("parserLib", parser.withParserLib(_))
-//    setParserValue("charset", parser.withCharset(_))
-//    setParserValue("codec", parser.withCompression(_))
-//
-//    schemaOpt.map(schema => parser.withSchema(schema))
-//
-//    parser.csvRdd(sparkSession.sqlContext, input)
-//  }
+  def toDataFrame(sparkSession: SparkSession, settings: Map[String, String], schema: StructType)(input: RDD[String]): DataFrame = {
+    // The spark-csv library originally supported creating a dataframe from an RDD of CSV strings, but
+    // the functionality was removed when spark-csv was incorporated into Spark 2.0.  We provide our own
+    // implementation as a work around, but it is currently not as fully featured.
+    val parse: (Iterator[String]) => Iterator[Row] = rowStrings => {
+      val csvParser = createCsvParser(settings)
+
+      // Parse each line in our RDD, yielding each as an array of tokens.  Any line
+      // with an unexpected number of values is dropped.
+      val parsedLines = rowStrings.map(str => csvParser.parseLine(str))
+        .filter(s => s.length == schema.fields.length)
+
+      // Cast the values of each parsed row to the appropriate type.  The createDataFrame call fails if the
+      // the types in the row don't match the internal types associated with the fields defined in the schema.
+      parsedLines.map(_.zipWithIndex)
+        .map { line =>
+          val typedLine = line.map { t =>
+            val field = schema.fields(t._2)
+            // cast parsed string value to datatype from
+            castFromSchema(t._1, field)
+          }
+          Row.fromSeq(typedLine)
+        }
+    }
+
+    val rows = input.mapPartitions(p => parse(p))
+    sparkSession.createDataFrame(rows, schema)
+  }
+
+  // Creates a CSV parser from a settings map.  Attempts to conform to settings available in the
+  // spark-csv lib, which was rolled into Spark 2.0+.
+  private def createCsvParser(settings: Map[String, String]): CsvParser = {
+
+    def setParserBoolean(key: String, default: Boolean, setFcn: Boolean => Unit): Unit = {
+      val value = settings.getOrElse(key, default.toString)
+      setFcn(value.trim.toLowerCase.toBoolean)
+    }
+
+    def setParserCharacter(key: String, default: Character, setFcn: Char => Unit): Unit = {
+      val value = settings.getOrElse(key, default.toString)
+      setFcn(value.charAt(0))
+    }
+
+    val parserSettings = new CsvParserSettings()
+    val parserFormat = new CsvFormat()
+
+    setParserBoolean("ignoreLeadingWhiteSpace", default = true, parserSettings.setIgnoreLeadingWhitespaces)
+    setParserBoolean("ignoreTrailingWhiteSpace", default = true, parserSettings.setIgnoreTrailingWhitespaces)
+    setParserCharacter("delimiter", ',', parserFormat.setDelimiter)
+    setParserCharacter("quote", '\"', parserFormat.setQuote)
+    setParserCharacter("escape", '\\', parserFormat.setQuoteEscape)
+    setParserCharacter("comment", '\u0000', parserFormat.setComment)
+    setParserBoolean("useHeader", default = false, parserSettings.setHeaderExtractionEnabled)
+
+    parserSettings.setFormat(parserFormat)
+    new CsvParser(parserSettings)
+  }
+
+  // scalastyle:off cyclomatic.complexity
+  // Casts a value to the type associated with its corresponding schema entry.
+  private def castFromSchema(value: String, schemaField: StructField): Any = {
+    schemaField.dataType.typeName match {
+      case "boolean" => value.toBoolean
+      case "byte" => value.toByte
+      case "short" => value.toShort
+      case "integer" => value.toInt
+      case "long" => value.toLong
+      case "float" => value.toFloat
+      case "double" => value.toDouble
+      case "string" => value
+      case "timestamp" => value.toLong
+      case "date" => value.toInt
+      case _ => ""
+    }
+  }
 }
