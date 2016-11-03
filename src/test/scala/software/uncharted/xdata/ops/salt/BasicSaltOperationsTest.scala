@@ -12,7 +12,7 @@
   */
 package software.uncharted.xdata.ops.salt
 
-import software.uncharted.xdata.ops.util.BasicOperations._
+import software.uncharted.xdata.ops.util.DataFrameOperations._
 import software.uncharted.xdata.ops.salt.BasicSaltOperations._
 import software.uncharted.xdata.spark.SparkFunSpec
 import software.uncharted.xdata.ops.{numeric => XDataNum}
