@@ -133,14 +133,15 @@ object BasicOperations {
       val typedLines = parsedLines
         .map(_.zipWithIndex)
         .map { line =>
-          line.map { t =>
-            val field = schema.fields(t._2)
+          line.map { indexedField =>
+            val field = schema.fields(indexedField._2)
             // cast parsed string value to datatype from schema.
-            castFromSchema(t._1, field)
+            val c = castFromSchema(indexedField._1, field)
+            c
           }
         }
       // drop any casts that failed and create a sequence of rows from them
-      typedLines.filter(s => !s.isEmpty)
+      typedLines.filter(typedLine => typedLine.forall(element => !element.isEmpty))
         .map(t => Row.fromSeq(t.flatten.toSeq))
     }
 
@@ -167,8 +168,8 @@ object BasicOperations {
     val parserSettings = new CsvParserSettings()
     val parserFormat = new CsvFormat()
 
-    setParserBoolean("ignoreLeadingWhiteSpace", default = true, parserSettings.setIgnoreLeadingWhitespaces)
-    setParserBoolean("ignoreTrailingWhiteSpace", default = true, parserSettings.setIgnoreTrailingWhitespaces)
+    setParserBoolean("ignoreLeadingWhiteSpaces", default = true, parserSettings.setIgnoreLeadingWhitespaces)
+    setParserBoolean("ignoreTrailingWhiteSpaces", default = true, parserSettings.setIgnoreTrailingWhitespaces)
     setParserCharacter("delimiter", ',', parserFormat.setDelimiter)
     setParserCharacter("quote", '\"', parserFormat.setQuote)
     setParserCharacter("escape", '\\', parserFormat.setQuoteEscape)
