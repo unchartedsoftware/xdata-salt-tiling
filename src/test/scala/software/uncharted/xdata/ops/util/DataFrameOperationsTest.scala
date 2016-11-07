@@ -54,12 +54,13 @@ class DataFrameOperationsTest extends SparkFunSpec {
       assertResult(List("one", "four"))(converted.select("c").rdd.map(_(0).asInstanceOf[String]).collect.toList)
     }
 
-    it("should work with a .csv with an explicit schema and a custom separator") {
+    it("should work with a .csv with an explicit schema and a custom settings") {
       val settings = Map(
         "delimiter" -> "*",
         "quote" -> "+",
         "ignoreTrailingWhiteSpaces" -> "false",
-        "ignoreLeadingWhiteSpaces" -> "false"
+        "ignoreLeadingWhiteSpaces" -> "false",
+        "comment" -> "null"
       )
       val data = sc.parallelize(Seq("1*1.0*+one*two+", "2*2.0*  two  ", "3*3.0*three", "4*4.0*four"))
       val schema = StructType(Seq(StructField("a", IntegerType), StructField("b", DoubleType), StructField("c", StringType)))

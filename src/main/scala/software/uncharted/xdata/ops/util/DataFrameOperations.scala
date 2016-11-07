@@ -84,13 +84,13 @@ object DataFrameOperations {
   private def createCsvParser(settings: Map[String, String]): CsvParser = {
 
     def setParserBoolean(key: String, default: Boolean, setFcn: Boolean => Unit): Unit = {
-      val value = settings.getOrElse(key, default.toString)
-      setFcn(value.trim.toLowerCase.toBoolean)
+      val value = Option(settings.getOrElse(key, default.toString))
+      setFcn(value.exists(_.trim.toLowerCase.toBoolean))
     }
 
     def setParserCharacter(key: String, default: Character, setFcn: Char => Unit): Unit = {
-      val value = settings.getOrElse(key, default.toString)
-      setFcn(value.charAt(0))
+      val value = Option(settings.getOrElse(key, default.toString))
+      setFcn(value.map(s => if (s.isEmpty()) '\u0000' else s.charAt(0)).getOrElse('\u0000'))
     }
 
     val parserSettings = new CsvParserSettings()
