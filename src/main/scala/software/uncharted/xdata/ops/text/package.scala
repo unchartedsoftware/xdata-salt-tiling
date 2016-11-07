@@ -19,11 +19,11 @@ import org.apache.spark.ml.feature.{HashingTF, IDF}
 
 package object text {
   /**
-    * Calculate the TFIDF of the input column and store the (term, tfidf) results in the output column.
+    * Calculate the TFIDF of the input column and store the TF & TFIDF results in the output columns.
     *
     * @param inputColumnName        Name of the input column. It should be a Seq[String].
     * @param outputColumnNameTF     Name of the output column that will contain the term frequencies.
-    * @param outputColumnNameTFIDF  Name of the output column that will contain the tfidf values.
+    * @param outputColumnNameTFIDF  Name of the output column that will contain the TFIDF values.
     * @param input                  Input DataFrame
     * @return DataFrame with the calculated TFIDF values.
     */
