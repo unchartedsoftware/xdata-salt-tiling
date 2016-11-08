@@ -58,11 +58,12 @@ class S3Client(accessKey: String, secretKey: String) extends Logging {
       val streamData = if(compress) zipData(data.toArray).get else data.toArray
       val is = new ByteArrayInputStream(streamData)
       val meta = new ObjectMetadata()
+      meta.setContentLength(streamData.length)
 
       meta.setContentType(contentType)
       if (compress) { meta.setContentEncoding("gzip") }
 
-      s3Client.putObject(new PutObjectRequest(bucketName, key, is, meta) // scalastyle:ignore
+      s3Client.putObject(new PutObjectRequest(bucketName, key, is, meta)
         .withCannedAcl(CannedAccessControlList.PublicRead))
       true
     } catch {
@@ -88,7 +89,7 @@ class S3Client(accessKey: String, secretKey: String) extends Logging {
               bytesRead = dis.read(buffer)
             }
           } catch {
-            case e: Exception => error("Failed to decompress file", e); None
+            case e: Exception => error("Failed to decompress file", e)
           } finally {
             bos.close()
           }
@@ -100,7 +101,7 @@ class S3Client(accessKey: String, secretKey: String) extends Logging {
   }
 
   def zipData (dataToBeCompressed: Array[Byte]): Option[Array[Byte]] = {
-    //create outputstream to write data in and the filter that would compress the data going in
+    //create output stream to write data in and the filter that would compress the data going in
     val bos = new ByteArrayOutputStream(dataToBeCompressed.length)
     try {
       val GzipFilter = new GZIPOutputStream(bos)
@@ -132,7 +133,7 @@ class S3Client(accessKey: String, secretKey: String) extends Logging {
           bytesRead = GUnzipFilter.read(buffer)
         }
         GUnzipFilter.close()
-        Some(bos.toByteArray())
+        Some(bos.toByteArray)
       } catch {
         case e: Exception => error("Failed to decompress file"); None
       } finally {
