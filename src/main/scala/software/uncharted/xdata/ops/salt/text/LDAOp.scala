@@ -77,13 +77,13 @@ object LDAOp {
     */
   def wordBagToWordCount[T] (input: RDD[(T, Map[String, Int])]): (Map[String, Int], RDD[(T, Vector)]) = {
     // Get a list of all used words, in alphabetical order - i.e., our dictionary
-    val allWords = input.flatMap(_._2).reduceByKey(_ + _).collect
+    val allWords = input.flatMap(_._2).reduceByKey(_ + _).collect.filter { case (word, count) => !stopWords.contains(word.trim.toLowerCase())}
     val dictionary = allWords.map(_._1).sorted.zipWithIndex.toMap
 
     // Port that dictionary back into our word maps, creating sparse vectors by map index
     val wordVectors = input.map { case (id, wordBag) =>
-      val indicesAndValues = wordBag.map { case (word, count) =>
-        (dictionary(word), count)
+      val indicesAndValues = wordBag.flatMap { case (word, count) =>
+        dictionary.get(word).map(wordIndex => (wordIndex, count))
       }.toArray.sortBy(_._1)
       val wordVector: Vector = new SparseVector(dictionary.size, indicesAndValues.map(_._1), indicesAndValues.map(_._2.toDouble))
       (id, wordVector)

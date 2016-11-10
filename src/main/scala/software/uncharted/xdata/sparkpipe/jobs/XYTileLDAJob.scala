@@ -20,7 +20,7 @@ import org.apache.spark.sql.SQLContext
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.xdata.ops.io.serializeElementDoubleScore
 import software.uncharted.xdata.ops.salt.text.WordCloudOperations
-import software.uncharted.xdata.sparkpipe.config.TileTopicConfig
+import software.uncharted.xdata.sparkpipe.config.{LDAConfig, TileTopicConfig}
 import software.uncharted.xdata.sparkpipe.jobs.JobUtil.dataframeFromSparkCsv
 
 
@@ -29,13 +29,23 @@ import software.uncharted.xdata.sparkpipe.jobs.JobUtil.dataframeFromSparkCsv
   * A job that takes tsv data, breaks out a document from each entry as a word bag, tiles the documents into
   * tile-based word bags, and runs Latent Dirichlet Allocation on those tile word bags
   */
-class XYTileLDAJob extends AbstractJob {
+object XYTileLDAJob extends AbstractJob {
   // Parse tile topic parameters out of supplied config
   private def parseTileTopicConfig (config: Config) = {
     TileTopicConfig(config) match {
       case Success(c) => c
       case Failure(e) =>
-        logger.error("Error getting TF/IDF config", e)
+        logger.error("Error getting topic tiling configuration", e)
+        sys.exit(-1)
+    }
+  }
+
+  // Get LDA-specific configuration
+  private def parseLDAConfig (config: Config) = {
+    LDAConfig(config) match {
+      case Success(c) => c
+      case Failure(e) =>
+        logger.error("Error getting LDA configuration")
         sys.exit(-1)
     }
   }
@@ -51,6 +61,7 @@ class XYTileLDAJob extends AbstractJob {
     val tilingConfig = parseTilingParameters(config)
     val outputOperation = parseOutputOperation(config)
     val tileTopicConfig = parseTileTopicConfig(config)
+    val ldaConfig = parseLDAConfig(config)
 
     val projection = createProjection(tileTopicConfig.projectionConfig, tilingConfig.levels)
     val wordCloudTileOp = WordCloudOperations.termFrequencyOp(
@@ -60,15 +71,15 @@ class XYTileLDAJob extends AbstractJob {
       projection,
       tilingConfig.levels
     )(_)
-    val IDFOperation = WordCloudOperations.doTFIDFByTile[Nothing](tileTopicConfig.wordsToKeep)(_)
+    val ldaOperation = WordCloudOperations.ldaWordsByTile[Nothing](ldaConfig)(_)
 
     // Create the dataframe from the input config
     val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc)
 
     // Process our data
-    Pipe(df)
+    val foo = Pipe(df)
       .to(wordCloudTileOp)
-      .to(IDFOperation)
+      .to(ldaOperation)
       .to(serializeElementDoubleScore)
       .to(outputOperation)
       .run
