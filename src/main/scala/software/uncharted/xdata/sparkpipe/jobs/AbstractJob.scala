@@ -75,10 +75,10 @@ trait AbstractJob extends Logging {
   /**
     * This function actually executes the task the job describes
     *
-    * @param sqlc An SQL context in which to run spark processes in our job
+    * @param session A spark session in which to run spark processes in our job
     * @param config The job configuration
     */
-  def execute(sparkSession: SparkSession, config: Config): Unit
+  def execute(session: SparkSession, config: Config): Unit
 
   def execute(args: Array[String]): Unit = {
     // get the properties file path
