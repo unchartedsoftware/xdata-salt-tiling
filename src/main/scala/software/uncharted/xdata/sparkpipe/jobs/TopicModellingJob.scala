@@ -14,10 +14,9 @@ package software.uncharted.xdata.sparkpipe.jobs
 
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
-import org.apache.spark.SparkContext
 import org.apache.spark.sql.{SQLContext, DataFrame}
 import software.uncharted.sparkpipe.Pipe
-import software.uncharted.xdata.ops.topics.twitter.doTopicModelling
+import software.uncharted.xdata.ops.topics.twitter.getDocumentTopicRawTFIDF
 import software.uncharted.xdata.sparkpipe.config.{SparkConfig, TopicModellingConfigParser, TopicModellingParams}
 
 // scalastyle:off method.length parameter.number
@@ -84,6 +83,7 @@ object TopicModellingJob extends Logging {
     *
     * @param args Array of commandline arguments
     */
+  // scalastyle:off
   def main(args: Array[String]): Unit = {
     // get the properties file path
     if (args.length != 1) {
@@ -114,22 +114,22 @@ object TopicModellingJob extends Logging {
     .option("delimiter", ",")
 
     try {
-      val topicModellingOp = doTopicModelling(
+      val topicModellingOp = getDocumentTopicRawTFIDF(
+        sqlContext,
         params.alpha,
         params.beta,
-        params.computeCoherence,
-        params.dateCol,
+        params.startDate,
         params.endDate,
-        params.idCol,
         params.iterN,
         params.k,
         params.numTopTopics,
-        params.pathToWrite,
-        sqlContext,
-        params.startDate,
-        stopwords_bcst,
-        params.textCol
+        params.dateCol,
+        params.idCol,
+        params.textCol,
+        "docTopics",
+        stopwords_bcst
       )(_ : (DataFrame, DataFrame))
+
       val corpus = Pipe(reader_corpus.load(params.pathToCorpus))
       val tfidf = Pipe(reader_tfidf.load(params.pathToTfidf))
       val merge = Pipe(corpus, tfidf)
@@ -138,7 +138,9 @@ object TopicModellingJob extends Logging {
         .run()
 
         // Without tfidf
-        // val topicModellingOp = doTopicModelling(params.alpha, params.beta, params.computeCoherence, params.dateCol, params.endDate, params.idCol, params.iterN, params.k, params.numTopTopics, params.pathToWrite, sqlContext, params.startDate, stopwords_bcst, params.textCol, None)(_ : DataFrame)
+        // val topicModellingOp = doTopicModelling(params.alpha, params.beta, params.computeCoherence, params.dateCol,
+        //    params.endDate, params.idCol, params.iterN, params.k, params.numTopTopics, params.pathToWrite, sqlContext,
+        //    params.startDate, stopwords_bcst, params.textCol, None)(_ : DataFrame)
         //
         // Pipe(reader_corpus.load(params.pathToCorpus))
         //   .to(topicModellingOp)

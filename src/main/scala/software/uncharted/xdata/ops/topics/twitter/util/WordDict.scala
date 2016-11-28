@@ -33,7 +33,9 @@ object WordDict extends Serializable with Logging {
     val filtered = wordcount.filter{case (word, count) => word.length > 2 }              // exclude words with 1-2 characters
                             .filter{case (word, count) => count >  min_count }            // exclude words with counts under min_count
                             .filterNot{case (word, count) => "^[#0-9]+$".r.findFirstIn(word).isDefined }   // exclude words made up of only digits
-                            .filterNot{case (word, count) => "^[\\s!\"#$%&\\\\\\'()*+,-./:;<=>?@\\[\\]^_`{|}~]+$".r.findFirstIn(word).isDefined  }   // exclude words made up of only punctuation
+                            .filterNot{case (word, count) =>
+                              // exclude words made up of only punctuation
+                              "^[\\s!\"#$%&\\\\\\'()*+,-./:;<=>?@\\[\\]^_`{|}~]+$".r.findFirstIn(word).isDefined  }
                             .filterNot{case (word, count) => stopwords contains word }       // exclude stopwords
     val sorted = filtered.sortWith{ (a, b) => a._2 > b._2 }
     val words = sorted.map{case (word, count) => word}

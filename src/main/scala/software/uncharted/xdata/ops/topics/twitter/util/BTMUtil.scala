@@ -30,7 +30,8 @@ object BTMUtil extends Serializable with Logging {
   def getWordIds(tokens: Array[String], word_dict: Map[String, Int], stopwords: Set[String]) : Array[Int] = {
     tokens.filter(w => !(stopwords contains w))              // ignore words in stopwords
                         .map(word => word_dict.getOrElse(word, -1))         // get the word_id associated with word
-                        .filter(x => x > -1)                                // ignore out-of-vocabulary words           // ToDo: should handled OOV words - save & output a list with counts?
+                        .filter(x => x > -1)                                // ignore out-of-vocabulary words
+                        // ToDo: should handled OOV words - save & output a list with counts?
   }
 
   def getBiterms(d:Array[Int]):Iterator[(Int, Int)] = {
@@ -59,8 +60,9 @@ object BTMUtil extends Serializable with Logging {
     */
   // scalastyle:off magic.number
   def reportTopics(theta: Array[Double], phi:Array[Double], words: Array[String], m: Int, k: Int, numWords: Int = 20) : Array[(Double, Seq[Int])] = {
-    Iterator.range(0, k).toArray.map { z =>
-      (theta(z), (0 until m).sortBy(w => -phi(w * k + z)).take(numWords).map(words).asInstanceOf[Seq[Int]])
+    val limit = Math.min(k, theta.length)
+    Iterator.range(0, limit).toArray.map { z =>
+      (theta(z), (0 until m).sortBy(w => -phi(w * limit + z)).take(numWords).map(words).asInstanceOf[Seq[Int]])
     }
   }
   // scalastyle:on magic.number

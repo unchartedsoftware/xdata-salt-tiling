@@ -12,9 +12,6 @@
  */
 package software.uncharted.xdata.sparkpipe.jobs
 
-import net.liftweb.json._
-import net.liftweb.json.JsonDSL._
-import org.apache.commons.io.FileUtils
 import org.scalatest.FunSpec
 import scala.io.Source.fromFile
 
@@ -25,6 +22,7 @@ class TopicModellingJobTest extends FunSpec {
   private val suffix: String = "bin"
 
   describe("TopicModellingParallelJobTest") {
+    // This test is very limited because the results obtained will frequently change.
     // When test are run from another project that includes this project, the current working directory is set such
     // that the data files referenced in tiling-file-io.conf can't be found.  To fix this we reset the CWD to the
     // xdata-pipeline-ops directory, and reset it afterwards.
@@ -40,16 +38,10 @@ class TopicModellingJobTest extends FunSpec {
         it("should run the topic modelling job") {
           TopicModellingJob.main(Array(path))
         }
+        val results = fromFile("src/test/resources/topic-modelling/results/actual/part-00000").getLines
 
-        val expected = fromFile("src/test/resources/topic-modelling/results/expected/part-00000").getLines
-        val actual = fromFile("src/test/resources/topic-modelling/results/actual/part-00000").getLines
-
-        it("should have an output that has the same number of rows as the expected output"){
-          assert(expected.length == actual.length)
-        }
-
-        it("should have output that matches the expected output exactly") {
-          assert((expected zip actual).forall(x => x._1 == x._2))
+        it("should have an output that has 5 rows"){
+          assert(results.length === 5)
         }
       }
     } finally {

@@ -40,6 +40,7 @@ case class TopicModellingParams (
   * Parse the config object into arguments for the topic modelling pipeline operations
   */
 // scalastyle:off method.length
+// scalastyle:off magic.number
 object TopicModellingConfigParser extends Logging {
   def parse(config: Config): TopicModellingParams = {
     try {

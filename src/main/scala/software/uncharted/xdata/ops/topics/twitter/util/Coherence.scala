@@ -13,13 +13,11 @@
 
 package software.uncharted.xdata.ops.topics.twitter.util
 
-import java.io._
-
 import grizzled.slf4j.Logging
 import org.apache.spark.rdd.RDD
 import scala.io.Source
-import scala.math._
 import org.apache.spark.sql.DataFrame
+import scala.math.log
 
 object Coherence extends Serializable with Logging {
 
@@ -49,7 +47,7 @@ object Coherence extends Serializable with Logging {
   def castDouble(number: Any): Double = number match {
     case n: Double => n.doubleValue()
     case n: Int    => n.toDouble
-    case x         => throw new IllegalArgumentException(s"$x is not a number.")
+    case x: Any    => throw new IllegalArgumentException(s"$x is not a number.")
   }
 
   // document frequency of a word

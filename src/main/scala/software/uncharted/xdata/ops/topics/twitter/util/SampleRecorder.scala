@@ -32,7 +32,7 @@ import scala.util.Random
   *
   */
 object Records extends Serializable {
-  def wordCountArray(m: Int) = Array.fill[Double](m)(0)
+  def wordCountArray(m: Int) : Array[Double] = Array.fill[Double](m)(0)
   def createRecorders(m: Int, k: Int): (scala.collection.mutable.Map[Int,Int], scala.collection.mutable.Map[Int,Array[Double]]) = {
     // counts of how many words for each value of z
     val nwz = collection.mutable.Map(Iterator.range(0, k).map { z => z -> wordCountArray(m) }.toSeq: _*)
@@ -51,18 +51,18 @@ class SampleRecorder (m: Int, kK:Int, weighted: Boolean = false) extends Seriali
   // Initialize class variables
   var tfidf_dict: Map[Int,Double] = Map[Int,Double]()             // empty placeholder for tfidf_dict
 
-  def setTfidf(tfidf_map:  Map[Int, Double]) = {
+  def setTfidf(tfidf_map:  Map[Int, Double]) : Unit = {
     tfidf_dict = tfidf_map
   }
 
   val (nz, nwz) = Records.createRecorders(m, kK)
 
-  def initRecorders(biterms: Array[Biterm] ) {
+  def initRecorders(biterms: Array[Biterm] ) : Unit = {
     if (weighted) assert(tfidf_dict.size > 0)       // n.b. have to setTfIdf dict if weighted=true before initializing recorders
-    def uni_sample(k: Int) = { Random.nextInt(k) }
+    def uniSample(k: Int) : Int = { Random.nextInt(k) }
     var count = 0
     biterms.foreach {b =>
-      val z = uni_sample(kK)
+      val z = uniSample(kK)
       count += 1
       b.z = z
       increment(z, b.biterm)
@@ -74,33 +74,33 @@ class SampleRecorder (m: Int, kK:Int, weighted: Boolean = false) extends Seriali
     tfidf_dict.getOrElse(word, default_value)
   }
 
-  def increment(z: Int, biterm: (Int, Int))  = {
+  def increment(z: Int, biterm: (Int, Int)) : Unit = {
     val (w1, w2) = biterm
     nz(z) += 1
-    nwz(z)(w1) = if (weighted) (nwz(z)(w1) + getWeight(w1)) else nwz(z)(w1) + 1
-    nwz(z)(w2) = if (weighted) (nwz(z)(w2) + getWeight(w1)) else nwz(z)(w2) + 1
+    nwz(z)(w1) = if (weighted) nwz(z)(w1) + getWeight(w1) else nwz(z)(w1) + 1
+    nwz(z)(w2) = if (weighted) nwz(z)(w2) + getWeight(w1) else nwz(z)(w2) + 1
   }
 
-  def decrement(biterm: (Int, Int), z: Int, k: Int ) = {
+  def decrement(biterm: (Int, Int), z: Int, k: Int ) : Unit = {
     val (w1, w2) = biterm // if z > k there will be nothing to decrement since that cluster has been deleted for being empty
      if ((z < k) & (k >0)) {
       // don't decrement below 0
       if (nz(z) > 0) nz(z) -= 1
-      if (nwz(z)(w1) > 0) nwz(z)(w1) = if (weighted) (nwz(z)(w1) - getWeight(w1)) else  nwz(z)(w1) - 1
-      if (nwz(z)(w2) > 0) nwz(z)(w2) = if (weighted) (nwz(z)(w2) - getWeight(w1)) else  nwz(z)(w2) - 1
+      if (nwz(z)(w1) > 0) nwz(z)(w1) = if (weighted) nwz(z)(w1) - getWeight(w1) else  nwz(z)(w1) - 1
+      if (nwz(z)(w2) > 0) nwz(z)(w2) = if (weighted) nwz(z)(w2) - getWeight(w1) else  nwz(z)(w2) - 1
     }
   }
 
 
   // ----------    Accessor methods: Get/Set Sample Recorders   ---------- //
-  def getNzMap() = nz
-  def getNwzMap() = nwz
-  def getNz(z: Int) = nz(z)
-  def getNwz(z: Int, w: Int) = nwz(z)(w)
-  def size() = nz.size
+  def getNzMap() : scala.collection.mutable.Map[Int,Int] = nz
+  def getNwzMap() : scala.collection.mutable.Map[Int,Array[Double]] = nwz
+  def getNz(z: Int) : Int = nz(z)
+  def getNwz(z: Int, w: Int) : Double = nwz(z)(w)
+  def size() : Int = nz.size
 
   // -----------   Mutate/Modify Sample Recorders   ---------- //
-  def addCluster() = {
+  def addCluster() : Int = {
     var k = nz.size
     nz += k -> 0
     nwz += k -> Records.wordCountArray(m)
@@ -123,7 +123,7 @@ class SampleRecorder (m: Int, kK:Int, weighted: Boolean = false) extends Seriali
 
   private def removeEmptyClusters() = {
     var k = nz.size
-    val zeros = nz.keys.toArray.sorted.filter(z => nz(z) == 0)
+    val zeros = nz.keys.toArray.filter(z => nz(z) == 0).sorted
     // if (k > 1) { }
     for (z <- zeros) {
       nz -= z
@@ -135,7 +135,7 @@ class SampleRecorder (m: Int, kK:Int, weighted: Boolean = false) extends Seriali
   }
 
   // get rid of empty clusters (empty tables can be removed from CRP)
-  def defrag() = {
+  def defrag() : Int = {
     val oldk = nz.size
     val old2newZ = mapZ()
     val k = removeEmptyClusters

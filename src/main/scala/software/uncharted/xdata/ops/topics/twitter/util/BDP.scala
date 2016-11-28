@@ -102,8 +102,8 @@ class BDP(kk: Int) extends Serializable with Logging {
     Iterator.range(0, iterN).foreach { iteration =>
       info(s"iteration: ${iteration + 1}\tk = $k")
       val bstart = System.nanoTime
-      biterms.foreach { case b =>
-        updateBiterm(b, model, m, alpha, eta)
+      biterms.foreach {
+        case b : Any => updateBiterm(b, model, m, alpha, eta)
       }
       // removeEmptyClusters & defrag
       k = model.defrag()
@@ -169,6 +169,7 @@ class BDP(kk: Int) extends Serializable with Logging {
     norm_dist.zipWithIndex.sortWith(_._1 > _._1) // associate each prob with its topic index, sort descending to make sampling more efficient
   }
 
+  // scalastyle:off return
   def sample[A](dist: Array[(Double, A)]): A = {
     val p = scala.util.Random.nextDouble
     val it = dist.iterator

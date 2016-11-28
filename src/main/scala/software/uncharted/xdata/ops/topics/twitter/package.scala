@@ -13,7 +13,6 @@
 package software.uncharted.xdata.ops.topics
 
 import org.apache.spark.broadcast.Broadcast
-import org.apache.spark.{SparkContext}
 import org.apache.spark.sql.{Column, DataFrame, SQLContext}
 import org.joda.time.{Days, DateTime}
 import software.uncharted.sparkpipe.Pipe
@@ -33,42 +32,41 @@ package object twitter {
     * Take a second DataFrame, representing precomputed tfidf scores, as input.
     * Parse this DataFrame into a broadcast variable and use it to do topic modelling
     *
+    * @param sqlContext A SQLContext object used to create the resulting DataFrame
     * @param alpha A dirichlet hyperparameter of the clumpiness of the model. Defaults to 1/e
     * @param beta The value of beta. Defaults to 0.01
-    * @param computeCoherence  Whether or not to compute the coherence score of each topic
-    * @param dateCol The column of the input DataFrame in which to find the date
+    * @param startDateStr Beginning (inclusive) of the date range you are running this job over
     * @param endDateStr The end (inclusive) of the date range this job is to be run over
-    * @param idCol The column of the input DataFrame in which to find the id
     * @param iterN The number of iterations of MCMC sampling to run. Defaults to 150
     * @param k The number of topics to start with. Defaults to 2
-    * @param numTopTopics Number of top terms per topic to output
-    * @param pathToWrite The path to the data (on which to do the topic modelling)
-    * @param sqlContext A SQLContext object used to create the resulting DataFrame
-    * @param startDateStr Beginning (inclusive) of the date range you are running this job over
+    * @param numTopTopics Number of topics to output
+    * @param dateCol The column of the input DataFrame in which to find the date
+    * @param idCol The column of the input DataFrame in which to find the id
+    * @param textCol The column of the input DataFrame in which to find the text
+    * @param outputCol The column of the output DataFrame in which the result will be written.
+    *                  It will contain a row with two columns: topic & probability.
     * @param stopwords_bcst All word to be ignored as potential topics
-    * @param textCol Column in which to find the text column
     *
     * @param input A tuple of DataFrames of the form: (corpus data, tfidf scores)
     */
-  // scalastyle:off parameter.number method.length
-  def doTopicModelling(
-    alpha: Double,
-    beta: Double,
-    computeCoherence: Boolean,
-    dateCol: String,
-    endDateStr: String,
-    idCol: String,
-    iterN: Int,
-    k: Int,
-    numTopTopics: Int,
-    pathToWrite: String,
-    sqlContext: SQLContext,
-    startDateStr: String,
-    stopwords_bcst: Broadcast[Set[String]],
-    textCol: String
-  )(
-    input: (DataFrame, DataFrame)
-  ) : DataFrame = {
+  // scalastyle:off parameter.number method.length magic.number
+  def getDocumentTopicRawTFIDF(
+                        sqlContext: SQLContext,
+                        alpha: Double = 1 / Math.E,
+                        beta: Double = 0.01,
+                        startDateStr: String,
+                        endDateStr: String,
+                        iterN: Int = 150,
+                        k: Int = 2,
+                        numTopTopics: Int = 1,
+                        dateCol: String,
+                        idCol: String,
+                        textCol: String,
+                        outputCol: String,
+                        stopwords_bcst: Broadcast[Set[String]]
+                      )(
+                        input: (DataFrame, DataFrame)
+                      ) : DataFrame = {
 
     // Read in the second dataframe as precomputed tfidf scores
     val tfidf_bcst = Some(sqlContext.sparkContext.broadcast(
@@ -78,63 +76,62 @@ package object twitter {
       )
     ))
 
-    doTopicModelling(
+    getDocumentTopic(
+      sqlContext,
       alpha,
       beta,
-      computeCoherence,
-      dateCol,
+      startDateStr,
       endDateStr,
-      idCol,
       iterN,
       k,
       numTopTopics,
-      pathToWrite,
-      sqlContext,
-      startDateStr,
-      stopwords_bcst,
+      dateCol,
+      idCol,
       textCol,
+      outputCol,
+      stopwords_bcst,
       tfidf_bcst
     )(input._1)
   }
 
   /**
     * Preform topic modelling
+    * @param sqlContext A SQLContext object used to create the resulting DataFrame
     * @param alpha A dirichlet hyperparameter of the clumpiness of the model. Defaults to 1/e
     * @param beta The value of beta. Defaults to 0.01
-    * @param computeCoherence  Whether or not to compute the coherence score of each topic
-    * @param dateCol The column of the input DataFrame in which to find the date
+    * @param startDateStr Beginning (inclusive) of the date range you are running this job over
     * @param endDateStr The end (inclusive) of the date range this job is to be run over
-    * @param idCol The column of the input DataFrame in which to find the id
     * @param iterN The number of iterations of MCMC sampling to run. Defaults to 150
     * @param k The number of topics to start with. Defaults to 2
-    * @param numTopTopics Number of top terms per topic to output
-    * @param pathToWrite The path to the data (on which to do the topic modelling)
-    * @param sqlContext A SQLContext object used to create the resulting DataFrame
-    * @param startDateStr Beginning (inclusive) of the date range you are running this job over
+    * @param numTopics Number of topics to output
+    * @param dateCol The column of the input DataFrame in which to find the date
+    * @param idCol The column of the input DataFrame in which to find the id
+    * @param textCol The column of the input DataFrame in which to find the text
+    * @param outputCol The column of the output DataFrame in which the result will be written.
+    *                  It will contain a row with two columns: topic & probability.
     * @param stopwords_bcst All word to be ignored as potential topics
     * @param tfidf_bcst The precomputed tfidf scores
     *
     * @param input The corpus data
     */
-  def doTopicModelling(
-    alpha: Double,
-    beta: Double,
-    computeCoherence: Boolean,
-    dateCol: String,
-    endDateStr: String,
-    idCol: String,
-    iterN: Int,
-    k: Int,
-    numTopTopics: Int,
-    pathToWrite: String,
-    sqlContext: SQLContext,
-    startDateStr: String,
-    stopwords_bcst: Broadcast[Set[String]],
-    textCol: String,
-    tfidf_bcst: Option[Broadcast[Array[(String, String, Double)]]] = None
-  )(
-    input: DataFrame
-  ) : DataFrame = {
+  def getDocumentTopic(
+                        sqlContext: SQLContext,
+                        alpha: Double = 1 / Math.E,
+                        beta: Double = 0.01,
+                        startDateStr: String,
+                        endDateStr: String,
+                        iterN: Int = 150,
+                        k: Int = 2,
+                        numTopics: Int = 1,
+                        dateCol: String,
+                        idCol: String,
+                        textCol: String,
+                        outputCol: String,
+                        stopwords_bcst: Broadcast[Set[String]],
+                        tfidf_bcst: Option[Broadcast[Array[(String, String, Double)]]] = None
+                      )(
+                        input: DataFrame
+                      ) : DataFrame = {
 
     // create a date parser specific to the input data
     val datePsr = BTMUtil.makeTwitterDateParser()
@@ -157,30 +154,7 @@ package object twitter {
       .run
 
     // Run BTM on each partition
-    val parts = data.mapPartitions(iter => BDPParallel.partitionBDP(iter, stopwords_bcst, iterN, k, alpha, beta, textCol, tfidf_bcst))
-      .collect
-      .filter(p => p.isDefined)
-      .map(p => p.get)
-
-    // Cast from `Any` to the proper types
-    val cparts = TopicModellingUtil.castResults(parts)
-
-    // If requested, compute the coherence score for each result
-    var coherenceMap : Option[Map[String,(Seq[Double],Double)]] = if (computeCoherence) Some(Coherence.computeCoherence(cparts, input, numTopTopics, textCol)) else None
-
-    // Create a dataframe of the results
-    TopicModellingUtil.writeTopicsToDF(
-      alpha,
-      beta,
-      coherenceMap,
-      computeCoherence,
-      cparts,
-      data,
-      iterN,
-      numTopTopics,
-      pathToWrite,
-      sqlContext,
-      textCol
-    )
+    val tweetTopics = data.mapPartitions(iter => BDPParallel.partitionBDP(iter, stopwords_bcst, iterN, k, numTopics, alpha, beta, textCol, formatted_date_col, idCol, tfidf_bcst))
+    sqlContext.createDataFrame(tweetTopics, BDPParallel.getTweetTopicSchema(data.schema, outputCol))
   }
 }

@@ -34,6 +34,7 @@ object TopicModellingUtil extends Logging {
     * @param to The date to end the range on
     * @return A seqence of dates (of the format yyyy-MM-dd) between the given endpoints with one day intervals
     */
+  // scalastyle:off magic.number
  def dateRange(from: Date, to: Date): Array[String] = {
    val s = Iterator.iterate(new DateTime(from))(_.plus(new Period().withDays(1))).takeWhile(!_.isAfter(new DateTime(to))).toArray
    s.map(datetime => datetime.toString.slice(0, 10))
@@ -46,6 +47,7 @@ object TopicModellingUtil extends Logging {
   * @param to The date to end the range on (yyyy-MM-dd)
   * @return A seqence of dates (of the format yyyy-MM-dd) between the given endpoints with one day intervals
   */
+  // scalastyle:off
  def dateRange(from: String, to: String): Array[String] = {
    val format = new SimpleDateFormat("yyyy-MM-dd")
    dateRange(format.parse(from), format.parse(to))
@@ -130,6 +132,7 @@ object TopicModellingUtil extends Logging {
           if (!coherenceMap.isEmpty) {val score = coherenceMap.get(date); score._1(i)} else None, // coherence score
           if (!coherenceMap.isEmpty) {val avg = coherenceMap.get(date); avg._2} else None // average coherence score
         ))
+          true
       }
     }
 

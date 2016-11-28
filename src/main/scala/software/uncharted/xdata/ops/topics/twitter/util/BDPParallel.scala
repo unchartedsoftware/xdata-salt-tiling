@@ -19,6 +19,7 @@ import grizzled.slf4j.Logging
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
+import org.apache.spark.sql.types.{ArrayType, StructType, StringType, DoubleType, StructField}
 
 /**
   * This is an extension of BDP (which itself is an extension of BTM, which is a variant on LDA)
@@ -31,35 +32,75 @@ import org.apache.spark.sql.Row
 object BDPParallel extends Serializable with Logging {
 
   /**
-    * Main Topic Modelling Function
+    * Get the updated schema for the topic modelled data frame.
+    * @param existingSchema Schema of the topic modelling input.
+    * @param outputCol Name of the output column that contains the topic modelling results.
+    * @return The updated schema for the modelled data frame.
+    */
+  def getTweetTopicSchema(existingSchema: StructType, outputCol: String) : StructType = {
+    StructType(
+      existingSchema.fields ++ Array(
+        StructField(outputCol,
+          ArrayType(
+            StructType(
+              Array(
+                StructField("topic", StringType),
+                StructField("probability", DoubleType)
+              )
+            )
+          )
+        )
+      )
+    )
+  }
+
+  /**
+    * Run the topic modelling algorithm across a single partition of data.
+    * @param iterator The data in the partition.
+    * @param stpbroad Set of stop words.
+    * @param iterN The number of iterations of MCMC sampling to run.
+    * @param k The number of topics to start with.
+    * @param numTopics Number of topics to output.
+    * @param alpha A dirichlet hyperparameter of the clumpiness of the model.
+    * @param eta
+    * @param textCol The column of the input DataFrame in which to find the text
+    * @param dateCol The column of the input DataFrame in which to find the date
+    * @param idCol The column of the input DataFrame in which to find the id
+    * @param tfidf_bcst TFIDF data to use when scoring words.
+    * @return The input rows with a new column containing the topics and their probabilities.
     */
   // scalastyle:off parameter.number
   def partitionBDP(
-    iterator: Iterator[Row],
-    stpbroad: Broadcast[scala.collection.immutable.Set[String]],
-    iterN: Int,
-    k:Int,
-    alpha: Double,
-    eta: Double,
-    textCol: String,
-    tfidf_bcst: Option[Broadcast[Array[(String, String, Double)]]] = None
-  ) : Iterator[Option[Array[Any]]] = {
+                    iterator: Iterator[Row],
+                    stpbroad: Broadcast[scala.collection.immutable.Set[String]],
+                    iterN: Int,
+                    k:Int,
+                    numTopics: Int,
+                    alpha: Double,
+                    eta: Double,
+                    textCol: String,
+                    dateCol: String,
+                    idCol: String,
+                    tfidf_bcst: Option[Broadcast[Array[(String, String, Double)]]] = None
+                  ) : Iterator[Row] = {
     if (iterator.isEmpty) {
       info("Empty partition. Revisit your partitioning mechanism to correct this skew warning")
-      Iterator(None)
+      Iterator.empty
     } else {
-      val datetexts = iterator.toSeq.map(x => (x(x.fieldIndex("_ymd_date")), x(x.fieldIndex(textCol))))
+      //Extract text from data.
+      val data = iterator.toSeq
+      val datetexts = data.map(x => (x(x.fieldIndex(dateCol)), x(x.fieldIndex(textCol))))
       val date = datetexts.head._1.asInstanceOf[String]
       val texts : Array[String] = datetexts.map(x => x._2.asInstanceOf[String]).distinct.toArray // no retweets
 
+      //Get the word counts.
       val stopwords = stpbroad.value
       val minCount = 0
       val (word_dict, words) = WordDict.createWordDictLocal(texts, stopwords, minCount)
-      val m = words.length
 
+      //Run the BDP.
       val bdp = new BDP(k)
-
-      val biterms = texts.map(text => BTMUtil.extractBitermsFromTextRandomK(text, word_dict, stopwords.toSet, k)).flatMap(x => x)
+      val biterms = texts.map(text => BTMUtil.extractBitermsFromTextRandomK(text, word_dict, stopwords, k)).flatMap(x => x)
 
       var weighted = false
       if (tfidf_bcst.isDefined) {
@@ -68,11 +109,70 @@ object BDPParallel extends Serializable with Logging {
       }
 
       val (topic_dist, theta, phi, nzMap, duration) = bdp.fit(biterms, words, iterN, k, alpha, eta, weighted)
-      Iterator(Some(Array(date, topic_dist, theta, phi, nzMap, m, duration)))
+
+      //Label the documents with the relevant topics.
+      labelDocuments(data, word_dict, stopwords, theta, phi, k, numTopics, textCol, dateCol, idCol)
     }
   }
 
-  def keyvalueRDD(rdd: RDD[Array[String]]) = {
+  private def labelDocuments(
+                      data: Seq[Row],
+                      wordDict: Map[String, Int],
+                      stopWords: scala.collection.immutable.Set[String],
+                      theta: Array[Double],
+                      phi: Array[Double],
+                      k: Int,
+                      numTopics: Int,
+                      textCol: String,
+                      dateCol: String,
+                      idCol: String
+                    ) : Iterator[Row] = {
+    //Create the word lookup as the inverse of the word dictionary.
+    val wordLookup = wordDict.map(_.swap)
+
+    data.map(doc => labelDocument(doc, wordDict, wordLookup, stopWords, theta, phi, k, numTopics, textCol, dateCol, idCol)).toIterator
+  }
+
+  private def labelDocument(
+                      document: Row,
+                      wordDict: Map[String, Int],
+                      wordLookup: Map[Int, String],
+                      stopWords: scala.collection.immutable.Set[String],
+                      theta: Array[Double],
+                      phi: Array[Double],
+                      k: Int,
+                      numTopics: Int,
+                      textCol: String,
+                      dateCol: String,
+                      idCol: String
+                    ) : Row = {
+    //Extract the biterms from the row.
+    val tokens = TextUtil.prep(document(document.fieldIndex(textCol)).asInstanceOf[String]).toArray
+    val d = BTMUtil.getWordIds(tokens, wordDict, stopWords)
+    val bs = BTMUtil.getBiterms(d).toArray
+
+    //Calculate the probabilities.
+    val limit = Math.min(k, theta.length)
+    val hs = bs.map { b =>
+      val (w1, w2) = b
+      1.0 / Iterator.range(0, limit).map { z =>
+        theta(z) * phi(w1 * limit + z) * phi(w2 * limit + z)
+      }.sum * bs.count(_ == b) / bs.length
+    }
+
+    val p_z_d = Iterator.range(0, limit).toArray.map{ z =>
+      bs.zip(hs).map { case (b, h) =>
+        val (w1, w2) = b
+        theta(z) * phi(w1 * limit + z) * phi(w2 * limit + z) * h
+      }.sum
+    }
+
+    //Retain the top N topics.
+    val topics = p_z_d.zipWithIndex.sortBy(p => -p._1).map(p => (wordLookup(p._2), p._1)).take(numTopics)
+    Row.fromSeq(document.toSeq ++ Array(topics))
+  }
+
+  def keyvalueRDD(rdd: RDD[Array[String]]) : RDD[(String, (String, String))] = {
     rdd.map(x => (x(0), (x(1), x(2))))
   }
 }
