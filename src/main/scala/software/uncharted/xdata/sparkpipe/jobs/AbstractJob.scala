@@ -114,7 +114,9 @@ trait AbstractJob extends Logging {
             Some(ConfigFactory.parseReader(Source.fromFile(cfgFile).bufferedReader()))
           }
         }
-      }.fold(environmentalConfig)((base, fallback) => base.withFallback(fallback))
+      }.fold(environmentalConfig) { (base, fallback) =>
+        base.withFallback(fallback)
+      }.resolve()
 
     if (debug) {
       debugConfig(config)
