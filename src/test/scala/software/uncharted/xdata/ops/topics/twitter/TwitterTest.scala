@@ -30,9 +30,9 @@ class TwitterTest extends SparkFunSpec {
       System.setProperty("user.dir", newDir)
 
       val stopWords = WordDict.loadStopwords(Array(
-        "src/test/resources/topic-modelling/stopwords/stopwords_all_en.v2.txt",
-        "src/test/resources/topic-modelling/stopwords/stopwords_ar.txt",
-        "src/test/resources/topic-modelling/stopwords/stopwords_html_tags.txt"
+        "src/main/resources/stopwords/stopwords_all_en.v2.txt",
+        "src/main/resources/stopwords/stopwords_ar.txt",
+        "src/main/resources/stopwords/stopwords_html_tags.txt"
       ).toList)
 
       it("should label tweets with topics") {
