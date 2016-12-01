@@ -115,18 +115,17 @@ object TopicModellingJob extends Logging {
 
     try {
       val topicModellingOp = getDocumentTopicRawTFIDF(
-        sqlContext,
-        params.alpha,
-        params.beta,
-        params.startDate,
-        params.endDate,
-        params.iterN,
-        params.k,
-        params.numTopTopics,
         params.dateCol,
         params.idCol,
         params.textCol,
         "docTopics",
+        sqlContext,
+        params.alpha,
+        params.beta,
+        params.timeRange,
+        params.iterN,
+        params.k,
+        params.numTopTopics,
         stopwords_bcst
       )(_ : (DataFrame, DataFrame))
 

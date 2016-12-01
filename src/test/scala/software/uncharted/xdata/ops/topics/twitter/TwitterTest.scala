@@ -13,8 +13,12 @@
 
 package software.uncharted.xdata.ops.topics.twitter
 
+import java.text.SimpleDateFormat
+import java.util.Date
+
 import org.apache.spark.sql.Row
 import software.uncharted.sparkpipe.Pipe
+import software.uncharted.xdata.ops.salt.RangeDescription
 import software.uncharted.xdata.ops.topics.twitter.util.WordDict
 import software.uncharted.xdata.spark.SparkFunSpec
 
@@ -48,19 +52,23 @@ class TwitterTest extends SparkFunSpec {
 
         val dfData = sqlc.createDataFrame(rddData)
 
+        val formatter = new SimpleDateFormat("yyyy-MM-dd")
+        val minTime = formatter.parse("2016-09-30").getTime
+        val maxTime = formatter.parse("2016-10-03").getTime
+        val timeRange = RangeDescription.fromStep(minTime, maxTime, 24 * 60 * 60 * 1000).asInstanceOf[RangeDescription[Long]]
+
         val result = getDocumentTopic(
-          sqlc,
-          1 / Math.E,
-          0.01,
-          "2016-09-30",
-          "2016-10-03",
-          10,
-          2,
-          10,
           "date",
           "id",
           "text",
           "topic",
+          sqlc,
+          1 / Math.E,
+          0.01,
+          timeRange,
+          10,
+          2,
+          10,
           stopwords_bcst,
           None)(dfData)
 
@@ -83,19 +91,23 @@ class TwitterTest extends SparkFunSpec {
         val corpus = Pipe(reader_corpus.load("src/test/resources/topic-modelling/isil_keywords.20160901-000000.txt")).run().filter("C7 = 'en'")
         val stopwords_bcst = sqlc.sparkContext.broadcast(stopWords)
 
+        val formatter = new SimpleDateFormat("yyyy-MM-dd")
+        val minTime = formatter.parse("2016-08-30").getTime
+        val maxTime = formatter.parse("2016-09-03").getTime
+        val timeRange = RangeDescription.fromStep(minTime, maxTime, 24 * 60 * 60 * 1000).asInstanceOf[RangeDescription[Long]]
+
         val result = getDocumentTopic(
-          sqlc,
-          1 / Math.E,
-          0.01,
-          "2016-08-30",
-          "2016-09-03",
-          10,
-          5,
-          3,
           "date",
           "id",
           "text",
           "topic",
+          sqlc,
+          1 / Math.E,
+          0.01,
+          timeRange,
+          10,
+          5,
+          3,
           stopwords_bcst,
           None)(corpus)
 

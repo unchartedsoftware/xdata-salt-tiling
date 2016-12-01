@@ -12,25 +12,26 @@
  */
 package software.uncharted.xdata.sparkpipe.config
 
+import java.text.SimpleDateFormat
+import java.util.Date
+
 import com.typesafe.config.{Config, ConfigException}
 import grizzled.slf4j.Logging
-import org.apache.spark.SparkContext
-import org.apache.spark.broadcast.Broadcast
-import software.uncharted.xdata.ops.topics.twitter.util.{TFIDF, TopicModellingUtil, WordDict}
+import software.uncharted.xdata.ops.salt.RangeDescription
+import software.uncharted.xdata.ops.topics.twitter.util.WordDict
 
 case class TopicModellingParams (
   alpha: Double,
   beta: Double,
   computeCoherence : Boolean,
+  timeRange: RangeDescription[Long],
   dateCol : String,
-  endDate: String,
   idCol : String,
   iterN: Int,
   k: Int,
   numTopTopics : Int,
   pathToCorpus : String,
   pathToTfidf : String,
-  startDate: String,
   stopwords: Set[String],
   textCol : String,
   pathToWrite: String
@@ -63,19 +64,24 @@ object TopicModellingConfigParser extends Logging {
       val textCol = topicsConfig.getString("textColumn")
       val pathToWrite = topicsConfig.getString("pathToWrite")
 
+
+      val formatter = new SimpleDateFormat("yyyy-MM-dd")
+      val minTime = formatter.parse(startDate).getTime
+      val maxTime = formatter.parse(endDate).getTime
+      val timeRange = RangeDescription.fromStep(minTime, maxTime, 24 * 60 * 60 * 1000).asInstanceOf[RangeDescription[Long]]
+
       TopicModellingParams(
         alpha,
         beta,
         computeCoherence,
+        timeRange,
         dateCol,
-        endDate,
         idCol,
         iterN,
         k,
         numTopTopics,
         pathToCorpus,
         pathToTfidf,
-        startDate,
         stopwords,
         textCol,
         pathToWrite

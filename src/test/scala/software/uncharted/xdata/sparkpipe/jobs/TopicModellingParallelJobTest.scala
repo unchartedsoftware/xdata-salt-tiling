@@ -35,12 +35,9 @@ class TopicModellingJobTest extends FunSpec {
 
       describe("#main()") {
 
-        it("should run the topic modelling job") {
+        it("should run the topic modelling job and output 5 rows") {
           TopicModellingJob.main(Array(path))
-        }
-        val results = fromFile("src/test/resources/topic-modelling/results/actual/part-00000").getLines
-
-        it("should have an output that has 5 rows"){
+          val results = fromFile("src/test/resources/topic-modelling/results/actual/part-00000").getLines
           assert(results.length === 5)
         }
       }
