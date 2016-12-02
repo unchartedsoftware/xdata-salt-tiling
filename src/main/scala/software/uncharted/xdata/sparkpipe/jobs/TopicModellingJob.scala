@@ -12,12 +12,14 @@
  */
 package software.uncharted.xdata.sparkpipe.jobs
 
+import scala.util.Try
+
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
 import org.apache.spark.sql.{SQLContext, DataFrame}
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.xdata.ops.topics.twitter.getDocumentTopicRawTFIDF
-import software.uncharted.xdata.sparkpipe.config.{SparkConfig, TopicModellingConfigParser, TopicModellingParams}
+import software.uncharted.xdata.sparkpipe.config.{SparkConfig, TopicModellingConfigParser, TopicModellingConfig}
 
 // scalastyle:off method.length parameter.number
 object TopicModellingJob extends Logging {
@@ -91,10 +93,10 @@ object TopicModellingJob extends Logging {
       sys.exit(-1)
     }
 
-    // load properties file from supplied URI
+    // load properties file from supplied URI. Should probably do more than just get from the Try.
     val config: Config = ConfigFactory.parseReader(scala.io.Source.fromFile(args(0)).bufferedReader()).resolve()
     val sqlContext: SQLContext = SparkConfig(config)
-    val params: TopicModellingParams = TopicModellingConfigParser.parse(config)
+    val params: TopicModellingConfig = TopicModellingConfigParser.apply(config).get
 
     val stopwords_bcst = sqlContext.sparkContext.broadcast(params.stopwords)
 
@@ -119,7 +121,6 @@ object TopicModellingJob extends Logging {
         params.idCol,
         params.textCol,
         "docTopics",
-        sqlContext,
         params.alpha,
         params.beta,
         params.timeRange,

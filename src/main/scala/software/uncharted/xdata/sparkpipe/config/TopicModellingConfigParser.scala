@@ -13,23 +13,23 @@
 package software.uncharted.xdata.sparkpipe.config
 
 import java.text.SimpleDateFormat
-import java.util.Date
 
-import com.typesafe.config.{Config, ConfigException}
+import scala.util.Try
+import com.typesafe.config.Config
 import grizzled.slf4j.Logging
 import software.uncharted.xdata.ops.salt.RangeDescription
 import software.uncharted.xdata.ops.topics.twitter.util.WordDict
 
-case class TopicModellingParams (
-  alpha: Double,
-  beta: Double,
+case class TopicModellingConfig (
+  alpha: Option[Double],
+  beta: Option[Double],
   computeCoherence : Boolean,
   timeRange: RangeDescription[Long],
   dateCol : String,
   idCol : String,
-  iterN: Int,
-  k: Int,
-  numTopTopics : Int,
+  iterN: Option[Int],
+  k: Option[Int],
+  numTopTopics : Option[Int],
   pathToCorpus : String,
   pathToTfidf : String,
   stopwords: Set[String],
@@ -43,19 +43,20 @@ case class TopicModellingParams (
 // scalastyle:off method.length
 // scalastyle:off magic.number
 object TopicModellingConfigParser extends Logging {
-  def parse(config: Config): TopicModellingParams = {
-    try {
+  def apply(config: Config): Try[TopicModellingConfig] = {
+    Try {
       val topicsConfig = config.getConfig("topics")
+      //I think alpha should be optional.
       val alphaStr = topicsConfig.getString("alpha")
       val alpha = if (alphaStr == "1/Math.E") 1/Math.E else alphaStr.toDouble
-      val beta = if (topicsConfig.hasPath("beta")) topicsConfig.getDouble("beta") else 0.01
+      val beta = if (topicsConfig.hasPath("beta")) Some(topicsConfig.getDouble("beta")) else None
       val computeCoherence = topicsConfig.getBoolean("computeCoherence")
       val dateCol = topicsConfig.getString("dateColumn")
       val endDate = topicsConfig.getString("endDate")
       val idCol = topicsConfig.getString("idColumn")
-      val iterN = if (topicsConfig.hasPath("iterN")) topicsConfig.getInt("iterN") else 150
-      val k = if (topicsConfig.hasPath("k")) topicsConfig.getInt("k") else 2
-      val numTopTopics = topicsConfig.getInt("numTopTopics")
+      val iterN = if (topicsConfig.hasPath("iterN")) Some(topicsConfig.getInt("iterN")) else None
+      val k = if (topicsConfig.hasPath("k")) Some(topicsConfig.getInt("k")) else None
+      val numTopTopics = Some(topicsConfig.getInt("numTopTopics"))
       val pathToCorpus = topicsConfig.getString("pathToCorpus")
       val pathToTfidf = if (topicsConfig.hasPath("pathToTfidf")) topicsConfig.getString("pathToTfidf") else ""
       val startDate = topicsConfig.getString("startDate")
@@ -70,8 +71,8 @@ object TopicModellingConfigParser extends Logging {
       val maxTime = formatter.parse(endDate).getTime
       val timeRange = RangeDescription.fromStep(minTime, maxTime, 24 * 60 * 60 * 1000).asInstanceOf[RangeDescription[Long]]
 
-      TopicModellingParams(
-        alpha,
+      TopicModellingConfig(
+        Some(alpha),
         beta,
         computeCoherence,
         timeRange,
@@ -86,11 +87,6 @@ object TopicModellingConfigParser extends Logging {
         textCol,
         pathToWrite
       )
-
-    } catch {
-      case e: ConfigException =>
-        error(s"Failure parsing arguments from Topic Modelling configuration file", e)
-        sys.exit(-1)
     }
   }
 }

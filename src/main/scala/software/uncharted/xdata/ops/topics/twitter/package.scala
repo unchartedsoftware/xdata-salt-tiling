@@ -31,24 +31,22 @@ package object twitter {
   /**
     * Perform Topic Modelling
     * Take a second DataFrame, representing precomputed tfidf scores, as input.
-    * Parse this DataFrame into a broadcast variable and use it to do topic modelling
+    * Parse this DataFrame into a broadcast variable and use it to do topic modelling.
     *
-    * @param dateCol The column of the input DataFrame in which to find the date
-    * @param idCol The column of the input DataFrame in which to find the id
-    * @param textCol The column of the input DataFrame in which to find the text
+    * @param dateCol The column of the input DataFrame in which to find the date.
+    * @param idCol The column of the input DataFrame in which to find the id.
+    * @param textCol The column of the input DataFrame in which to find the text.
     * @param outputCol The column of the output DataFrame in which the result will be written.
     *                  It will contain a row with two columns: topic & probability.
-    * @param sqlContext A SQLContext object used to create the resulting DataFrame
-    * @param alpha A dirichlet hyperparameter of the clumpiness of the model. Defaults to 1/e
-    * @param beta The value of beta. Defaults to 0.01
-    * @param startDateStr Beginning (inclusive) of the date range you are running this job over
-    * @param endDateStr The end (inclusive) of the date range this job is to be run over
-    * @param iterN The number of iterations of MCMC sampling to run. Defaults to 150
-    * @param k The number of topics to start with. Defaults to 2
-    * @param numTopTopics Number of topics to output
-    * @param stopwords_bcst All word to be ignored as potential topics
+    * @param alpha A dirichlet hyperparameter of the clumpiness of the model. Defaults to 1/e.
+    * @param beta The value of beta. Defaults to 0.01.
+    * @param timeRange Beginning & end (inclusive) of the date range you are running this job over.
+    * @param iterN The number of iterations of MCMC sampling to run. Defaults to 150.
+    * @param k The number of topics to start with. Defaults to 2.
+    * @param numTopics Number of topics to output. Defaults to 1.
+    * @param stopwords_bcst All word to be ignored as potential topics.
     *
-    * @param input A tuple of DataFrames of the form: (corpus data, tfidf scores)
+    * @param input A tuple of DataFrames of the form: (corpus data, tfidf scores).
     */
   // scalastyle:off parameter.number method.length magic.number
   def getDocumentTopicRawTFIDF(
@@ -56,19 +54,19 @@ package object twitter {
                         idCol: String,
                         textCol: String,
                         outputCol: String,
-                        sqlContext: SQLContext,
-                        alpha: Double = 1 / Math.E,
-                        beta: Double = 0.01,
+                        alpha: Option[Double] = None,
+                        beta: Option[Double] = None,
                         timeRange: RangeDescription[Long],
-                        iterN: Int = 150,
-                        k: Int = 2,
-                        numTopTopics: Int = 1,
+                        iterN: Option[Int] = None,
+                        k: Option[Int] = None,
+                        numTopics: Option[Int] = None,
                         stopwords_bcst: Broadcast[Set[String]]
                       )(
                         input: (DataFrame, DataFrame)
                       ) : DataFrame = {
 
     // Read in the second dataframe as precomputed tfidf scores
+    val sqlContext = input._1.sqlContext
     val tfidf_bcst = Some(sqlContext.sparkContext.broadcast(
       TFIDF.filterDateRange(
         TFIDF.loadTFIDF(input._2),
@@ -81,35 +79,32 @@ package object twitter {
       idCol,
       textCol,
       outputCol,
-      sqlContext,
       alpha,
       beta,
       timeRange,
       iterN,
       k,
-      numTopTopics,
+      numTopics,
       stopwords_bcst,
       tfidf_bcst
     )(input._1)
   }
 
   /**
-    * Preform topic modelling
-    * @param dateCol The column of the input DataFrame in which to find the date
-    * @param idCol The column of the input DataFrame in which to find the id
-    * @param textCol The column of the input DataFrame in which to find the text
+    * Perform topic modelling
+    * @param dateCol The column of the input DataFrame in which to find the date.
+    * @param idCol The column of the input DataFrame in which to find the id.
+    * @param textCol The column of the input DataFrame in which to find the text.
     * @param outputCol The column of the output DataFrame in which the result will be written.
     *                  It will contain a row with two columns: topic & probability.
-    * @param sqlContext A SQLContext object used to create the resulting DataFrame
-    * @param alpha A dirichlet hyperparameter of the clumpiness of the model. Defaults to 1/e
-    * @param beta The value of beta. Defaults to 0.01
-    * @param startDateStr Beginning (inclusive) of the date range you are running this job over
-    * @param endDateStr The end (inclusive) of the date range this job is to be run over
-    * @param iterN The number of iterations of MCMC sampling to run. Defaults to 150
-    * @param k The number of topics to start with. Defaults to 2
-    * @param numTopics Number of topics to output
-    * @param stopwords_bcst All word to be ignored as potential topics
-    * @param tfidf_bcst The precomputed tfidf scores
+    * @param alpha A dirichlet hyperparameter of the clumpiness of the model. Defaults to 1/e.
+    * @param beta The value of beta. Defaults to 0.01.
+    * @param timeRange Beginning & end (inclusive) of the date range you are running this job over.
+    * @param iterN The number of iterations of MCMC sampling to run. Defaults to 150.
+    * @param k The number of topics to start with. Defaults to 2.
+    * @param numTopics Number of topics to output. Defaults to 1.
+    * @param stopwords_bcst All word to be ignored as potential topics.
+    * @param tfidf_bcst The precomputed tfidf scores.
     *
     * @param input The corpus data
     */
@@ -118,18 +113,23 @@ package object twitter {
                         idCol: String,
                         textCol: String,
                         outputCol: String,
-                        sqlContext: SQLContext,
-                        alpha: Double = 1 / Math.E,
-                        beta: Double = 0.01,
+                        alpha: Option[Double] = None,
+                        beta: Option[Double] = None,
                         timeRange: RangeDescription[Long],
-                        iterN: Int = 150,
-                        k: Int = 2,
-                        numTopics: Int = 1,
+                        iterN: Option[Int] = None,
+                        k: Option[Int] = None,
+                        numTopics: Option[Int] = None,
                         stopwords_bcst: Broadcast[Set[String]],
                         tfidf_bcst: Option[Broadcast[Array[(String, String, Double)]]] = None
                       )(
                         input: DataFrame
                       ) : DataFrame = {
+    //Set the defaults.
+    val alphaDefault = alpha.getOrElse(1 / Math.E)
+    val betaDefault = beta.getOrElse(0.01)
+    val iterNDefault = iterN.getOrElse(150)
+    val kDefault = k.getOrElse(2)
+    val numTopicsDefault = numTopics.getOrElse(1)
 
     // create a date parser specific to the input data
     val datePsr = BTMUtil.makeTwitterDateParser()
@@ -153,7 +153,9 @@ package object twitter {
       .run
 
     // Run BTM on each partition
-    val tweetTopics = data.mapPartitions(iter => BDPParallel.partitionBDP(iter, stopwords_bcst, iterN, k, numTopics, alpha, beta, textCol, formatted_date_col, idCol, tfidf_bcst))
-    sqlContext.createDataFrame(tweetTopics, BDPParallel.getTweetTopicSchema(data.schema, outputCol))
+    val tweetTopics = data.mapPartitions(iter => BDPParallel.partitionBDP(iter, stopwords_bcst, iterNDefault, kDefault,
+      numTopicsDefault, alphaDefault, betaDefault, textCol, formatted_date_col, idCol, tfidf_bcst))
+
+    input.sqlContext.createDataFrame(tweetTopics, BDPParallel.getTweetTopicSchema(data.schema, outputCol))
   }
 }

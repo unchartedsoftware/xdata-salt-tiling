@@ -14,7 +14,6 @@
 package software.uncharted.xdata.ops.topics.twitter
 
 import java.text.SimpleDateFormat
-import java.util.Date
 
 import org.apache.spark.sql.Row
 import software.uncharted.sparkpipe.Pipe
@@ -62,13 +61,12 @@ class TwitterTest extends SparkFunSpec {
           "id",
           "text",
           "topic",
-          sqlc,
-          1 / Math.E,
-          0.01,
+          Some(1 / Math.E),
+          Some(0.01),
           timeRange,
-          10,
-          2,
-          10,
+          Some(10),
+          Some(2),
+          Some(10),
           stopwords_bcst,
           None)(dfData)
 
@@ -101,13 +99,12 @@ class TwitterTest extends SparkFunSpec {
           "id",
           "text",
           "topic",
-          sqlc,
-          1 / Math.E,
-          0.01,
+          Some(1 / Math.E),
+          Some(0.01),
           timeRange,
-          10,
-          5,
-          3,
+          Some(10),
+          Some(5),
+          Some(3),
           stopwords_bcst,
           None)(corpus)
 
