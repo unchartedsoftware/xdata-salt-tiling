@@ -1,28 +1,27 @@
 /**
- * Copyright (c) 2014-2015 Uncharted Software Inc. All rights reserved.
- *
- * Property of Uncharted(tm), formerly Oculus Info Inc.
- * http://uncharted.software/
- *
- * This software is the confidential and proprietary information of
- * Uncharted Software Inc. ("Confidential Information"). You shall not
- * disclose such Confidential Information and shall use it only in
- * accordance with the terms of the license agreement you entered into
- * with Uncharted Software Inc.
- */
+  * Copyright (c) 2014-2015 Uncharted Software Inc. All rights reserved.
+  *
+  * Property of Uncharted(tm), formerly Oculus Info Inc.
+  * http://uncharted.software/
+  *
+  * This software is the confidential and proprietary information of
+  * Uncharted Software Inc. ("Confidential Information"). You shall not
+  * disclose such Confidential Information and shall use it only in
+  * accordance with the terms of the license agreement you entered into
+  * with Uncharted Software Inc.
+  */
 package software.uncharted.xdata.ops
 
-import java.io.{BufferedOutputStream, File, FileOutputStream}
+import java.io.{File, FileOutputStream}
 import java.nio.{ByteBuffer, ByteOrder, DoubleBuffer}
-import java.util.ArrayList
 import java.util.zip.ZipOutputStream
 
 import grizzled.slf4j.Logging
 import org.apache.spark.rdd.RDD
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.util.SparseArray
-
-import scala.util.parsing.json.JSONObject
+import net.liftweb.json.JsonAST.compactRender
+import net.liftweb.json.Extraction.decompose
 
 package object io extends Logging {
 
@@ -30,6 +29,11 @@ package object io extends Logging {
 
   //to remove scalastyle:string literal error
   val slash = "/"
+  val comma = ","
+
+  val binExtension = ".bin"
+
+  implicit val formats = net.liftweb.json.DefaultFormats
 
 
   /**
@@ -46,7 +50,10 @@ package object io extends Logging {
     if (input.context.getConf.get("spark.master") != "local") {
       throw new Exception("writeToFile() not permitted on non-local Spark instance")
     }
-    new FileSystemClient(baseFilePath, Some(extension)).write(layerName, input.map { case (index, data) => (index, data.toArray) })
+    val tileIndexTranslator = (index: (Int, Int, Int)) => {
+      mkRowId("", slash, extension)(index._1, index._2, index._3)
+    }
+    new FileSystemClient(baseFilePath, Some(extension)).write[(Int, Int, Int)](layerName, input.map { case (index, data) => (index, data.toArray) }, tileIndexTranslator)
     input
   }
 
@@ -75,8 +82,10 @@ package object io extends Logging {
   def writeToZip(baseZipDirectory: String, layerName: String)(input: RDD[((Int, Int, Int), Seq[Byte])]): RDD[((Int, Int, Int), Seq[Byte])] = {
     val zipDirectory = new File(baseZipDirectory)
     zipDirectory.mkdirs()
-
-    new ZipFileClient(zipDirectory).write(layerName + ".zip", input.map { case (index, data) => (index, data.toArray) })
+    val tileIndexTranslator = (index: (Int, Int, Int)) => {
+      mkRowId("", slash, binExtension)(index._1, index._2, index._3)
+    }
+    new ZipFileClient(zipDirectory).write(layerName + ".zip", input.map { case (index, data) => (index, data.toArray) }, tileIndexTranslator)
     input
   }
 
@@ -120,7 +129,7 @@ package object io extends Logging {
       tileDataIter.foreach { tileData =>
         val coord = tileData._1
         // store tile in bucket as layerName/level-xIdx-yIdx.bin
-        val key = s"$layerName/${coord._1}/${coord._2}/${coord._3}.bin"
+        val key = mkRowId(s"${layerName}/", slash, binExtension)(coord._1, coord._2, coord._3)
         s3Client.upload(tileData._2.toArray, bucketName, key)
       }
     }
@@ -159,7 +168,7 @@ package object io extends Logging {
     val results = input.mapPartitions { tileDataIter =>
       tileDataIter.map { tileData =>
         val coord = tileData._1
-        val rowID = mkRowId(s"${layerName}/", slash, ".bin")(coord._1, coord._2, coord._3)
+        val rowID = mkRowId("", comma, "")(coord._1, coord._2, coord._3)
         (rowID, tileData._2)
       }
     }
@@ -169,7 +178,7 @@ package object io extends Logging {
     input
   }
 
-  private def mkRowId(prefix: String, separator: String, suffix: String)(level: Int, x: Int, y: Int): String = {
+  private[io] def mkRowId(prefix: String, separator: String, suffix: String)(level: Int, x: Int, y: Int): String = {
     val digits = math.log10(1 << level).floor.toInt + 1
     (prefix + "%02d" + separator + "%0" + digits + "d" + separator + "%0" + digits + "d" + suffix).format(level, x, y)
   }
@@ -199,7 +208,7 @@ package object io extends Logging {
     */
   def serializeBinArray[TC, BC, X](tiles: RDD[SeriesData[TC, BC, Double, X]]):
   RDD[(TC, Seq[Byte])] =
-    serializeTiles(doubleTileToByteArrayDense)(tiles)
+  serializeTiles(doubleTileToByteArrayDense)(tiles)
 
   // Serialize a single tile's data - an alternate version that does the same thing in a tenth the time
   // See unit test in PackageTest for confirmation
@@ -218,20 +227,21 @@ package object io extends Logging {
     */
   def serializeElementScore[TC, BC, X](tiles: RDD[SeriesData[TC, BC, List[(String, Int)], X]]):
   RDD[(TC, Seq[Byte])] =
-    serializeTiles(scoreListToByteArray)(tiles)
+  serializeTiles(scoreListToByteArray)(tiles)
 
-  def scoreListToByteArray: SparseArray[List[(String, Int)]] => Seq[Byte] = sparseData =>
-    new JSONObject(sparseData.head.toMap).toString().getBytes
+  def scoreListToByteArray: SparseArray[List[(String, Int)]] => Seq[Byte] = {
+    sparseData => compactRender(decompose(sparseData.head.toMap)).toString().getBytes
+  }
 
   /**
     * Serializes tile bins according to an arbitrarily specified serialization function
     *
     * @param serializationFcn The serialization function by which a single tile is serialized
-    * @param tiles The input tile set
+    * @param tiles            The input tile set
     * @tparam TC The tile coordinate type
     * @tparam BC The bin coordinate type
-    * @tparam V The value type
-    * @tparam X Any associated analytic type
+    * @tparam V  The value type
+    * @tparam X  Any associated analytic type
     * @return Index/byte-array tuples
     */
   def serializeTiles[TC, BC, V, X](serializationFcn: SparseArray[V] => Seq[Byte])(tiles: RDD[SeriesData[TC, BC, V, X]]): RDD[(TC, Seq[Byte])] = {

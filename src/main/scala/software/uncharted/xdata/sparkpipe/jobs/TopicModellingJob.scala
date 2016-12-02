@@ -1,28 +1,27 @@
 /**
- * Copyright (c) 2014-2015 Uncharted Software Inc. All rights reserved.
- *
- * Property of Uncharted(tm), formerly Oculus Info Inc.
- * http://uncharted.software/
- *
- * This software is the confidential and proprietary information of
- * Uncharted Software Inc. ("Confidential Information"). You shall not
- * disclose such Confidential Information and shall use it only in
- * accordance with the terms of the license agreement you entered into
- * with Uncharted Software Inc.
- */
+  * Copyright (c) 2014-2015 Uncharted Software Inc. All rights reserved.
+  *
+  * Property of Uncharted(tm), formerly Oculus Info Inc.
+  * http://uncharted.software/
+  *
+  * This software is the confidential and proprietary information of
+  * Uncharted Software Inc. ("Confidential Information"). You shall not
+  * disclose such Confidential Information and shall use it only in
+  * accordance with the terms of the license agreement you entered into
+  * with Uncharted Software Inc.
+  */
 package software.uncharted.xdata.sparkpipe.jobs
 
 import scala.util.Try
-
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
-import org.apache.spark.sql.{SQLContext, DataFrame}
+import org.apache.spark.sql.{DataFrame, SQLContext, SparkSession}
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.xdata.ops.topics.twitter.getDocumentTopicRawTFIDF
-import software.uncharted.xdata.sparkpipe.config.{SparkConfig, TopicModellingConfigParser, TopicModellingConfig}
+import software.uncharted.xdata.sparkpipe.config.{SparkConfig, TopicModellingConfig, TopicModellingConfigParser}
 
 // scalastyle:off method.length parameter.number
-object TopicModellingJob extends Logging {
+object TopicModellingJob extends AbstractJob {
 
   /**
     * This job runs the topic modelling op
@@ -81,76 +80,54 @@ object TopicModellingJob extends Logging {
     * spark {
     *   master = local
     *   ...
-    * }
-    *
-    * @param args Array of commandline arguments
     */
-  // scalastyle:off
-  def main(args: Array[String]): Unit = {
-    // get the properties file path
-    if (args.length != 1) {
-      logger.error("Usage: <job-executable> <config-file>")
-      sys.exit(-1)
-    }
-
-    // load properties file from supplied URI. Should probably do more than just get from the Try.
-    val config: Config = ConfigFactory.parseReader(scala.io.Source.fromFile(args(0)).bufferedReader()).resolve()
-    val sqlContext: SQLContext = SparkConfig(config)
+  // scalastyle:off multiple.string.literals
+  override def execute(sparkSession: SparkSession, config: Config): Unit = {
     val params: TopicModellingConfig = TopicModellingConfigParser.apply(config).get
-
-    val stopwords_bcst = sqlContext.sparkContext.broadcast(params.stopwords)
-
-    // Write results to file if 'outfile' specified in config
     val outputOperation = JobUtil.createTopicsOutputOperation(params.pathToWrite)
 
-    val reader_corpus = sqlContext.read
-    .format("com.databricks.spark.csv")
-    .option("header", "true")
-    .option("inferSchema", "true")
-    .option("delimiter", "\t")
+    val stopwords_bcst = sparkSession.sparkContext.broadcast(params.stopwords)
 
-    val reader_tfidf = sqlContext.read
-    .format("com.databricks.spark.csv")
-    .option("header", "false")
-    .option("inferSchema", "true")
-    .option("delimiter", ",")
+    val reader_corpus = sparkSession.read
+      .format("com.databricks.spark.csv")
+      .option("header", "true")
+      .option("inferSchema", "true")
+      .option("delimiter", "\t")
 
-    try {
-      val topicModellingOp = getDocumentTopicRawTFIDF(
-        params.dateCol,
-        params.idCol,
-        params.textCol,
-        "docTopics",
-        params.alpha,
-        params.beta,
-        params.timeRange,
-        params.iterN,
-        params.k,
-        params.numTopTopics,
-        stopwords_bcst
-      )(_ : (DataFrame, DataFrame))
+    val reader_tfidf = sparkSession.read
+      .format("com.databricks.spark.csv")
+      .option("header", "false")
+      .option("inferSchema", "true")
+      .option("delimiter", ",")
 
-      val corpus = Pipe(reader_corpus.load(params.pathToCorpus))
-      val tfidf = Pipe(reader_tfidf.load(params.pathToTfidf))
-      val merge = Pipe(corpus, tfidf)
-        .to(topicModellingOp)
-        .maybeTo(outputOperation)
-        .run()
+    val topicModellingOp = getDocumentTopicRawTFIDF(
+      params.dateCol,
+      params.idCol,
+      params.textCol,
+      "docTopics",
+      params.alpha,
+      params.beta,
+      params.timeRange,
+      params.iterN,
+      params.k,
+      params.numTopTopics,
+      stopwords_bcst
+    )(_: (DataFrame, DataFrame))
 
-        // Without tfidf
-        // val topicModellingOp = doTopicModelling(params.alpha, params.beta, params.computeCoherence, params.dateCol,
-        //    params.endDate, params.idCol, params.iterN, params.k, params.numTopTopics, params.pathToWrite, sqlContext,
-        //    params.startDate, stopwords_bcst, params.textCol, None)(_ : DataFrame)
-        //
-        // Pipe(reader_corpus.load(params.pathToCorpus))
-        //   .to(topicModellingOp)
-        //   .maybeTo(outputOperation)
-        //   .run()
+    val corpus = Pipe(reader_corpus.load(params.pathToCorpus))
+    val tfidf = Pipe(reader_tfidf.load(params.pathToTfidf))
+    val merge = Pipe(corpus, tfidf)
+      .to(topicModellingOp)
+      .maybeTo(outputOperation)
+      .run()
 
-    } finally {
-      System.clearProperty("spark.driver.port")
-      System.clearProperty("spark.hostPort")
-      sqlContext.sparkContext.stop()
-    }
+    // Without tfidf
+    // val topicModellingOp = doTopicModelling(params.alpha, params.beta, params.computeCoherence, params.dateCol,
+    //    params.endDate, params.idCol, params.iterN, params.k, params.numTopTopics, params.pathToWrite, sqlContext,
+    //    params.startDate, stopwords_bcst, params.textCol, None)(_ : DataFrame)
+    //
+    // Pipe(reader_corpus.load(params.pathToCorpus))
+    //   .to(topicModellingOp)
+    //   .maybeTo(outputOperation)
   }
 }

@@ -15,11 +15,15 @@ package software.uncharted.xdata.ops.topics
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.sql.{Column, DataFrame, SQLContext}
 import java.util.Date
+
+import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.addColumn
 import software.uncharted.sparkpipe.ops.core.dataframe.temporal.dateFilter
 import software.uncharted.xdata.ops.salt.RangeDescription
 import software.uncharted.xdata.ops.topics.twitter.util.{BDPParallel, BTMUtil, TFIDF, TopicModellingUtil}
+
+import scala.tools.nsc.util.ShowPickled
 
 /**
   * This package contains the operation (doTopicModelling) to compute the topics of a given corpus.
@@ -45,7 +49,6 @@ package object twitter {
     * @param k The number of topics to start with. Defaults to 2.
     * @param numTopics Number of topics to output. Defaults to 1.
     * @param stopwords_bcst All word to be ignored as potential topics.
-    *
     * @param input A tuple of DataFrames of the form: (corpus data, tfidf scores).
     */
   // scalastyle:off parameter.number method.length magic.number
@@ -92,6 +95,7 @@ package object twitter {
 
   /**
     * Perform topic modelling
+    *
     * @param dateCol The column of the input DataFrame in which to find the date.
     * @param idCol The column of the input DataFrame in which to find the id.
     * @param textCol The column of the input DataFrame in which to find the text.
@@ -105,7 +109,6 @@ package object twitter {
     * @param numTopics Number of topics to output. Defaults to 1.
     * @param stopwords_bcst All word to be ignored as potential topics.
     * @param tfidf_bcst The precomputed tfidf scores.
-    *
     * @param input The corpus data
     */
   def getDocumentTopic(
@@ -124,6 +127,7 @@ package object twitter {
                       )(
                         input: DataFrame
                       ) : DataFrame = {
+
     //Set the defaults.
     val alphaDefault = alpha.getOrElse(1 / Math.E)
     val betaDefault = beta.getOrElse(0.01)
@@ -153,9 +157,20 @@ package object twitter {
       .run
 
     // Run BTM on each partition
-    val tweetTopics = data.mapPartitions(iter => BDPParallel.partitionBDP(iter, stopwords_bcst, iterNDefault, kDefault,
-      numTopicsDefault, alphaDefault, betaDefault, textCol, formatted_date_col, idCol, tfidf_bcst))
-
-    input.sqlContext.createDataFrame(tweetTopics, BDPParallel.getTweetTopicSchema(data.schema, outputCol))
+    val tweetTopics = data.mapPartitions { iter =>
+      BDPParallel.partitionBDP(
+        iter,
+        stopwords_bcst,
+        iterNDefault,
+        kDefault,
+        numTopicsDefault,
+        alphaDefault,
+        betaDefault,
+        textCol,
+        formatted_date_col,
+        idCol,
+        tfidf_bcst)
+    }(RowEncoder(data.schema))
+    tweetTopics.toDF()
   }
 }

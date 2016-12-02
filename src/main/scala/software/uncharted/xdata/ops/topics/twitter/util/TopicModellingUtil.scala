@@ -12,12 +12,10 @@
  */
 package software.uncharted.xdata.ops.topics.twitter.util
 
-import java.io.{File, PrintWriter}
 import java.text.SimpleDateFormat
-import java.util.{Calendar,Date}
-import java.nio.file.{Paths, Files}
+import java.util.{Date}
 import grizzled.slf4j.Logging
-import org.joda.time.{DateTime, Days, Period}
+import org.joda.time.{DateTime, Period}
 import org.apache.spark.sql.{DataFrame, Row, SQLContext}
 import org.apache.spark.sql.types.{StructType, IntegerType, StructField, BooleanType, StringType, LongType, ArrayType, DoubleType}
 
@@ -82,83 +80,5 @@ object TopicModellingUtil extends Logging {
     val terms = tp.filterNot(_.startsWith("#")).take(3)
     val labels = if (hashtags.size >= 3) hashtags else hashtags ++ terms take 3
     labels
-  }
-
-  // scalastyle:off method.length
-  /**
-    * Write the results of topic modelling to file. Writes one result file per day in the date range given as input
-    *
-    * @param cparts
-    * @param data
-    * @param textCol
-    * @param alpha
-    * @param beta
-    * @param outdir
-    * @param iterN
-    * @param computeCoherence
-    * @param numTopTopics
-    */
-  def writeTopicsToDF(
-    alpha: Double,
-    beta: Double,
-    coherenceMap: Option[Map[String, (Seq[Double], Double)]],
-    computeCoherence : Boolean,
-    cparts : Array[(String, Array[(Double, Seq[String])], Array[Double], Array[Double], Map[Int,Int], Int, Double)],
-    data: DataFrame,
-    iterN : Int,
-    numTopTopics : Int,
-    outdir: String,
-    sqlContext: SQLContext,
-    textCol : String
-  ) : DataFrame = {
-
-    var result : scala.collection.mutable.Seq[Row] = scala.collection.mutable.Seq()
-    cparts.map { cp =>
-      val (date, topic_dist, theta, phi, nzMap, m, duration) = cp
-      topic_dist.zipWithIndex.map {
-        case (t, i) => result = result ++ Seq(Row(
-          date,
-          i,
-          nzMap(i),
-          t._1, // theta
-          findLabels(t._2), // topic labels
-          t._2.slice(0,20), // topics
-          "%.4f".format(duration), // job duration
-          alpha,
-          beta,
-          iterN,
-          m,
-          topic_dist.length, // k
-          if (!coherenceMap.isEmpty) {val score = coherenceMap.get(date); score._1(i)} else None, // coherence score
-          if (!coherenceMap.isEmpty) {val avg = coherenceMap.get(date); avg._2} else None // average coherence score
-        ))
-          true
-      }
-    }
-
-    /**
-      * Output schema for results. Results are segmented by date
-      */
-    val schema = StructType(
-      StructField("Date", StringType, false) ::
-      StructField("Z", IntegerType, false) ::
-      StructField("Recorder_map", IntegerType, false) ::
-      StructField("Theta", DoubleType, false) ::
-      StructField("Topic_labels", ArrayType(StringType, false), false) ::
-      StructField("Topics", ArrayType(StringType, false), false) ::
-      StructField("Job_duration_minutes", StringType, false) ::
-      StructField("Alpha", DoubleType, false) ::
-      StructField("Beta", DoubleType, false) ::
-      StructField("IterN", IntegerType, false) ::
-      StructField("M", IntegerType, false) ::
-      StructField("K", IntegerType, false) ::
-      StructField("Coherence_score", DoubleType, true) ::
-      StructField("Average_coherence_score", DoubleType, true) ::
-      Nil
-    )
-
-    val rdd = sqlContext.sparkContext.parallelize(result.toSeq)
-
-    sqlContext.createDataFrame(rdd, schema)
   }
 }

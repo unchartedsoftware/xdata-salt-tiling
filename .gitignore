@@ -2,6 +2,8 @@ build
 *.iml
 .idea
 *~
+*.swp
 .gradle
 test.output
 classes
+tags

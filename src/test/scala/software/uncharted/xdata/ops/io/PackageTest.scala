@@ -16,16 +16,17 @@ import java.io.File
 import java.nio.file.{Paths, Files}
 
 import org.apache.commons.io.FileUtils
-import software.uncharted.salt.core.generation.output.{TestSeriesData, SeriesData}
+import software.uncharted.salt.core.generation.output.TestSeriesData
 import software.uncharted.salt.core.util.SparseArray
 import software.uncharted.xdata.ops.salt.MercatorTimeProjection
 import software.uncharted.xdata.spark.SparkFunSpec
 
-import scala.util.parsing.json.JSONObject
-
 import org.apache.hadoop.hbase.client._;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
+
+import net.liftweb.json.JsonAST.compactRender
+import net.liftweb.json.Extraction.decompose
 
 
 
@@ -36,7 +37,7 @@ class PackageTest extends SparkFunSpec {
   private val testDir = "build/tmp/test_file_output/test_data"
   private val testLayer = "test_layer"
   private val testBucket = "uncharted-s3-client-test"
-  private val extension = "tst"
+  private val extension = ".tst"
 
   lazy val awsAccessKey = sys.env("AWS_ACCESS_KEY")
   lazy val awsSecretKey = sys.env("AWS_SECRET_KEY")
@@ -49,6 +50,8 @@ class PackageTest extends SparkFunSpec {
 
   def genHeatmapArray(in: Double*) = in.foldLeft(new SparseArray(0, 0.0))(_ += _)
   def genTopicArray(in: List[(String, Int)]*) = in.foldLeft(new SparseArray(0, List[(String, Int)]()))(_ += _)
+
+  implicit val formats = net.liftweb.json.DefaultFormats
 
   describe("#writeToFile") {
     it("should create the folder directory structure if it's missing") {
@@ -233,6 +236,19 @@ class PackageTest extends SparkFunSpec {
     }
   }
 
+  describe("#mkRowId") {
+    it("should form proper IDs without suffix or prefix") {
+      assertResult("04,07,03")(mkRowId("", ",", "")(4, 7, 3))
+      assertResult("03:1:3")(mkRowId("", ":", "")(3, 1, 3))
+      assertResult("10--0045--0110")(mkRowId("", "--", "")(10,45,110))
+    }
+    it("should prepend and append prefix and suffix properly") {
+      assertResult("abc/04/07/03.bin")(mkRowId("abc/", "/", ".bin")(4, 7, 3))
+      assertResult("abc/03:1:3.bin")(mkRowId("abc/", ":", ".bin")(3, 1, 3))
+      assertResult("abc/10--0045--0110.bin")(mkRowId("abc/", "--", ".bin")(10,45,110))
+    }
+  }
+
   describe("#serializeBinArray") {
     it("should ignore tiles with no updated bins") {
       val series = sc.parallelize(
@@ -262,7 +278,6 @@ class PackageTest extends SparkFunSpec {
   }
 
   describe("#serializeElementScore") {
-
     it("should create an RDD of JSON strings serialized to bytes from series data ") {
       val arr0 = genTopicArray(List("aa" -> 1, "bb" -> 2))
       val arr1 = genTopicArray(List("cc" -> 3, "dd" -> 4))
@@ -273,7 +288,7 @@ class PackageTest extends SparkFunSpec {
           TestSeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (4, 5, 6), arr1, None)
         ))
 
-      val json = List(new JSONObject(Map("aa" -> 1, "bb" -> 2)).toString().getBytes, new JSONObject(Map("cc" -> 3, "dd" -> 4)).toString().getBytes)
+      val json = List(compactRender(decompose((Map("aa" -> 1, "bb" -> 2)))).toString().getBytes, compactRender(decompose(Map("cc" -> 3, "dd" -> 4))).toString().getBytes)
 
       val result = serializeElementScore(series).collect()
       assertResult(2)(result.length)

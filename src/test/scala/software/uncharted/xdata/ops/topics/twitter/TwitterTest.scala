@@ -47,9 +47,9 @@ class TwitterTest extends SparkFunSpec {
           Tweet("4", "Sun Oct 02 00:00:10 +0000 2016", "i wish i had been independent and wise because this is silly"),
           Tweet("5", "Sun Oct 02 00:00:10 +0000 2016", "this is the final test i did it. Now, more than ever, we need Trump.")
         ))
-        val stopwords_bcst = sqlc.sparkContext.broadcast(stopWords)
+        val stopwords_bcst = sc.broadcast(stopWords)
 
-        val dfData = sqlc.createDataFrame(rddData)
+        val dfData = sparkSession.createDataFrame(rddData)
 
         val formatter = new SimpleDateFormat("yyyy-MM-dd")
         val minTime = formatter.parse("2016-09-30").getTime
@@ -81,13 +81,13 @@ class TwitterTest extends SparkFunSpec {
         //Run a bigger test and make sure the returned topics are generally accurate.
         //You will never be able to get 100% identical result, but the general content of the returned topics
         //will be consistent between runs.
-        val reader_corpus = sqlc.read
+        val reader_corpus = sparkSession.read
           .format("com.databricks.spark.csv")
           .option("header", "true")
           .option("inferSchema", "true")
           .option("delimiter", "\t")
         val corpus = Pipe(reader_corpus.load("src/test/resources/topic-modelling/isil_keywords.20160901-000000.txt")).run().filter("C7 = 'en'")
-        val stopwords_bcst = sqlc.sparkContext.broadcast(stopWords)
+        val stopwords_bcst = sparkSession.sparkContext.broadcast(stopWords)
 
         val formatter = new SimpleDateFormat("yyyy-MM-dd")
         val minTime = formatter.parse("2016-08-30").getTime

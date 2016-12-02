@@ -53,33 +53,6 @@ class BasicOperationsTest extends SparkFunSpec {
         assertResult(List(1, 4, 9, 16))(map((n: Int) => n * n)(data).collect.toList)
       }
     }
-
-    describe("#toDataFrame") {
-      it("should work with a case class") {
-        val data = sc.parallelize(Seq(TestRow(1, 1.0, "one"), TestRow(2, 2.0, "two"), TestRow(3, 3.0, "three"), TestRow(4, 4.0, "four")))
-        val converted = toDataFrame(sqlc)(data)
-        assertResult(List(1, 2, 3, 4))(converted.select("a").rdd.map(_(0).asInstanceOf[Int]).collect.toList)
-        assertResult(List(1.0, 2.0, 3.0, 4.0))(converted.select("b").rdd.map(_(0).asInstanceOf[Double]).collect.toList)
-        assertResult(List("one", "two", "three", "four"))(converted.select("c").rdd.map(_(0).asInstanceOf[String]).collect.toList)
-      }
-
-      it("should work with a .csv with auto-schema") {
-        val data = sc.parallelize(Seq("1,1.0,one", "2,2.0,two", "3,3.0,three", "4,4.0,four"))
-        val converted = toDataFrame(sqlc, Map("inferSchema" -> "true"), None)(data)
-        assertResult(List(1, 2, 3, 4))(converted.select("C0").rdd.map(_(0).asInstanceOf[Int]).collect.toList)
-        assertResult(List(1.0, 2.0, 3.0, 4.0))(converted.select("C1").rdd.map(_(0).asInstanceOf[Double]).collect.toList)
-        assertResult(List("one", "two", "three", "four"))(converted.select("C2").rdd.map(_(0).asInstanceOf[String]).collect.toList)
-      }
-
-      it("should work with a .csv with an explicit schema") {
-        val data = sc.parallelize(Seq("1,1.0,one", "2,2.0,two", "3,3.0,three", "4,4.0,four"))
-        val schema = StructType(Seq(StructField("a", IntegerType), StructField("b", DoubleType), StructField("c", StringType)))
-        val converted = toDataFrame(sqlc, Map[String, String](), Some(schema))(data)
-        assertResult(List(1, 2, 3, 4))(converted.select("a").rdd.map(_(0).asInstanceOf[Int]).collect.toList)
-        assertResult(List(1.0, 2.0, 3.0, 4.0))(converted.select("b").rdd.map(_(0).asInstanceOf[Double]).collect.toList)
-        assertResult(List("one", "two", "three", "four"))(converted.select("c").rdd.map(_(0).asInstanceOf[String]).collect.toList)
-      }
-    }
   }
 }
 
