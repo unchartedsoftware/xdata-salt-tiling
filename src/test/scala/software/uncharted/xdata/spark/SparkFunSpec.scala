@@ -14,7 +14,7 @@ package software.uncharted.xdata.spark
 
 import java.util.concurrent.Semaphore
 
-import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.{SQLContext, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext}
 import org.scalatest.{FunSpec, Outcome}
 
@@ -24,7 +24,7 @@ import org.scalatest.{FunSpec, Outcome}
  */
 abstract class SparkFunSpec extends FunSpec {
   protected var sc: SparkContext = _
-  protected var sqlc: SQLContext = _
+  protected var sparkSession: SparkSession = _
 
   def before(): Unit = {
     System.clearProperty("spark.driver.port")
@@ -34,8 +34,8 @@ abstract class SparkFunSpec extends FunSpec {
       .setMaster("local")
       .setAppName("test")
 
-    sc = new SparkContext(conf)
-    sqlc = new SQLContext(sc)
+    sparkSession = SparkSession.builder.config(conf).getOrCreate()
+    sc = sparkSession.sparkContext
   }
 
   def after(): Unit = {

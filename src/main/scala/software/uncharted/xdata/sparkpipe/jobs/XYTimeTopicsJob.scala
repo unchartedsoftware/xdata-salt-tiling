@@ -14,7 +14,11 @@ package software.uncharted.xdata.sparkpipe.jobs
 
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
+<<<<<<< HEAD
 import org.apache.spark.sql.{DataFrame, SQLContext}
+=======
+import org.apache.spark.sql.{DataFrame, SQLContext, SparkSession}
+>>>>>>> develop
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.temporal.parseDate
 import software.uncharted.sparkpipe.ops.core.dataframe.text.{includeTermFilter, split}
@@ -25,23 +29,13 @@ import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOper
 
 // scalastyle:off method.length
 object XYTimeTopicsJob extends AbstractJob {
+
   private val convertedTime = "convertedTime"
 
-  def execute(sqlc: SQLContext, config: Config): Unit = {
-
-    config.resolve()
-
-    // parse the schema, and exit on any errors
-    val schema = Schema(config).getOrElse {
-      error("Couldn't create schema - exiting")
-      sys.exit(-1)
-    }
-
-    // Parse tiling parameters out of supplied config
-    val tilingConfig = TilingConfig(config).getOrElse {
-      logger.error("Invalid tiling config")
-      sys.exit(-1)
-    }
+  def execute(sparkSession: SparkSession, config: Config): Unit = {
+    val schema = parseSchema(config)
+    val tilingConfig = parseTilingParameters(config)
+    val outputOperation = parseOutputOperation(config)
 
     // Parse geo heatmap parameters out of supplied config
     val topicsConfig = XYTimeTopicsConfig(config).getOrElse {
@@ -56,11 +50,6 @@ object XYTimeTopicsJob extends AbstractJob {
       case Some("cartesian") | None => CartesianTimeTopics(topicsConfig.yCol, topicsConfig.xCol, topicsConfig.timeCol, topicsConfig.textCol,
         None, topicsConfig.timeRange, topicsConfig.topicLimit, tilingConfig.levels)(_)
       case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
-    }
-
-    val outputOperation = createTileOutputOperation(config).getOrElse {
-      logger.error("Output operation config")
-      sys.exit(-1)
     }
 
     // Create the spark context from the supplied config

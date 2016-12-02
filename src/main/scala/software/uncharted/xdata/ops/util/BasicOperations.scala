@@ -12,15 +12,10 @@
   */
 package software.uncharted.xdata.ops.util
 
-
-
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{Column, DataFrame, SQLContext}
+import org.apache.spark.sql.{Column, DataFrame}
 
 import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.TypeTag
-import com.databricks.spark.csv.CsvParser
-import org.apache.spark.sql.types.StructType
 
 
 
@@ -44,7 +39,7 @@ object BasicOperations {
 
 
 
-  // Basic RDD oeprations
+  // Basic RDD operations
   /**
     * Filter input based on a given test
     *
@@ -82,8 +77,6 @@ object BasicOperations {
     * @return The input data, transformed
     */
   def map[S, T: ClassTag](fcn: S => T)(input: RDD[S]): RDD[T] = input.map(fcn)
-
-
 
   // Basic Dataframe operations
   def filterA (condition: Column)(input: DataFrame): DataFrame =

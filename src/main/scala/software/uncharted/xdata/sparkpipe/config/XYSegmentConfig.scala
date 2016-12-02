@@ -12,9 +12,10 @@
  */
 package software.uncharted.xdata.sparkpipe.config
 
-import com.typesafe.config.{Config, ConfigException}
-import grizzled.slf4j.Logging
+import com.typesafe.config.Config
 import software.uncharted.xdata.ops.salt.ArcTypes
+
+import scala.util.Try
 
 // Parse config for segment sparkpipe op
 case class XYSegmentConfig(arcType: ArcTypes.Value,
@@ -28,7 +29,7 @@ case class XYSegmentConfig(arcType: ArcTypes.Value,
                            xyBounds: (Double, Double, Double, Double),
                            tileSize: Int)
 
-object XYSegmentConfig extends Logging {
+object XYSegmentConfig {
   val xySegmentKey = "xySegment"
   val arcTypeKey = "arcType"
   val projectionKey = "projection"
@@ -41,8 +42,8 @@ object XYSegmentConfig extends Logging {
   val xyBoundsKey = "xyBounds"
   val tileSizeKey = "tileSize"
 
-  def apply(config: Config): Option[XYSegmentConfig] = {
-    try {
+  def apply(config: Config): Try[XYSegmentConfig] = {
+    Try{
       val segmentConfig = config.getConfig(xySegmentKey)
       val arcType: ArcTypes.Value = segmentConfig.getString(arcTypeKey).toLowerCase match {
         case "fullline" => ArcTypes.FullLine
@@ -51,7 +52,7 @@ object XYSegmentConfig extends Logging {
         case "leaderarc" => ArcTypes.LeaderArc
       }
       val xyBounds = segmentConfig.getDoubleList(xyBoundsKey).toArray(Array(Double.box(0.0)))
-      Some(XYSegmentConfig(
+      XYSegmentConfig(
         arcType,
         if (segmentConfig.hasPath(projectionKey)) Some(segmentConfig.getString(projectionKey)) else None,
         if (segmentConfig.hasPath(minSegLenKey)) Some(segmentConfig.getInt(minSegLenKey)) else None,
@@ -62,11 +63,7 @@ object XYSegmentConfig extends Logging {
         segmentConfig.getString(y2ColKey),
         (xyBounds(0), xyBounds(1), xyBounds(2), xyBounds(3)),
         segmentConfig.getInt(tileSizeKey)
-      ))
-    } catch {
-      case e: ConfigException =>
-        error("Failure parsing arguments from [" + xySegmentKey + "]", e)
-        None
+      )
     }
   }
 }

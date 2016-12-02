@@ -15,7 +15,7 @@ package software.uncharted.xdata.sparkpipe.jobs
 
 
 import com.typesafe.config.Config
-import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.{SQLContext, SparkSession}
 import software.uncharted.salt.core.analytic.numeric.{MinMaxAggregator, SumAggregator}
 import software.uncharted.salt.core.generation.request.TileLevelRequest
 import software.uncharted.salt.core.projection.numeric.{CartesianProjection, MercatorProjection}
@@ -38,7 +38,7 @@ object XYHeatmapJob extends AbstractJob {
     * @param sqlc   An SQL context in which to run spark processes in our job
     * @param config The job configuration
     */
-  override def execute(sqlc: SQLContext, config: Config): Unit = {
+  override def execute(sparkSession: SparkSession, config: Config): Unit = {
     val schema = parseSchema(config)
     val tilingConfig = parseTilingParameters(config)
     val outputOperation = parseOutputOperation(config)
@@ -64,7 +64,7 @@ object XYHeatmapJob extends AbstractJob {
     )(new TileLevelRequest(tilingConfig.levels, (tc: (Int, Int, Int)) => tc._1))(_)
 
     // Pipe the dataframe
-    Pipe(dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc))
+    Pipe(dataframeFromSparkCsv(config, tilingConfig.source, schema, sparkSession))
       .to(_.cache)
       .to(heatmapOperation)
       .to(serializeBinArray)

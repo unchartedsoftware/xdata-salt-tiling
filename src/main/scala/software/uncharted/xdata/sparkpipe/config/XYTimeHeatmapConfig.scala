@@ -12,9 +12,10 @@
  */
 package software.uncharted.xdata.sparkpipe.config
 
-import com.typesafe.config.{Config, ConfigException}
-import grizzled.slf4j.Logging
+import com.typesafe.config.Config
 import software.uncharted.xdata.ops.salt.RangeDescription
+
+import scala.util.Try
 
 // Parse config for geoheatmap sparkpipe op
 case class XYTimeHeatmapConfig(xCol: String,
@@ -22,7 +23,7 @@ case class XYTimeHeatmapConfig(xCol: String,
                                timeCol: String,
                                timeRange: RangeDescription[Long],
                                projection: Option[String] = None)
-object XYTimeHeatmapConfig extends Logging {
+object XYTimeHeatmapConfig {
 
   val xyTimeHeatmapKey = "xyTimeHeatmap"
   val projectionKey = "projection"
@@ -33,20 +34,16 @@ object XYTimeHeatmapConfig extends Logging {
   val timeStepKey = "step"
   val timeCountKey =  "count"
 
-  def apply(config: Config): Option[XYTimeHeatmapConfig] = {
-    try {
+  def apply(config: Config): Try[XYTimeHeatmapConfig] = {
+    Try {
       val heatmapConfig = config.getConfig(xyTimeHeatmapKey)
-      Some(XYTimeHeatmapConfig(
+      XYTimeHeatmapConfig(
         heatmapConfig.getString(xColumnKey),
         heatmapConfig.getString(yColumnKey),
         heatmapConfig.getString(timeColumnKey),
         RangeDescription.fromMin(heatmapConfig.getLong(timeMinKey), heatmapConfig.getLong(timeStepKey), heatmapConfig.getInt(timeCountKey)),
-        if (heatmapConfig.hasPath(projectionKey)) Some(heatmapConfig.getString(projectionKey)) else None)
+        if (heatmapConfig.hasPath(projectionKey)) Some(heatmapConfig.getString(projectionKey)) else None
       )
-    } catch {
-      case e: ConfigException =>
-        error("Failure parsing arguments from [" + xyTimeHeatmapKey + "]", e)
-        None
     }
   }
 }

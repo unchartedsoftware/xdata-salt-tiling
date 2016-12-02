@@ -15,6 +15,8 @@ package software.uncharted.xdata.ops.text
 
 import software.uncharted.xdata.spark.SparkFunSpec
 import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.mllib.feature.{HashingTF => TestTF}
+import org.apache.spark.ml.linalg.{SparseVector}
 
 class TextTest extends SparkFunSpec {
   describe("Pipeline Text Analytics Test") {
@@ -27,27 +29,31 @@ class TextTest extends SparkFunSpec {
         TFIDFData(5, "this is the final test i did it".split(" "))
       ))
 
-      val dfData = sqlc.createDataFrame(rddData)
+      val dfData = sparkSession.createDataFrame(rddData)
 
-      val result = text.tfidf("text", "tfidfs")(dfData)
+      val result = text.tfidf("text", "tfs", "tfidfs")(dfData)
 
       assert(result.count() === 5)
 
       //Verify the relative tfidf values for a few pairs.
-      //Extract the term + tfidf values and put them in a map.
-      val resultMap = result.select("tfidfs").collect().map(x => x(0).asInstanceOf[Seq[Row]].map(t => (t(0), t(1).asInstanceOf[Double])).toMap)
-      assert(resultMap(0)("test") < resultMap(0)("this"))
-      assert(resultMap(0)("this") < resultMap(0)("a"))
+      //Extract the term + tfidf values.
+      val resultMap = result.select("tfidfs").collect().map(x => x(0).asInstanceOf[SparseVector])
 
-      assert(resultMap(1)("testing") < resultMap(1)("more"))
-      assert(resultMap(1)("testing") < resultMap(1)("done"))
+      //Use the hashing TF to get the index in the sparse vectors returned.
+      val testTF = new TestTF(resultMap(0).size)
 
-      assert(resultMap(3)("wish") < resultMap(3)("i"))
-      assert(resultMap(3)("it") < resultMap(3)("wish"))
+      assert(resultMap(0)(testTF.indexOf("test")) < resultMap(0)(testTF.indexOf("this")))
+      assert(resultMap(0)(testTF.indexOf("this")) < resultMap(0)(testTF.indexOf("a")))
 
-      assert(resultMap(4)("it") < resultMap(4)("final"))
+      assert(resultMap(1)(testTF.indexOf("testing")) < resultMap(1)(testTF.indexOf("more")))
+      assert(resultMap(1)(testTF.indexOf("testing")) < resultMap(1)(testTF.indexOf("done")))
 
-      assert(resultMap(4)("i") < resultMap(3)("i"))
+      assert(resultMap(3)(testTF.indexOf("wish")) < resultMap(3)(testTF.indexOf("i")))
+      assert(resultMap(3)(testTF.indexOf("it")) < resultMap(3)(testTF.indexOf("wish")))
+
+      assert(resultMap(4)(testTF.indexOf("it")) < resultMap(4)(testTF.indexOf("final")))
+
+      assert(resultMap(4)(testTF.indexOf("i")) < resultMap(3)(testTF.indexOf("i")))
     }
   }
 }

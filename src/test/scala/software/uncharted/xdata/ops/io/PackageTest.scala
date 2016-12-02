@@ -24,11 +24,17 @@ import software.uncharted.salt.core.util.SparseArray
 import software.uncharted.xdata.ops.salt.MercatorTimeProjection
 import software.uncharted.xdata.spark.SparkFunSpec
 
+<<<<<<< HEAD
 import scala.util.parsing.json.{JSONType, JSON, JSONObject}
 
+=======
+>>>>>>> develop
 import org.apache.hadoop.hbase.client._;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
+
+import net.liftweb.json.JsonAST.compactRender
+import net.liftweb.json.Extraction.decompose
 
 
 
@@ -52,6 +58,8 @@ class PackageTest extends SparkFunSpec {
 
   def genHeatmapArray(in: Double*) = SparseArray(in.length, 0.0)(in.zipWithIndex.map(_.swap):_*)
   def genTopicArray[T](in: List[(String, T)]*) = SparseArray(in.length, List[(String, T)]())(in.zipWithIndex.map(_.swap):_*)
+
+  implicit val formats = net.liftweb.json.DefaultFormats
 
   describe("#writeToFile") {
     it("should create the folder directory structure if it's missing") {
@@ -277,9 +285,12 @@ class PackageTest extends SparkFunSpec {
     }
   }
 
+<<<<<<< HEAD
   def getJSON (from: Array[((Int, Int, Int), Seq[Byte])], index: Int): JSONType =
     JSON.parseRaw(new String(from(index)._2.toArray)).get
 
+=======
+>>>>>>> develop
   describe("#serializeElementScore") {
     it("should create an RDD of JSON strings serialized to bytes from series data ") {
       val arr0 = genTopicArray(List("aa" -> 1, "bb" -> 2))
@@ -291,6 +302,11 @@ class PackageTest extends SparkFunSpec {
           new SeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (4, 5, 6), arr1, None)
         ))
 
+<<<<<<< HEAD
+=======
+      val json = List(compactRender(decompose((Map("aa" -> 1, "bb" -> 2)))).toString().getBytes, compactRender(decompose(Map("cc" -> 3, "dd" -> 4))).toString().getBytes)
+
+>>>>>>> develop
       val result = serializeElementScore(series).collect()
       assertResult(2)(result.length)
 

@@ -20,7 +20,7 @@ import scala.io.Source
 import scala.collection.JavaConverters._ // scalastyle:ignore
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
-import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.{SQLContext, SparkSession}
 import org.apache.spark.sql.types.StructType
 import software.uncharted.salt.core.projection.numeric.{CartesianProjection, MercatorProjection, NumericProjection}
 import software.uncharted.xdata.sparkpipe.config.{ProjectionConfig, CartesianProjectionConfig, MercatorProjectionConfig}
@@ -44,10 +44,10 @@ trait AbstractJob extends Logging {
     * @return A fully determined schema
     */
   protected def parseSchema (config: Config): StructType = {
-    Schema(config).getOrElse {
-      error("Couldn't create schema - exiting")
+    Schema(config).recover { case err: Exception =>
+      error("Couldn't create schema - exiting", err)
       sys.exit(-1)
-    }
+    }.get
   }
 
   /**
@@ -56,10 +56,10 @@ trait AbstractJob extends Logging {
     * @return A fully determined set of tiling parameters
     */
   protected def parseTilingParameters (config: Config): TilingConfig = {
-    TilingConfig(config).getOrElse {
-      logger.error("Invalid tiling config")
+    TilingConfig(config).recover { case err: Exception =>
+      logger.error("Invalid tiling config", err)
       sys.exit(-1)
-    }
+    }.get
   }
 
   /**
@@ -68,10 +68,10 @@ trait AbstractJob extends Logging {
     * @return A fully determined output operation
     */
   protected def parseOutputOperation (config: Config): OutputOperation = {
-    createTileOutputOperation(config).getOrElse {
-      logger.error("Output operation config")
+    createTileOutputOperation(config).recover { case err: Exception =>
+      logger.error("Output operation config", err)
       sys.exit(-1)
-    }
+    }.get
   }
 
   protected def createProjection (config: ProjectionConfig, levels: Seq[Int]):
@@ -90,10 +90,10 @@ trait AbstractJob extends Logging {
   /**
     * This function actually executes the task the job describes
     *
-    * @param sqlc An SQL context in which to run spark processes in our job
+    * @param session A spark session in which to run spark processes in our job
     * @param config The job configuration
     */
-  def execute(sqlc: SQLContext, config: Config): Unit
+  def execute(session: SparkSession, config: Config): Unit
 
   def execute(args: Array[String]): Unit = {
     // get the properties file path
@@ -129,18 +129,20 @@ trait AbstractJob extends Logging {
             Some(ConfigFactory.parseReader(Source.fromFile(cfgFile).bufferedReader()))
           }
         }
-      }.fold(environmentalConfig)((base, fallback) => base.withFallback(fallback))
+      }.fold(environmentalConfig) { (base, fallback) =>
+        base.withFallback(fallback)
+      }.resolve()
 
     config.resolve()
     if (debug) {
       debugConfig(config)
     }
 
-    val sqlc = SparkConfig(config)
+    val sparkSession = SparkConfig(config)
     try {
-      execute(sqlc, config)
+      execute(sparkSession, config)
     } finally {
-      sqlc.sparkContext.stop()
+      sparkSession.sparkContext.stop()
     }
   }
 

@@ -13,7 +13,7 @@
 package software.uncharted.xdata.sparkpipe.jobs
 
 import com.typesafe.config.Config
-import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.{SQLContext, SparkSession}
 import software.uncharted.salt.core.analytic.numeric.{MinMaxAggregator, SumAggregator}
 import software.uncharted.salt.core.generation.request.TileLevelRequest
 import software.uncharted.sparkpipe.Pipe
@@ -34,7 +34,7 @@ object IPHeatmapJob extends AbstractJob {
     * @param sqlc   An SQL context in which to run spark processes in our job
     * @param config The job configuration
     */
-  override def execute(sqlc: SQLContext, config: Config): Unit = {
+  override def execute(sparkSession: SparkSession, config: Config): Unit = {
     config.resolve
 
     val schema = parseSchema(config)
@@ -42,13 +42,13 @@ object IPHeatmapJob extends AbstractJob {
     val outputOperation = parseOutputOperation(config)
 
     // Parse IP tiling parameters out of supplied config
-    val ipConfig = IPHeatmapConfig(config).getOrElse {
-      logger.error("Invalid heatmap op config")
+    val ipConfig = IPHeatmapConfig(config).recover { case err: Exception =>
+      logger.error("Invalid heatmap op config", err)
       sys.exit(-1)
-    }
+    }.get
 
     // Create the dataframe from the input config
-    val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc)
+    val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, sparkSession)
 
     val tilingOp = IPHeatmapOp(new IPProjection(tilingConfig.levels),
       tilingConfig.bins.getOrElse(IPHeatmapOp.defaultTileSize),
