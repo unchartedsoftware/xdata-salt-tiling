@@ -16,7 +16,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.{Logger, Logging}
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.{SQLContext, SparkSession}
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.xdata.ops.salt.text.LDAOp
 import software.uncharted.xdata.sparkpipe.config.{HdfsCsvConfig, HdfsIOConfig, LDAConfig}
@@ -63,10 +63,10 @@ object LDAAugmentationJob extends AbstractJob {
   /**
     * This function actually executes the task the job describes
     *
-    * @param sqlc   An SQL context in which to run spark processes in our job
+    * @param session A spark session in which to run spark processes in our job
     * @param config The job configuration
     */
-  override def execute(sqlc: SQLContext, config: Config): Unit = {
+  override def execute(session: SparkSession, config: Config): Unit = {
     config.resolve()
     // Ignore info messages
     org.apache.log4j.Logger.getRootLogger.setLevel(org.apache.log4j.Level.WARN)
@@ -76,7 +76,7 @@ object LDAAugmentationJob extends AbstractJob {
     val ldaConfig = readLDAConfig(config)
 
     // Read data
-    val inputData = readFile(sqlc.sparkContext, inputConfig).zipWithIndex().map { case ((rawRecord, fields), index) =>
+    val inputData = readFile(session.sparkContext, inputConfig).zipWithIndex().map { case ((rawRecord, fields), index) =>
       val text = fields(0)
       (index, (rawRecord, text))
     }

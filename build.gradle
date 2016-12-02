@@ -222,7 +222,7 @@ ext {
 // Jars this project depends on
 dependencies {
   // Compile config - needed to build and required at runtime
-  compile "software.uncharted.salt:salt-core:4.0.3"
+  compile "software.uncharted.salt:salt-core:4.1.0"
   compile "software.uncharted.sparkpipe:sparkpipe-core:0.9.8"
   compile "org.clapper:grizzled-slf4j_$dependencyScalaVersion:1.0.2"
   compile 'log4j:apache-log4j-extras:1.2.17'

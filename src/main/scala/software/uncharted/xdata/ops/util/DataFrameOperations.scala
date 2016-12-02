@@ -79,6 +79,18 @@ object DataFrameOperations {
     sparkSession.createDataFrame(rows, schema)
   }
 
+  /**
+    * Join two data frames on the specified columns
+    * @param indexColumnA The join ID column of the first data frame
+    * @param indexColumnB The join ID column of the second data frame
+    * @param inputA The first data frame
+    * @param inputB The second data frame
+    * @return The joined data frames
+    */
+  def joinDataFrames (indexColumnA: String, indexColumnB: String)(inputA: DataFrame, inputB: DataFrame): DataFrame = {
+    inputA.join(inputB, inputA(indexColumnA) === inputB(indexColumnB))
+  }
+
   // Creates a CSV parser from a settings map.  Attempts to conform to settings available in the
   // spark-csv lib, which was rolled into Spark 2.0+.
   private def createCsvParser(settings: Map[String, String]): CsvParser = {

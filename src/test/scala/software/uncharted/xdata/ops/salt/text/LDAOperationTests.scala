@@ -14,14 +14,11 @@ package software.uncharted.xdata.ops.salt.text
 
 import org.apache.spark.sql.{DataFrame, Row}
 import software.uncharted.xdata.spark.SparkFunSpec
-import software.uncharted.xdata.ops.util.BasicOperations
+import software.uncharted.xdata.ops.util.DataFrameOperations
 import software.uncharted.xdata.sparkpipe.config.LDAConfig
 
-/**
-  * Created by nkronenfeld on 03/10/16.
-  */
 class LDAOperationTests extends SparkFunSpec {
-  import BasicOperations._
+  import DataFrameOperations._
 
   describe("Word determination") {
     it("should break a text apart into words properly, including dealing with contractions") {
@@ -50,7 +47,7 @@ class LDAOperationTests extends SparkFunSpec {
       val rddData = sc.parallelize(texts.zipWithIndex).map{case (text, index) =>
         new LDATestData(index, text)
       }
-      val data = toDataFrame(sqlc)(rddData)
+      val data = toDataFrame(sparkSession)(rddData)
       val results = textLDA("index", "text", LDAConfig(4, 2, 4, None, None, "", "", ""))(data)
 
       printResults(data, results)
@@ -87,7 +84,7 @@ class LDAOperationTests extends SparkFunSpec {
           new LDATestData(index, text)
       }
 
-      val data = toDataFrame(sqlc)(rddData)
+      val data = toDataFrame(sparkSession)(rddData)
       val results = textLDA("index", "text", LDAConfig(2, 20, 2, None, None, "", "", ""))(data)
 
       printResults(data, results)

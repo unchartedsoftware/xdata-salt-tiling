@@ -101,7 +101,7 @@ class TFIDFWordCloudTest extends SparkFunSpec {
         TFIDFData(7.0, 5.0, "aaa eee hhh"), // (0, 0, 0), (1, 1, 1), (2, 3, 2)
         TFIDFData(7.0, 7.0, "aaa eee iii")  // (0, 0, 0), (1, 1, 1), (2, 3, 3)
       ))
-      val data = sqlc.createDataFrame(rddData)
+      val data = sparkSession.createDataFrame(rddData)
 
       val projection = new CartesianProjection(Seq(0, 1, 2), (0.0, 0.0), (8.0, 8.0))
       val termFrequencies = WordCloudOperations.termFrequencyOp("x", "y", "text", projection, Seq(0, 1, 2))(data)

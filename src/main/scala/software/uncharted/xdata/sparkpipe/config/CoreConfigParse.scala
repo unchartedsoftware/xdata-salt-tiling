@@ -12,8 +12,8 @@
  */
 package software.uncharted.xdata.sparkpipe.config
 
-import org.apache.spark.sql.{SQLContext, SparkSession}
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.sql.SparkSession
+import org.apache.spark.SparkConf
 import com.typesafe.config.Config
 import scala.collection.JavaConverters._ // scalastyle:ignore
 import scala.util.Try
@@ -35,7 +35,7 @@ object SparkConfig {
 
     val session = SparkSession.builder.config(conf).getOrCreate()
     if (config.hasPath(checkpointDirectoryKey)) {
-	  session.sparkContext.setCheckpointDirectory(config.getString(checkpointDirectoryKey))
+      session.sparkContext.setCheckpointDir(config.getString(checkpointDirectoryKey))
     }
     session
   }

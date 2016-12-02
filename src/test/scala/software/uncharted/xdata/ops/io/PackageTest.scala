@@ -13,9 +13,8 @@
 package software.uncharted.xdata.ops.io
 
 import java.io.File
-import java.nio.file.{Paths, Files}
+import java.nio.file.{Files, Paths}
 
-import net.liftweb.json
 import org.apache.commons.io.FileUtils
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.projection.Projection
@@ -23,24 +22,17 @@ import software.uncharted.salt.core.projection.numeric.MercatorProjection
 import software.uncharted.salt.core.util.SparseArray
 import software.uncharted.xdata.ops.salt.MercatorTimeProjection
 import software.uncharted.xdata.spark.SparkFunSpec
-
-<<<<<<< HEAD
-import scala.util.parsing.json.{JSONType, JSON, JSONObject}
-
-=======
->>>>>>> develop
-import org.apache.hadoop.hbase.client._;
-import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hbase.TableName;
-
-import net.liftweb.json.JsonAST.compactRender
-import net.liftweb.json.Extraction.decompose
+import org.apache.hadoop.hbase.client._
+import org.apache.hadoop.hbase.HBaseConfiguration
+import org.apache.hadoop.hbase.TableName
+import net.liftweb.json.JsonAST.JValue
+import net.liftweb.json.{JsonDSL, parse}
 
 
 
 // scalastyle:off magic.number
 // scalastyle:off multiple.string.literals
-class PackageTest extends SparkFunSpec {
+class PackageTest extends SparkFunSpec with JsonDSL {
 
   private val testDir = "build/tmp/test_file_output/test_data"
   private val testLayer = "test_layer"
@@ -285,12 +277,10 @@ class PackageTest extends SparkFunSpec {
     }
   }
 
-<<<<<<< HEAD
-  def getJSON (from: Array[((Int, Int, Int), Seq[Byte])], index: Int): JSONType =
-    JSON.parseRaw(new String(from(index)._2.toArray)).get
 
-=======
->>>>>>> develop
+  def getJSON (from: Array[((Int, Int, Int), Seq[Byte])], index: Int): JValue =
+    parse(new String(from(index)._2.toArray))
+
   describe("#serializeElementScore") {
     it("should create an RDD of JSON strings serialized to bytes from series data ") {
       val arr0 = genTopicArray(List("aa" -> 1, "bb" -> 2))
@@ -302,19 +292,16 @@ class PackageTest extends SparkFunSpec {
           new SeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (4, 5, 6), arr1, None)
         ))
 
-<<<<<<< HEAD
-=======
-      val json = List(compactRender(decompose((Map("aa" -> 1, "bb" -> 2)))).toString().getBytes, compactRender(decompose(Map("cc" -> 3, "dd" -> 4))).toString().getBytes)
-
->>>>>>> develop
       val result = serializeElementScore(series).collect()
       assertResult(2)(result.length)
 
       assertResult(result(0)._1)((1, 2, 3))
-      assertResult(new JSONObject(Map("aa" -> 1, "bb" -> 2)))(getJSON(result, 0))
+      val expected0: JValue = Map("aa" -> 1, "bb" -> 2)
+      assertResult(expected0)(getJSON(result, 0))
 
       assertResult(result(1)._1)((4, 5, 6))
-      assertResult(new JSONObject(Map("cc" -> 3, "dd" -> 4)))(getJSON(result, 1))
+      val expected1: JValue = Map("cc" -> 3, "dd" -> 4)
+      assertResult(expected1)(getJSON(result, 1))
     }
 
     it("Should leave the order of the list alone") {
@@ -358,10 +345,12 @@ class PackageTest extends SparkFunSpec {
       assertResult(2)(result.length)
 
       assertResult(result(0)._1)((1, 2, 3))
-      assertResult(new JSONObject(Map("aa" -> 1.0, "bb" -> 2.0)))(getJSON(result, 0))
+      val expected0: JValue = Map("aa" -> 1.0, "bb" -> 2.0)
+      assertResult(expected0)(getJSON(result, 0))
 
       assertResult(result(1)._1)((4, 5, 6))
-      assertResult(new JSONObject(Map("cc" -> 3.0, "dd" -> 4.0)))(getJSON(result, 1))
+      val expected1: JValue = Map("cc" -> 3.0, "dd" -> 4.0)
+      assertResult(expected1)(getJSON(result, 1))
     }
 
     it("Should leave the order of the list alone") {

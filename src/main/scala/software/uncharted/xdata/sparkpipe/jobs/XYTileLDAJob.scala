@@ -16,7 +16,7 @@ package software.uncharted.xdata.sparkpipe.jobs
 
 import scala.util.{Failure, Success}
 import com.typesafe.config.Config
-import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.SparkSession
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.xdata.ops.io.serializeElementDoubleScore
 import software.uncharted.xdata.ops.salt.text.WordCloudOperations
@@ -53,10 +53,10 @@ object XYTileLDAJob extends AbstractJob {
   /**
     * This function actually executes the task the job describes
     *
-    * @param sqlc   An SQL context in which to run spark processes in our job
+    * @param session A spark session in which to run spark processes in our job
     * @param config The job configuration
     */
-  override def execute(sqlc: SQLContext, config: Config): Unit = {
+  override def execute(session: SparkSession, config: Config): Unit = {
     val schema = parseSchema(config)
     val tilingConfig = parseTilingParameters(config)
     val outputOperation = parseOutputOperation(config)
@@ -74,7 +74,7 @@ object XYTileLDAJob extends AbstractJob {
     val ldaOperation = WordCloudOperations.ldaWordsByTile[Nothing](ldaConfig)(_)
 
     // Create the dataframe from the input config
-    val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc)
+    val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, session)
 
     // Process our data
     val foo = Pipe(df)

@@ -14,25 +14,20 @@ package software.uncharted.xdata.sparkpipe.jobs
 
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
-<<<<<<< HEAD
-import org.apache.spark.sql.{DataFrame, SQLContext}
-=======
-import org.apache.spark.sql.{DataFrame, SQLContext, SparkSession}
->>>>>>> develop
+import org.apache.spark.sql.SparkSession
 import software.uncharted.sparkpipe.Pipe
-import software.uncharted.sparkpipe.ops.core.dataframe.temporal.parseDate
 import software.uncharted.sparkpipe.ops.core.dataframe.text.{includeTermFilter, split}
 import software.uncharted.xdata.ops.io.serializeElementScore
 import software.uncharted.xdata.ops.salt.{CartesianTimeTopics, MercatorTimeHeatmap, MercatorTimeTopics}
-import software.uncharted.xdata.sparkpipe.config.{Schema, SparkConfig, TilingConfig, XYTimeTopicsConfig}
-import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOperation, createTileOutputOperation, dataframeFromSparkCsv}
+import software.uncharted.xdata.sparkpipe.config.{TilingConfig, XYTimeTopicsConfig}
+import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOperation, dataframeFromSparkCsv}
 
 // scalastyle:off method.length
 object XYTimeTopicsJob extends AbstractJob {
 
   private val convertedTime = "convertedTime"
 
-  def execute(sparkSession: SparkSession, config: Config): Unit = {
+  def execute(session: SparkSession, config: Config): Unit = {
     val schema = parseSchema(config)
     val tilingConfig = parseTilingParameters(config)
     val outputOperation = parseOutputOperation(config)
@@ -54,7 +49,7 @@ object XYTimeTopicsJob extends AbstractJob {
 
     // Create the spark context from the supplied config
     // Create the dataframe from the input config
-    val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, sqlc)
+    val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, session)
 
     // Pipe the dataframe
     Pipe(df)
