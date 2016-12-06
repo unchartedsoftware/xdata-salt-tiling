@@ -19,7 +19,7 @@ import grizzled.slf4j.Logging
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.types.{ArrayType, StructType, StringType, DoubleType, StructField}
+import org.apache.spark.sql.types.{DoubleType, MapType, StringType, StructType, StructField}
 
 /**
   * This is an extension of BDP (which itself is an extension of BTM, which is a variant on LDA)
@@ -40,16 +40,7 @@ object BDPParallel extends Serializable with Logging {
   def getTweetTopicSchema(existingSchema: StructType, outputCol: String) : StructType = {
     StructType(
       existingSchema.fields ++ Array(
-        StructField(outputCol,
-          ArrayType(
-            StructType(
-              Array(
-                StructField("topic", StringType),
-                StructField("probability", DoubleType)
-              )
-            )
-          )
-        )
+        StructField(outputCol, MapType(StringType, DoubleType))
       )
     )
   }
@@ -168,7 +159,11 @@ object BDPParallel extends Serializable with Logging {
     }
 
     //Retain the top N topics.
-    val topics = p_z_d.zipWithIndex.sortBy(p => -p._1).map(p => (wordLookup(p._2), p._1)).take(numTopics)
+    val topics = p_z_d.zipWithIndex
+      .sortBy(p => -p._1)
+      .map(p => (wordLookup(p._2), p._1))
+      .take(numTopics)
+      .toMap
     Row.fromSeq(document.toSeq ++ Array(topics))
   }
 

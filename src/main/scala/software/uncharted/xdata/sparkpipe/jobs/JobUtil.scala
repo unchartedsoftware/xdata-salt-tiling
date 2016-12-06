@@ -64,15 +64,4 @@ object JobUtil {
       Failure(new Exception("No metadata output operation given"))
     }
   }
-
-  def createTopicsOutputOperation(path : String): Option[(DataFrame) => DataFrame] = {
-    if (!path.isEmpty) {
-      Some((input : DataFrame) => {
-        input.write.format("com.databricks.spark.csv").option("header", "true").mode("overwrite").save(path)
-        input
-      })
-    } else {
-      None
-    }
-  }
 }

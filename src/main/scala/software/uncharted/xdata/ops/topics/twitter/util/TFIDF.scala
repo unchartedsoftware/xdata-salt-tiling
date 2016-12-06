@@ -13,6 +13,8 @@
 
 package software.uncharted.xdata.ops.topics.twitter.util
 
+import java.sql.Date
+
 import scala.io.Source
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.sql.DataFrame
@@ -56,7 +58,7 @@ object TFIDF extends Serializable {
   */
   def loadTFIDF(input: DataFrame): Array[(String, String, Double)] = {
     input.collect.map{row => (
-      row(0).asInstanceOf[String], // date
+      row(0).toString,
       row(1).asInstanceOf[String], // word
       row(2).asInstanceOf[Double] // score
     )}

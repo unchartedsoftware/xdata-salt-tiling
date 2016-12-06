@@ -156,7 +156,6 @@ package object twitter {
       .to(_.repartition(numPartitions, new Column(formatted_date_col)))
       .run
 
-    // Run BTM on each partition
     val tweetTopics = data.mapPartitions { iter =>
       BDPParallel.partitionBDP(
         iter,
@@ -170,7 +169,7 @@ package object twitter {
         formatted_date_col,
         idCol,
         tfidf_bcst)
-    }(RowEncoder(data.schema))
+    }(RowEncoder(BDPParallel.getTweetTopicSchema(data.schema, outputCol)))
     tweetTopics.toDF()
   }
 }

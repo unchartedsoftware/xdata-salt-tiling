@@ -246,7 +246,7 @@ dependencies {
   provided "org.apache.spark:spark-sql_$dependencyScalaVersion:$sparkVersion"
 
   // Test related
-  testCompile "org.scalatest:scalatest_$dependencyScalaVersion:3.0.0"
+  testCompile "org.scalatest:scalatest_$dependencyScalaVersion:3.0.1"
   testRuntime 'org.pegdown:pegdown:1.1.0'
   scoverage "org.scoverage:scalac-scoverage-plugin_$dependencyScalaVersion:1.1.0",
     "org.scoverage:scalac-scoverage-runtime_$dependencyScalaVersion:1.1.0"
