@@ -13,7 +13,7 @@
 package software.uncharted.xdata.ops.topics
 
 import org.apache.spark.broadcast.Broadcast
-import org.apache.spark.sql.{Column, DataFrame, SQLContext}
+import org.apache.spark.sql.{Column, DataFrame}
 import java.util.Date
 
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
@@ -21,7 +21,7 @@ import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.addColumn
 import software.uncharted.sparkpipe.ops.core.dataframe.temporal.dateFilter
 import software.uncharted.xdata.ops.salt.RangeDescription
-import software.uncharted.xdata.ops.topics.twitter.util.{BDPParallel, BTMUtil, TFIDF, TopicModellingUtil}
+import software.uncharted.xdata.ops.topics.twitter.util.{BDPParallel, BTMUtil, TFIDF, TopicModellingUtil, TwitterTokenizer}
 
 import scala.tools.nsc.util.ShowPickled
 
@@ -31,6 +31,21 @@ import scala.tools.nsc.util.ShowPickled
   * of DataFrames where the second represents your pre-computed tfidf scores
   */
 package object twitter {
+
+  /**
+    * Remove retweet rows from the DataFrame.
+    * @param textCol The column of the input DataFrame in which to find the text.
+    * @param input DataFrame of the tweet corpus.
+    * @return DataFrame containing only unique tweet rows.
+    */
+  def removeReTweets(textCol: String)(input: DataFrame): DataFrame ={
+    //Keep distinct (clean) text.
+    //Since we need the whole Row, group by text and return one row / group.
+    val cleanText = input.rdd.map(t => (t(t.schema.fieldIndex(textCol)).asInstanceOf[String], t)).map(g => (TwitterTokenizer.normclean(g._1), g._2))
+    val groups = cleanText.groupBy(t => t._1)
+
+    input.sqlContext.createDataFrame(groups.map(g => g._2.head._2), input.schema)
+  }
 
   /**
     * Perform Topic Modelling
