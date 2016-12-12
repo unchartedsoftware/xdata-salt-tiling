@@ -12,11 +12,38 @@
  */
 package software.uncharted.xdata.sparkpipe.config
 
-import com.typesafe.config.{ConfigFactory, Config}
+import com.typesafe.config.{Config, ConfigFactory}
+import org.apache.spark.SparkConf
 import org.scalatest.FunSpec
 import software.uncharted.xdata.ops.io.S3Test
 
 class CoreConfigParseTest() extends FunSpec {
+  describe("SparkConfig") {
+    describe("#applySparkConfigEntries") {
+      it("should apply entries from multiple direct and indirect levels") {
+        val config = ConfigFactory.parseString(
+          """
+            |spark {
+            |    app.name = "test application"
+            |    executor {
+            |        instances = 8
+            |        cores = 4
+            |	       memory = 10g
+            |    }
+            |    network.timeout = 900
+            |}
+            |
+          """.stripMargin
+        )
+        val conf = SparkConfig.applySparkConfigEntries(config)(new SparkConf())
+        assert(8 === conf.getInt("spark.executor.instances", -1))
+        assert(4 === conf.getInt("spark.executor.cores", -1))
+        assert("10g" === conf.get("spark.executor.memory"))
+        assert("test application" === conf.get("spark.app.name"))
+        assert(900 === conf.getInt("spark.network.timeout", -1))
+      }
+    }
+  }
   describe("S3OutputConfig") {
     describe("#apply") {
       it("should create an S3 config object from an input config", S3Test) {
