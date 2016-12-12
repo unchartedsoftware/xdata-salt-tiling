@@ -25,14 +25,15 @@ import scala.util.Try
 object SparkConfig {
   val sparkKey = "spark"
 
-  def apply(config: Config): SparkSession = {
-    val conf = new SparkConf()
+  private[config] def applySparkConfigEntries (config: Config)(conf: SparkConf): SparkConf = {
     config.getConfig(sparkKey)
       .entrySet()
       .asScala
-      .foreach(e => conf.set(s"spark.${e.getKey}", e.getValue.unwrapped().asInstanceOf[String]))
-
-    SparkSession.builder.config(conf).getOrCreate()
+      .foreach(e => conf.set(s"spark.${e.getKey}", e.getValue.unwrapped().toString))
+    conf
+  }
+  def apply(config: Config): SparkSession = {
+    SparkSession.builder.config(applySparkConfigEntries(config)(new SparkConf())).getOrCreate()
   }
 }
 
