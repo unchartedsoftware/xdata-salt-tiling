@@ -41,7 +41,8 @@ package object twitter {
   def removeReTweets(textCol: String)(input: DataFrame): DataFrame ={
     //Keep distinct (clean) text.
     //Since we need the whole Row, group by text and return one row / group.
-    val cleanText = input.rdd.map(t => (t(t.schema.fieldIndex(textCol)).asInstanceOf[String], t)).map(g => (TwitterTokenizer.normclean(g._1), g._2))
+    val text = input.rdd.map(t => (t(t.schema.fieldIndex(textCol)).asInstanceOf[String], t))
+    val cleanText = text.map(g => (TwitterTokenizer.normclean(g._1), g._2))
     val groups = cleanText.groupBy(t => t._1)
 
     input.sqlContext.createDataFrame(groups.map(g => g._2.head._2), input.schema)
