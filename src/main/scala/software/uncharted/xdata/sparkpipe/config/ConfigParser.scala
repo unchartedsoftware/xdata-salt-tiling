@@ -18,29 +18,25 @@ import com.typesafe.config.Config
 /**
   * A mix-in trait to with some helper functions for parsing config files
   */
-class ConfigParser {
-  private def getOption[T] (config: Config, key: String, extractFrom: Config => T): Option[T] = {
-    if (config.hasPath(key)) {
-      Some(extractFrom(config))
-    } else {
-      None
-    }
+trait ConfigParser {
+  private def getOption[T] (config: Config, possibleKeys: String*)(extractFrom: (Config, String) => T): Option[T] = {
+    possibleKeys.find(key => config.hasPath(key)).map(key => extractFrom(config, key))
   }
 
-  def getConfigOption (config: Config, key: String): Option[Config] = {
-    getOption(config, key, _.getConfig(key))
+  def getConfigOption (config: Config, possibleKeys: String*): Option[Config] = {
+    getOption(config, possibleKeys:_*)((c, k) => c.getConfig(k))
   }
-  def getStringOption (config: Config, key: String): Option[String] = {
-    getOption(config, key, _.getString(key))
+  def getStringOption (config: Config, possibleKeys: String*): Option[String] = {
+    getOption(config, possibleKeys:_*)((c, k) => c.getString(k))
   }
-  def getIntOption (config: Config, key: String): Option[Int] = {
-    getOption(config, key, _.getInt(key))
+  def getIntOption (config: Config, possibleKeys: String*): Option[Int] = {
+    getOption(config, possibleKeys:_*)((c, k) => c.getInt(k))
   }
-  def getDoubleOption (config: Config, key: String): Option[Double] = {
-    getOption(config, key, _.getDouble(key))
+  def getDoubleOption (config: Config, possibleKeys: String*): Option[Double] = {
+    getOption(config, possibleKeys:_*)((c, k) => c.getDouble(k))
   }
-  def getBooleanOption (config: Config, key: String): Option[Boolean] = {
-    getOption(config, key, _.getBoolean(key))
+  def getBooleanOption (config: Config, possibleKeys: String*): Option[Boolean] = {
+    getOption(config, possibleKeys:_*)((c, k) => c.getBoolean(k))
   }
 
 
