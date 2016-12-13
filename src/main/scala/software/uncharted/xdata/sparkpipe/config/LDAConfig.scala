@@ -36,7 +36,7 @@ case class LDAConfig (numTopics: Int,
                       topicSeparator: String,
                       wordSeparator: String,
                       scoreSeparator: String)
-object LDAConfig extends ConfigParsingHelper {
+object LDAConfig extends ConfigParser {
   val LDA_ROOT_KEY = "lda"
   val NUM_TOPICS_KEY = "topics"
   val WORDS_PER_TOPIC_KEY = "words-per-topic"
@@ -55,12 +55,12 @@ object LDAConfig extends ConfigParsingHelper {
   def apply (config: Config): Try[LDAConfig] = {
     Try {
       val topicsNode = config.getConfig(LDA_ROOT_KEY)
-      val separatorsNode = optionalConfig(topicsNode, SEPARATOR_TOPIC_KEY)
+      val separatorsNode = getConfigOption(topicsNode, SEPARATOR_TOPIC_KEY)
       val (topicSeparator, wordSeparator, scoreSeparator) =
         separatorsNode.map(node => (
-          optionalString(node, TOPIC_SEPARATOR_KEY).getOrElse(DEFAULT_TOPIC_SEPARATOR),
-          optionalString(node, WORD_SEPARATOR_KEY).getOrElse(DEFAULT_WORD_SEPARATOR),
-          optionalString(node, SCORE_SEPARATOR_KEY).getOrElse(DEFAULT_SCORE_SEPARATOR)
+          getString(node, TOPIC_SEPARATOR_KEY, DEFAULT_TOPIC_SEPARATOR),
+          getString(node, WORD_SEPARATOR_KEY, DEFAULT_WORD_SEPARATOR),
+          getString(node, SCORE_SEPARATOR_KEY, DEFAULT_SCORE_SEPARATOR)
           )).getOrElse(
           (DEFAULT_TOPIC_SEPARATOR, DEFAULT_WORD_SEPARATOR, DEFAULT_SCORE_SEPARATOR)
         )
@@ -68,8 +68,8 @@ object LDAConfig extends ConfigParsingHelper {
         topicsNode.getInt(NUM_TOPICS_KEY),
         topicsNode.getInt(WORDS_PER_TOPIC_KEY),
         topicsNode.getInt(TOPICS_PER_DOC_KEY),
-        optionalInt(topicsNode, CHECKPOINT_INTERVAL_KEY),
-        optionalInt(topicsNode, MAX_ITERATIONS_KEY),
+        getIntOption(topicsNode, CHECKPOINT_INTERVAL_KEY),
+        getIntOption(topicsNode, MAX_ITERATIONS_KEY),
         topicSeparator, wordSeparator, scoreSeparator
       )
     }
