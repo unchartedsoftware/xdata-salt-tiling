@@ -206,29 +206,3 @@ case class TFIDFInfo(docCount: Array[Int], docTerms: Array[Map[String, Int]]) {
 
   // scalastyle:on method.name
 }
-
-object WordCounter {
-  val wordSeparators = "('$|^'|'[^a-zA-Z_0-9']+|[^a-zA-Z_0-9']+'|[^a-zA-Z_0-9'])+"
-}
-
-class WordCounter extends Aggregator[String, MutableMap[String, Int], Map[String, Int]] {
-  override def default(): MutableMap[String, Int] = MutableMap[String, Int]()
-
-  override def finish(intermediate: MutableMap[String, Int]): Map[String, Int] = intermediate.toMap
-
-  override def merge(left: MutableMap[String, Int], right: MutableMap[String, Int]): MutableMap[String, Int] = {
-    right.foreach { case (term, frequency) =>
-      left(term) = left.getOrElse(term, 0) + frequency
-    }
-    left
-  }
-
-  override def add(current: MutableMap[String, Int], next: Option[String]): MutableMap[String, Int] = {
-    next.foreach { input =>
-      input.split(WordCounter.wordSeparators).map(_.toLowerCase.trim).filter(!_.isEmpty).foreach(word =>
-        current(word) = current.getOrElse(word, 0) + 1
-      )
-    }
-    current
-  }
-}
