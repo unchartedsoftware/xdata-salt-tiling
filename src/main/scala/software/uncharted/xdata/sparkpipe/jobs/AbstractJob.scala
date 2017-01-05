@@ -80,43 +80,46 @@ trait AbstractJob extends Logging {
     */
   def execute(session: SparkSession, config: Config): Unit
 
-  def execute(args: Array[String]): Unit = {
+  def readConfigArguments (args: Array[String]): Config = {
     // get the properties file path
     if (args.length < 1) {
       logger.error("Path to conf file required")
       sys.exit(-1)
     }
 
-    // load properties file from supplied URI
     val environmentalConfig = ConfigFactory.load()
-    val config =
-      args.flatMap { cfgFileName =>
-        if (cfgFileName == "debug") {
-          debug = true
+    args.flatMap { cfgFileName =>
+      if (cfgFileName == "debug") {
+        debug = true
+        None
+      } else {
+        val cfgFile = new File(cfgFileName)
+        if (!cfgFile.exists()) {
+          logger.warn(s"Config file $cfgFileName doesn't exist")
+          None
+        } else if (!cfgFile.isFile) {
+          logger.warn(s"Config file $cfgFileName is a directory, not a file")
+          None
+        } else if (!cfgFile.canRead) {
+          logger.warn(s"Can't read config file $cfgFileName")
           None
         } else {
-          val cfgFile = new File(cfgFileName)
-          if (!cfgFile.exists()) {
-            logger.warn(s"Config file $cfgFileName doesn't exist")
-            None
-          } else if (!cfgFile.isFile) {
-            logger.warn(s"Config file $cfgFileName is a directory, not a file")
-            None
-          } else if (!cfgFile.canRead) {
-            logger.warn(s"Can't read config file $cfgFileName")
-            None
-          } else {
-            if (debug) {
-              // scalastyle:off regex
-              println(s"Reading config file $cfgFile")
-              // scalastyle:on regex
-            }
-            Some(ConfigFactory.parseReader(Source.fromFile(cfgFile).bufferedReader()))
+          if (debug) {
+            // scalastyle:off regex
+            println(s"Reading config file $cfgFile")
+            // scalastyle:on regex
           }
+          Some(ConfigFactory.parseReader(Source.fromFile(cfgFile).bufferedReader()))
         }
-      }.fold(environmentalConfig) { (base, fallback) =>
-        base.withFallback(fallback)
-      }.resolve()
+      }
+    }.fold(environmentalConfig) { (base, fallback) =>
+      base.withFallback(fallback)
+    }.resolve()
+  }
+
+  def execute(args: Array[String]): Unit = {
+    // load properties file from supplied URI
+    val config = readConfigArguments(args)
 
     if (debug) {
       debugConfig(config)
