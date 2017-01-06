@@ -19,7 +19,7 @@ import com.typesafe.config.Config
 import org.apache.spark.sql.SparkSession
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.xdata.ops.io.serializeElementDoubleScore
-import software.uncharted.xdata.ops.salt.text.WordCloudOperations
+import software.uncharted.xdata.ops.salt.text.TextOperations
 import software.uncharted.xdata.sparkpipe.config.{LDAConfig, TileTopicConfig}
 import software.uncharted.xdata.sparkpipe.jobs.JobUtil.dataframeFromSparkCsv
 
@@ -64,14 +64,14 @@ object XYTileLDAJob extends AbstractJob {
     val ldaConfig = parseLDAConfig(config)
 
     val projection = createProjection(tileTopicConfig.projectionConfig, tilingConfig.levels)
-    val wordCloudTileOp = WordCloudOperations.termFrequencyOp(
+    val wordCloudTileOp = TextOperations.termFrequencyOp(
       tileTopicConfig.xColumn,
       tileTopicConfig.yColumn,
       tileTopicConfig.textColumn,
       projection,
       tilingConfig.levels
     )(_)
-    val ldaOperation = WordCloudOperations.ldaWordsByTile[Nothing](ldaConfig)(_)
+    val ldaOperation = TextOperations.ldaWordsByTile[Nothing](ldaConfig)(_)
 
     // Create the dataframe from the input config
     val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, session)

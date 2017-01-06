@@ -14,6 +14,7 @@ package software.uncharted.xdata.ops.salt.text
 
 
 
+import org.apache.spark.sql.DataFrame
 import software.uncharted.salt.core.projection.numeric.CartesianProjection
 import software.uncharted.xdata.spark.SparkFunSpec
 
@@ -23,6 +24,40 @@ import software.uncharted.salt.core.util.SparseArray
 
 
 class TFIDFWordCloudTest extends SparkFunSpec {
+  private val tfidfConf = TFIDFConfiguration(
+    RawTF, LogIDF, DictionaryConfiguration(true, None, None, None, None, None), 10
+    )
+
+  private def createTestData () = {
+    // Note that TF:IDF is done separately on each level
+    // So for each level, the document is the aggregation of all data that maps to a given tile
+    //
+    //                                       tile coordinates for each datum
+    //                                       lvl 0      lvl 1      lvl 2
+    val rddData = sc.parallelize(Seq(
+      TFIDFData(1.0, 1.0, "aaa bbb fff"), // (0, 0, 0), (1, 0, 0), (2, 0, 0)
+      TFIDFData(1.0, 3.0, "aaa bbb ggg"), // (0, 0, 0), (1, 0, 0), (2, 0, 1)
+      TFIDFData(3.0, 1.0, "aaa bbb hhh"), // (0, 0, 0), (1, 0, 0), (2, 1, 0)
+      TFIDFData(3.0, 3.0, "aaa bbb iii"), // (0, 0, 0), (1, 0, 0), (2, 1, 1)
+
+      TFIDFData(1.0, 5.0, "aaa ccc fff"), // (0, 0, 0), (1, 0, 1), (2, 0, 2)
+      TFIDFData(1.0, 7.0, "aaa ccc ggg"), // (0, 0, 0), (1, 0, 1), (2, 0, 3)
+      TFIDFData(3.0, 5.0, "aaa ccc hhh"), // (0, 0, 0), (1, 0, 1), (2, 1, 2)
+      TFIDFData(3.0, 7.0, "aaa ccc iii"), // (0, 0, 0), (1, 0, 1), (2, 1, 3)
+
+      TFIDFData(5.0, 1.0, "aaa ddd fff"), // (0, 0, 0), (1, 1, 0), (2, 2, 0)
+      TFIDFData(5.0, 3.0, "aaa ddd ggg"), // (0, 0, 0), (1, 1, 0), (2, 2, 1)
+      TFIDFData(7.0, 1.0, "aaa ddd hhh"), // (0, 0, 0), (1, 1, 0), (2, 3, 0)
+      TFIDFData(7.0, 3.0, "aaa ddd iii"), // (0, 0, 0), (1, 1, 0), (2, 3, 1)
+
+      TFIDFData(5.0, 5.0, "aaa eee fff"), // (0, 0, 0), (1, 1, 1), (2, 2, 2)
+      TFIDFData(5.0, 7.0, "aaa eee ggg"), // (0, 0, 0), (1, 1, 1), (2, 2, 3)
+      TFIDFData(7.0, 5.0, "aaa eee hhh"), // (0, 0, 0), (1, 1, 1), (2, 3, 2)
+      TFIDFData(7.0, 7.0, "aaa eee iii")  // (0, 0, 0), (1, 1, 1), (2, 3, 3)
+    ))
+    sparkSession.createDataFrame(rddData)
+  }
+
   describe("Tile transformation") {
     it("should transform sparse arrays correctly") {
       val base = SparseArray(12, 0)(2 -> 4, 3 -> 9, 7 -> 49)
@@ -75,40 +110,10 @@ class TFIDFWordCloudTest extends SparkFunSpec {
     }
 
     it("should calculate tf*idf correctly using the fast calculation") {
-      // Note that TF:IDF is done separately on each level
-      // So for each level, the document is the aggregation of all data that maps to a given tile
-      //
-      //                                       tile coordinates for each datum
-      //                                       lvl 0      lvl 1      lvl 2
-      val rddData = sc.parallelize(Seq(
-        TFIDFData(1.0, 1.0, "aaa bbb fff"), // (0, 0, 0), (1, 0, 0), (2, 0, 0)
-        TFIDFData(1.0, 3.0, "aaa bbb ggg"), // (0, 0, 0), (1, 0, 0), (2, 0, 1)
-        TFIDFData(3.0, 1.0, "aaa bbb hhh"), // (0, 0, 0), (1, 0, 0), (2, 1, 0)
-        TFIDFData(3.0, 3.0, "aaa bbb iii"), // (0, 0, 0), (1, 0, 0), (2, 1, 1)
-
-        TFIDFData(1.0, 5.0, "aaa ccc fff"), // (0, 0, 0), (1, 0, 1), (2, 0, 2)
-        TFIDFData(1.0, 7.0, "aaa ccc ggg"), // (0, 0, 0), (1, 0, 1), (2, 0, 3)
-        TFIDFData(3.0, 5.0, "aaa ccc hhh"), // (0, 0, 0), (1, 0, 1), (2, 1, 2)
-        TFIDFData(3.0, 7.0, "aaa ccc iii"), // (0, 0, 0), (1, 0, 1), (2, 1, 3)
-
-        TFIDFData(5.0, 1.0, "aaa ddd fff"), // (0, 0, 0), (1, 1, 0), (2, 2, 0)
-        TFIDFData(5.0, 3.0, "aaa ddd ggg"), // (0, 0, 0), (1, 1, 0), (2, 2, 1)
-        TFIDFData(7.0, 1.0, "aaa ddd hhh"), // (0, 0, 0), (1, 1, 0), (2, 3, 0)
-        TFIDFData(7.0, 3.0, "aaa ddd iii"), // (0, 0, 0), (1, 1, 0), (2, 3, 1)
-
-        TFIDFData(5.0, 5.0, "aaa eee fff"), // (0, 0, 0), (1, 1, 1), (2, 2, 2)
-        TFIDFData(5.0, 7.0, "aaa eee ggg"), // (0, 0, 0), (1, 1, 1), (2, 2, 3)
-        TFIDFData(7.0, 5.0, "aaa eee hhh"), // (0, 0, 0), (1, 1, 1), (2, 3, 2)
-        TFIDFData(7.0, 7.0, "aaa eee iii")  // (0, 0, 0), (1, 1, 1), (2, 3, 3)
-      ))
-      val data = sparkSession.createDataFrame(rddData)
+      val data = createTestData()
 
       val projection = new CartesianProjection(Seq(0, 1, 2), (0.0, 0.0), (8.0, 8.0))
-      val termFrequencies = WordCloudOperations.termFrequencyOp("x", "y", "text", projection, Seq(0, 1, 2))(data)
-
-      val tfidfConf = TFIDFConfiguration(
-        RawTF, LogIDF, DictionaryConfiguration(true, None, None, None, None, None), 10
-      )
+      val termFrequencies = TextOperations.termFrequencyOp("x", "y", "text", projection, Seq(0, 1, 2))(data)
 
       val tfidf = TextOperations.doTFIDFByTileFast[Nothing](tfidfConf)(termFrequencies).collect.sortBy { r =>
         16 * r.coords._1 + 4 * r.coords._2 + r.coords._3
@@ -157,40 +162,10 @@ class TFIDFWordCloudTest extends SparkFunSpec {
 
 
     it("should calculate tf*idf correctly using the slow calculation") {
-      // Note that TF:IDF is done separately on each level
-      // So for each level, the document is the aggregation of all data that maps to a given tile
-      //
-      //                                       tile coordinates for each datum
-      //                                       lvl 0      lvl 1      lvl 2
-      val rddData = sc.parallelize(Seq(
-        TFIDFData(1.0, 1.0, "aaa bbb fff"), // (0, 0, 0), (1, 0, 0), (2, 0, 0)
-        TFIDFData(1.0, 3.0, "aaa bbb ggg"), // (0, 0, 0), (1, 0, 0), (2, 0, 1)
-        TFIDFData(3.0, 1.0, "aaa bbb hhh"), // (0, 0, 0), (1, 0, 0), (2, 1, 0)
-        TFIDFData(3.0, 3.0, "aaa bbb iii"), // (0, 0, 0), (1, 0, 0), (2, 1, 1)
-
-        TFIDFData(1.0, 5.0, "aaa ccc fff"), // (0, 0, 0), (1, 0, 1), (2, 0, 2)
-        TFIDFData(1.0, 7.0, "aaa ccc ggg"), // (0, 0, 0), (1, 0, 1), (2, 0, 3)
-        TFIDFData(3.0, 5.0, "aaa ccc hhh"), // (0, 0, 0), (1, 0, 1), (2, 1, 2)
-        TFIDFData(3.0, 7.0, "aaa ccc iii"), // (0, 0, 0), (1, 0, 1), (2, 1, 3)
-
-        TFIDFData(5.0, 1.0, "aaa ddd fff"), // (0, 0, 0), (1, 1, 0), (2, 2, 0)
-        TFIDFData(5.0, 3.0, "aaa ddd ggg"), // (0, 0, 0), (1, 1, 0), (2, 2, 1)
-        TFIDFData(7.0, 1.0, "aaa ddd hhh"), // (0, 0, 0), (1, 1, 0), (2, 3, 0)
-        TFIDFData(7.0, 3.0, "aaa ddd iii"), // (0, 0, 0), (1, 1, 0), (2, 3, 1)
-
-        TFIDFData(5.0, 5.0, "aaa eee fff"), // (0, 0, 0), (1, 1, 1), (2, 2, 2)
-        TFIDFData(5.0, 7.0, "aaa eee ggg"), // (0, 0, 0), (1, 1, 1), (2, 2, 3)
-        TFIDFData(7.0, 5.0, "aaa eee hhh"), // (0, 0, 0), (1, 1, 1), (2, 3, 2)
-        TFIDFData(7.0, 7.0, "aaa eee iii")  // (0, 0, 0), (1, 1, 1), (2, 3, 3)
-      ))
-      val data = sparkSession.createDataFrame(rddData)
+      val data = createTestData()
 
       val projection = new CartesianProjection(Seq(0, 1, 2), (0.0, 0.0), (8.0, 8.0))
-      val termFrequencies = WordCloudOperations.termFrequencyOp("x", "y", "text", projection, Seq(0, 1, 2))(data)
-
-      val tfidfConf = TFIDFConfiguration(
-        RawTF, LogIDF, DictionaryConfiguration(true, None, None, None, None, None), 10
-      )
+      val termFrequencies = TextOperations.termFrequencyOp("x", "y", "text", projection, Seq(0, 1, 2))(data)
 
       val tfidf = TextOperations.doTFIDFByTileSlow[Nothing](tfidfConf)(termFrequencies).collect.sortBy { r =>
         16 * r.coords._1 + 4 * r.coords._2 + r.coords._3
@@ -235,6 +210,47 @@ class TFIDFWordCloudTest extends SparkFunSpec {
       Seq("fff", "ggg", "hhh", "iii").foreach(key => assert(0.0 === tile1_11(key)))
 
       // We could also test level 2 tiles... leaving that as an exercise for later for now.
+    }
+  }
+
+  describe("timing trials") {
+    def runNewFast (data: DataFrame): Unit = {
+      val projection = new CartesianProjection(Seq(0, 1, 2), (0.0, 0.0), (8.0, 8.0))
+      val termFrequencies = TextOperations.termFrequencyOp("x", "y", "text", projection, Seq(0, 1, 2))(data)
+
+      val tfidf = TextOperations.doTFIDFByTileFast[Nothing](tfidfConf)(termFrequencies).collect
+    }
+    def runNewSlow (data: DataFrame): Unit = {
+      val projection = new CartesianProjection(Seq(0, 1, 2), (0.0, 0.0), (8.0, 8.0))
+      val termFrequencies = TextOperations.termFrequencyOp("x", "y", "text", projection, Seq(0, 1, 2))(data)
+
+      val tfidf = TextOperations.doTFIDFByTileSlow[Nothing](tfidfConf)(termFrequencies).collect
+    }
+    def time[T] (f: => T): (T, Long) = {
+      val startTime = System.currentTimeMillis()
+      val result: T = f
+      val endTime = System.currentTimeMillis()
+      (result, (endTime - startTime))
+    }
+
+    ignore("testing relative speeds of various algorithms") {
+      var tnf = 0L
+      var tns = 0L
+      var to = 0L
+      val N = 1000
+
+      for (i <- 1 to N) {
+        {
+          val (result, t) = time(runNewFast(createTestData()))
+          tnf += t
+        }
+        {
+          val (result, t) = time(runNewSlow(createTestData()))
+          tns += t
+        }
+      }
+
+      println(s"Timing stats for $N runs:")
     }
   }
 }

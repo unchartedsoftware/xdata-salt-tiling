@@ -192,7 +192,7 @@ object ProbabilisticIDF extends IDFType {
   }
 }
 
-object TFIDFCalculatorParser extends ConfigParser {
+object TFIDFConfigurationParser extends ConfigParser {
   private val SECTION_KEY = "tf-idf"
   private val TYPE_KEY = "type"
 
@@ -261,7 +261,7 @@ object TFIDFCalculatorParser extends ConfigParser {
   }
 
 
-  def tfIdfConfig(config: Config): Try[TFIDFConfiguration] = {
+  def parse(config: Config): Try[TFIDFConfiguration] = {
     tfConfig(config).map { tfConf =>
       val section = config.getConfig(SECTION_KEY)
 

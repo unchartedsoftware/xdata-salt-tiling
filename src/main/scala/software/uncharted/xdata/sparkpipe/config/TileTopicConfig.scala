@@ -14,32 +14,34 @@ package software.uncharted.xdata.sparkpipe.config
 
 import com.typesafe.config.Config
 import grizzled.slf4j.Logging
+import software.uncharted.xdata.ops.salt.text.{TFIDFConfiguration, TFIDFConfigurationParser}
 
 import scala.util.Try
 
 case class TileTopicConfig(xColumn: String,
                            yColumn: String,
                            textColumn: String,
-                           wordsToKeep: Int,
-                           projectionConfig: ProjectionConfig)
+                           projectionConfig: ProjectionConfig,
+                           tfIdfConfig: TFIDFConfiguration)
 object TileTopicConfig extends Logging {
+  val SECTION_KEY = "topics"
   val X_COLUMN_KEY = "xColumn"
   val Y_COLUMN_KEY = "yColumn"
   val TEXT_COLUMN_KEY = "textColumn"
-  val WORDS_KEY = "wordsToKeep"
   val PROJECTION_KEY = "projection"
 
   def apply (config: Config): Try[TileTopicConfig] = {
     for (
-      projectionConfig <- Try(config.getConfig(PROJECTION_KEY));
-      projection <- ProjectionConfig(projectionConfig)
+      section <- Try(config.getConfig(SECTION_KEY));
+      projectionConfig <- Try(section.getConfig(PROJECTION_KEY));
+      projection <- ProjectionConfig(projectionConfig);
+      tfidfConfig <- TFIDFConfigurationParser.parse(section)
     ) yield {
       val xColumn = config.getString(X_COLUMN_KEY)
       val yColumn = config.getString(Y_COLUMN_KEY)
       val textColumn = config.getString(TEXT_COLUMN_KEY)
-      val wordsToKeep = config.getInt(WORDS_KEY)
 
-      TileTopicConfig(xColumn, yColumn, textColumn, wordsToKeep, projection)
+      TileTopicConfig(xColumn, yColumn, textColumn, projection, tfidfConfig)
     }
   }
 }

@@ -19,7 +19,7 @@ import com.typesafe.config.Config
 import org.apache.spark.sql.SparkSession
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.xdata.ops.io.serializeElementDoubleScore
-import software.uncharted.xdata.ops.salt.text.WordCloudOperations
+import software.uncharted.xdata.ops.salt.text.{TFIDFConfigurationParser, TextOperations}
 import software.uncharted.xdata.sparkpipe.config.TileTopicConfig
 import software.uncharted.xdata.sparkpipe.jobs.JobUtil.dataframeFromSparkCsv
 
@@ -31,11 +31,20 @@ object XYTileTFIDFJob extends AbstractJob {
     TileTopicConfig(config) match {
       case Success(c) => c
       case Failure(e) =>
-        logger.error("Error getting TF/IDF config", e)
+        error("Error getting tile config", e)
         sys.exit(-1)
     }
   }
 
+  // Parse TF*IDF config parameters out of supplied config
+  private def parseTFIDFConfig (config: Config) = {
+    TFIDFConfigurationParser.parse(config) match {
+      case Success(c) => c
+      case Failure(e) =>
+        error("Error getting TF*IDF config", e)
+        sys.exit(-1)
+    }
+  }
   /**
     * This function actually executes the task the job describes
     *
@@ -47,9 +56,10 @@ object XYTileTFIDFJob extends AbstractJob {
     val tilingConfig = parseTilingParameters(config)
     val outputOperation = parseOutputOperation(config)
     val tileTopicConfig = parseTileTopicConfig(config)
+    val tfidfConfig = parseTFIDFConfig(config)
 
     val projection = createProjection(tileTopicConfig.projectionConfig, tilingConfig.levels)
-    val wordCloudTileOp = WordCloudOperations.termFrequencyOp(
+    val wordCloudTileOp = TextOperations.termFrequencyOp(
       tileTopicConfig.xColumn,
       tileTopicConfig.yColumn,
       tileTopicConfig.textColumn,
@@ -62,7 +72,7 @@ object XYTileTFIDFJob extends AbstractJob {
     // Process our data
     Pipe(df)
       .to(wordCloudTileOp)
-      .to(WordCloudOperations.doTFIDFByTile(tileTopicConfig.wordsToKeep))
+      .to(TextOperations.doTFIDFByTileFast(tfidfConfig))
       .to(serializeElementDoubleScore)
       .to(outputOperation)
       .run

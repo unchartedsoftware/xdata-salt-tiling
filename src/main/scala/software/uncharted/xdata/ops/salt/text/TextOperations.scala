@@ -21,7 +21,9 @@ import software.uncharted.salt.core.analytic.Aggregator
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.generation.request.TileLevelRequest
 import software.uncharted.salt.core.projection.numeric.NumericProjection
+import software.uncharted.salt.core.util.SparseArray
 import software.uncharted.xdata.ops.salt.ZXYOp
+import software.uncharted.xdata.sparkpipe.config.LDAConfig
 
 import scala.reflect.ClassTag
 
@@ -80,6 +82,31 @@ object TextOperations extends ZXYOp {
   }
 
 
+  /**
+    * Take a dataframe with a column containing text documents, and tile the documents into term-frequency collections.
+    *
+    * @param xCol The column with the x coordinate of each record
+    * @param yCol The column with the y coordinate of each record
+    * @param textCol The column containing the document in each record
+    * @param projection The projection dermining how x and y coordinates are interpretted
+    * @param zoomLevels The tile levels to generate
+    * @param input The input data
+    * @return A set of tiles containing, by tile, the words appearing in each tile, and the number of times each word
+    *         appears
+    */
+  def termFrequencyOp(xCol: String,
+                      yCol: String,
+                      textCol: String,
+                      projection: NumericProjection[(Double, Double), (Int, Int, Int), (Int, Int)],
+                      zoomLevels: Seq[Int])
+                     (input: DataFrame):
+  RDD[SeriesData[(Int, Int, Int), (Int, Int), Map[String, Int], Nothing]] = {
+    // Pull out term and document frequencies for each tile
+    val request = new TileLevelRequest(zoomLevels, (tc: (Int, Int, Int)) => tc._1)
+    val binAggregator = new WordCounter
+
+    super.apply(projection, 1, xCol, yCol, textCol, binAggregator, None)(request)(input)
+  }
 
   /**
     * Convert an input DataFrame into an RDD of word bags
@@ -366,6 +393,71 @@ object TextOperations extends ZXYOp {
     })(input)
   }
 
+  /**
+    * Perform LDA on the output of termFrequency, on a tile by tile basis, outputting the top topics in each tile
+    *
+    * This assumes a single bin per tile
+    *
+    * @param config The configuration for how to run LDA
+    * @param input The input data of tiles of word bags
+    * @tparam X The type of metadata associated with each tile
+    * @return A new tile set containing the LDA results on each word bag
+    */
+  def ldaTopicsByTile[X] (config: LDAConfig)
+                         (input: RDD[SeriesData[(Int, Int, Int), (Int, Int), Map[String, Int], X]]):
+  RDD[SeriesData[(Int, Int, Int), (Int, Int), List[(String, Double)], X]] = {
+    type InSeries  = SeriesData[(Int, Int, Int), (Int, Int), Map[String, Int], X]
+    type OutSeries = SeriesData[(Int, Int, Int), (Int, Int), List[(String, Double)], X]
+    val transform: InSeries => Map[String, Int] = _.bins(0)
+
+    LDAOp.wordBagLDA(config, transform)(input).map { case (inData, ldaResults) =>
+      val outputResults = ldaResults.map { t =>
+        (t.topic.map { ws => ws.word + config.scoreSeparator + ws.score }.mkString(config.wordSeparator), t.score)
+      }.toList
+      new OutSeries(
+        inData.projection,
+        inData.maxBin,
+        inData.coords,
+        SparseArray[List[(String, Double)]](1, List[(String, Double)](), 0.0f)(0 -> outputResults),
+        inData.tileMeta)
+    }
+  }
+
+  /**
+    * Perform LDA on the output of termFrequency, on a tile by tile basis, outputting the top words in each tile,
+    * weighted by topic weight and word-within-topic weight
+    *
+    * This assumes a single bin per tile
+    *
+    * @param config The configuration for how to run LDA
+    * @param input The input data of tiles of word bags
+    * @tparam X The type of metadata associated with each tile
+    * @return A new tile set containing the LDA results on each word bag
+    */
+  def ldaWordsByTile[X] (config: LDAConfig)
+                        (input: RDD[SeriesData[(Int, Int, Int), (Int, Int), Map[String, Int], X]]):
+  RDD[SeriesData[(Int, Int, Int), (Int, Int), List[(String, Double)], X]] = {
+    type InSeries  = SeriesData[(Int, Int, Int), (Int, Int), Map[String, Int], X]
+    type OutSeries = SeriesData[(Int, Int, Int), (Int, Int), List[(String, Double)], X]
+    val transform: InSeries => Map[String, Int] = _.bins(0)
+
+    LDAOp.wordBagLDA(config, transform)(input).map { case (inData, ldaResults) =>
+      val wordScores = MutableMap[String, Double]()
+      ldaResults.foreach { t =>
+        val topicScore = t.score
+        t.topic.foreach { ws =>
+          wordScores(ws.word) = wordScores.getOrElse(ws.word, 0.0) + topicScore * ws.score
+        }
+      }
+      val outputResults = wordScores.toList.sortBy(-_._2).take(config.wordsPerTopic)
+      new OutSeries(
+        inData.projection,
+        inData.maxBin,
+        inData.coords,
+        SparseArray[List[(String, Double)]](1, List[(String, Double)](), 0.0f)(0 -> outputResults),
+        inData.tileMeta)
+    }
+  }
   /**
     * Take a set of tiles, and transform the tile contents
     *
