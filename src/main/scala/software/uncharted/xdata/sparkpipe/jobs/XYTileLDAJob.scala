@@ -19,7 +19,7 @@ import com.typesafe.config.Config
 import org.apache.spark.sql.SparkSession
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.xdata.ops.io.serializeElementDoubleScore
-import software.uncharted.xdata.ops.salt.text.TextOperations
+import software.uncharted.xdata.ops.salt.text.{DictionaryConfigurationParser, LDAOp, TextOperations}
 import software.uncharted.xdata.sparkpipe.config.{LDAConfig, TileTopicConfig}
 import software.uncharted.xdata.sparkpipe.jobs.JobUtil.dataframeFromSparkCsv
 
@@ -50,6 +50,11 @@ object XYTileLDAJob extends AbstractJob {
     }
   }
 
+  // Get dictionary creation configuration
+  private def parseDictionaryConfig (config: Config) = {
+    DictionaryConfigurationParser.parse(config)
+  }
+
   /**
     * This function actually executes the task the job describes
     *
@@ -61,6 +66,7 @@ object XYTileLDAJob extends AbstractJob {
     val tilingConfig = parseTilingParameters(config)
     val outputOperation = parseOutputOperation(config)
     val tileTopicConfig = parseTileTopicConfig(config)
+    val dictionayrConfig = parseDictionaryConfig(config)
     val ldaConfig = parseLDAConfig(config)
 
     val projection = createProjection(tileTopicConfig.projectionConfig, tilingConfig.levels)
@@ -71,13 +77,13 @@ object XYTileLDAJob extends AbstractJob {
       projection,
       tilingConfig.levels
     )(_)
-    val ldaOperation = TextOperations.ldaWordsByTile[Nothing](ldaConfig)(_)
+    val ldaOperation = LDAOp.ldaWordsByTile[Nothing](dictionayrConfig, ldaConfig)(_)
 
     // Create the dataframe from the input config
     val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, session)
 
     // Process our data
-    val foo = Pipe(df)
+    Pipe(df)
       .to(wordCloudTileOp)
       .to(ldaOperation)
       .to(serializeElementDoubleScore)

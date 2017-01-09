@@ -14,15 +14,13 @@ package software.uncharted.xdata.sparkpipe.config
 
 import com.typesafe.config.Config
 import grizzled.slf4j.Logging
-import software.uncharted.xdata.ops.salt.text.{TFIDFConfiguration, TFIDFConfigurationParser}
 
 import scala.util.Try
 
 case class TileTopicConfig(xColumn: String,
                            yColumn: String,
                            textColumn: String,
-                           projectionConfig: ProjectionConfig,
-                           tfIdfConfig: TFIDFConfiguration)
+                           projectionConfig: ProjectionConfig)
 object TileTopicConfig extends Logging {
   val SECTION_KEY = "topics"
   val X_COLUMN_KEY = "xColumn"
@@ -34,14 +32,13 @@ object TileTopicConfig extends Logging {
     for (
       section <- Try(config.getConfig(SECTION_KEY));
       projectionConfig <- Try(section.getConfig(PROJECTION_KEY));
-      projection <- ProjectionConfig(projectionConfig);
-      tfidfConfig <- TFIDFConfigurationParser.parse(section)
+      projection <- ProjectionConfig(projectionConfig)
     ) yield {
       val xColumn = config.getString(X_COLUMN_KEY)
       val yColumn = config.getString(Y_COLUMN_KEY)
       val textColumn = config.getString(TEXT_COLUMN_KEY)
 
-      TileTopicConfig(xColumn, yColumn, textColumn, projection, tfidfConfig)
+      TileTopicConfig(xColumn, yColumn, textColumn, projection)
     }
   }
 }

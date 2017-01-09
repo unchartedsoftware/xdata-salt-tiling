@@ -14,6 +14,8 @@ package software.uncharted.xdata.ops.salt.text
 
 import java.io.FileInputStream
 
+import org.apache.spark.mllib.linalg.{SparseVector, Vector}
+
 import scala.collection.mutable.{Map => MutableMap}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.DataFrame
@@ -33,7 +35,7 @@ import scala.reflect.ClassTag
   */
 object TextOperations extends ZXYOp {
   type TileData[T, X] = SeriesData[(Int, Int, Int), (Int, Int), T, X]
-  private val notWord = "('[^a-zA-Z]|[^a-zA-Z]'|[^a-zA-Z'])+"
+  private[text] val notWord = "('[^a-zA-Z]|[^a-zA-Z]'|[^a-zA-Z'])+"
 
   private def nullToOption[T] (t: T): Option[T] =
     if (null == t) {
@@ -133,6 +135,37 @@ object TextOperations extends ZXYOp {
   }
 
   /**
+    * Convert an input dataset that contains texts into an output dataset that contains word bags
+    * @param config A dictionary configuration that indicates how dictionaries are to be formed.  This is currently
+    *               only used to determine case sensitivity, but could be used for more in the future.
+    * @param textExtractorFcn A function to extract the text from an input data record
+    * @param wordBagInjectorFcn A function to inject the word bag into an input data record to create an output data
+    *                           record
+    * @param input The input data
+    * @tparam T The input data type
+    * @tparam U The output data type
+    * @return A dataset containing the created word bags
+    */
+  def textToWordBags[T, U: ClassTag] (config: DictionaryConfiguration,
+                                      textExtractorFcn: T => String,
+                                      wordBagInjectorFcn: (T,   Map[String, Int]) => U)(input: RDD[T]): RDD[U] = {
+    input.map { t =>
+      val words = MutableMap[String, Int]()
+
+      textExtractorFcn(t).split(notWord).foreach { word =>
+        val casedWord = if (config.caseSensitive) {
+          word
+        } else {
+          word.toLowerCase
+        }
+        words(casedWord) = words.getOrElse(casedWord, 0) + 1
+      }
+
+      wordBagInjectorFcn(t, words.toMap)
+    }
+  }
+
+  /**
     * Convert an RDD of T to an RDD of word bags
     *
     * @param config A dictionary configuration object that specifies some aspects of how word conversion takes place
@@ -156,6 +189,27 @@ object TextOperations extends ZXYOp {
       filter(!_._2.isEmpty).
       // Change simple document strings to word bags
       map { case (id, document) => (id, documentToWordBag(document, config.caseSensitive, stopWords, goWords)) }
+  }
+
+  /**
+    * Take an RDD of (id, word bag) pairs, and transform the word bags into vector references into a common dictionary,
+    * with the entries being the count of words in each word bag.
+    *
+    * @param dictionary A dictionary of all words; the key is the word, the value, the place in the index
+    * @param input A dataset of (id, word bag)
+    * @tparam T The type of the ID associated with each word bag
+    * @return a dataset of (id, vector), where the vectors reference the words in the dictionary
+    */
+  def wordBagToWordVector[T] (dictionary: Map[String, Int])(input: RDD[(T, Map[String, Int])]): RDD[(T, Vector)] = {
+    // Use our dictionary to map word maps into sparse vectors by map index
+    val wordVectors = input.map { case (id, wordBag) =>
+      val indicesAndValues = wordBag.flatMap { case (word, count) =>
+        dictionary.get(word).map(wordIndex => (wordIndex, count))
+      }.toArray.sortBy(_._1)
+      val wordVector: Vector = new SparseVector(dictionary.size, indicesAndValues.map(_._1), indicesAndValues.map(_._2.toDouble))
+      (id, wordVector)
+    }
+    wordVectors
   }
 
   /**
@@ -393,71 +447,6 @@ object TextOperations extends ZXYOp {
     })(input)
   }
 
-  /**
-    * Perform LDA on the output of termFrequency, on a tile by tile basis, outputting the top topics in each tile
-    *
-    * This assumes a single bin per tile
-    *
-    * @param config The configuration for how to run LDA
-    * @param input The input data of tiles of word bags
-    * @tparam X The type of metadata associated with each tile
-    * @return A new tile set containing the LDA results on each word bag
-    */
-  def ldaTopicsByTile[X] (config: LDAConfig)
-                         (input: RDD[SeriesData[(Int, Int, Int), (Int, Int), Map[String, Int], X]]):
-  RDD[SeriesData[(Int, Int, Int), (Int, Int), List[(String, Double)], X]] = {
-    type InSeries  = SeriesData[(Int, Int, Int), (Int, Int), Map[String, Int], X]
-    type OutSeries = SeriesData[(Int, Int, Int), (Int, Int), List[(String, Double)], X]
-    val transform: InSeries => Map[String, Int] = _.bins(0)
-
-    LDAOp.wordBagLDA(config, transform)(input).map { case (inData, ldaResults) =>
-      val outputResults = ldaResults.map { t =>
-        (t.topic.map { ws => ws.word + config.scoreSeparator + ws.score }.mkString(config.wordSeparator), t.score)
-      }.toList
-      new OutSeries(
-        inData.projection,
-        inData.maxBin,
-        inData.coords,
-        SparseArray[List[(String, Double)]](1, List[(String, Double)](), 0.0f)(0 -> outputResults),
-        inData.tileMeta)
-    }
-  }
-
-  /**
-    * Perform LDA on the output of termFrequency, on a tile by tile basis, outputting the top words in each tile,
-    * weighted by topic weight and word-within-topic weight
-    *
-    * This assumes a single bin per tile
-    *
-    * @param config The configuration for how to run LDA
-    * @param input The input data of tiles of word bags
-    * @tparam X The type of metadata associated with each tile
-    * @return A new tile set containing the LDA results on each word bag
-    */
-  def ldaWordsByTile[X] (config: LDAConfig)
-                        (input: RDD[SeriesData[(Int, Int, Int), (Int, Int), Map[String, Int], X]]):
-  RDD[SeriesData[(Int, Int, Int), (Int, Int), List[(String, Double)], X]] = {
-    type InSeries  = SeriesData[(Int, Int, Int), (Int, Int), Map[String, Int], X]
-    type OutSeries = SeriesData[(Int, Int, Int), (Int, Int), List[(String, Double)], X]
-    val transform: InSeries => Map[String, Int] = _.bins(0)
-
-    LDAOp.wordBagLDA(config, transform)(input).map { case (inData, ldaResults) =>
-      val wordScores = MutableMap[String, Double]()
-      ldaResults.foreach { t =>
-        val topicScore = t.score
-        t.topic.foreach { ws =>
-          wordScores(ws.word) = wordScores.getOrElse(ws.word, 0.0) + topicScore * ws.score
-        }
-      }
-      val outputResults = wordScores.toList.sortBy(-_._2).take(config.wordsPerTopic)
-      new OutSeries(
-        inData.projection,
-        inData.maxBin,
-        inData.coords,
-        SparseArray[List[(String, Double)]](1, List[(String, Double)](), 0.0f)(0 -> outputResults),
-        inData.tileMeta)
-    }
-  }
   /**
     * Take a set of tiles, and transform the tile contents
     *

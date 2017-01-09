@@ -12,13 +12,11 @@
   */
 package software.uncharted.xdata.sparkpipe.jobs
 
-import com.typesafe.config.{Config, ConfigFactory}
-import grizzled.slf4j.{Logger, Logging}
+import com.typesafe.config.Config
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{SQLContext, SparkSession}
-import software.uncharted.sparkpipe.Pipe
-import software.uncharted.xdata.ops.salt.text.LDAOp
+import org.apache.spark.sql.SparkSession
+import software.uncharted.xdata.ops.salt.text.{DictionaryConfiguration, DictionaryConfigurationParser, LDAOp}
 import software.uncharted.xdata.sparkpipe.config.{HdfsCsvConfig, HdfsIOConfig, LDAConfig}
 
 import scala.util.{Failure, Success}
@@ -29,35 +27,37 @@ import scala.util.{Failure, Success}
 object LDAAugmentationJob extends AbstractJob {
   private def readInputConfig (config: Config): HdfsCsvConfig = {
     HdfsIOConfig.csv("input")(config) match {
-      case Success(config) => {
-        if (config.neededColumns.length != 1) {
-          logger.error("Input configuration specifies other than 1 column")
+      case Success(c) =>
+        if (c.neededColumns.length != 1) {
+          error("Input configuration specifies other than 1 column")
           sys.exit(-1)
         }
-        config
-      }
+        c
       case Failure(e) =>
-        logger.error("Error reading input config", e)
+        error("Error reading input config", e)
         sys.exit(-1)
     }
   }
 
   private def readOutputConfig (config: Config): HdfsCsvConfig = {
     HdfsIOConfig.csv("output")(config) match {
-      case Success(config) => config
+      case Success(c) => c
       case Failure(e) =>
-        logger.error("Error reading output configuration", e)
+        error("Error reading output configuration", e)
         sys.exit(-1)
     }
   }
 
   private def readLDAConfig (config: Config): LDAConfig = {
     LDAConfig(config) match {
-      case Success(config) => config
+      case Success(c) => c
       case Failure(e) =>
-        logger.error("Error reading LDA configuration", e)
+        error("Error reading LDA configuration", e)
         sys.exit(-1)
     }
+  }
+  private def readDictionaryConfig (config: Config): DictionaryConfiguration = {
+    DictionaryConfigurationParser.parse(config)
   }
 
   /**
@@ -74,10 +74,11 @@ object LDAAugmentationJob extends AbstractJob {
     val inputConfig = readInputConfig(config)
     val outputConfig = readOutputConfig(config)
     val ldaConfig = readLDAConfig(config)
+    val dictionaryConfig = readDictionaryConfig(config)
 
     // Read data
     val inputData = readFile(session.sparkContext, inputConfig).zipWithIndex().map { case ((rawRecord, fields), index) =>
-      val text = fields(0)
+      val text = fields.head
       (index, (rawRecord, text))
     }
 
@@ -85,10 +86,10 @@ object LDAAugmentationJob extends AbstractJob {
     val texts = inputData.map { case (id, (rawRecord, text)) => (id, text) }
     dbg("(1) There are " + texts.count + " texts")
     // Perform LDA on the text column
-    val topics = LDAOp.textLDA(ldaConfig, texts)
-    dbg("(2) There are " + topics.count + " topic records")
+    val docTopics = LDAOp.textLDATopics[(Long, String)](dictionaryConfig, ldaConfig, _._2, _._1)(texts)
+    dbg("(2) There are " + docTopics.count + " topic records")
     // Reformat topics for output
-    val formattedTopics = topics.map { case (docId, topics) =>
+    val formattedTopics = docTopics.map { case (docId, topics) =>
       (
         docId,
         topics.map { entry =>

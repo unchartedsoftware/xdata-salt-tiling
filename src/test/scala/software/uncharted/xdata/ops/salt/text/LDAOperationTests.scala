@@ -12,6 +12,7 @@
   */
 package software.uncharted.xdata.ops.salt.text
 
+import com.typesafe.config.ConfigFactory
 import org.apache.spark.sql.{DataFrame, Row}
 import software.uncharted.xdata.spark.SparkFunSpec
 import software.uncharted.xdata.ops.util.DataFrameOperations
@@ -19,13 +20,14 @@ import software.uncharted.xdata.sparkpipe.config.LDAConfig
 
 class LDAOperationTests extends SparkFunSpec {
   import DataFrameOperations._
+  val defaultDictionaryConfig = DictionaryConfigurationParser.parse(ConfigFactory.empty())
 
   describe("Word determination") {
     it("should break a text apart into words properly, including dealing with contractions") {
       val words =
         """She said, 'The quick brown fox doesn't ever jump over the lazy
           |dog.  I say it won't, it doesn't, and it didn't, and I'm sticking
-          |to that!""".split(LDAOp.notWord).toList
+          |to that!""".split(TextOperations.notWord).toList
       assert(List(
         "She", "said", "The", "quick", "brown", "fox", "doesn't", "ever", "jump", "over",
         "the", "lazy", "dog", "I", "say", "it", "won't", "it", "doesn't", "and", "it",
@@ -48,7 +50,7 @@ class LDAOperationTests extends SparkFunSpec {
         new LDATestData(index, text)
       }
       val data = toDataFrame(sparkSession)(rddData)
-      val results = textLDA("index", "text", LDAConfig(4, 2, 4, None, None, "", "", ""))(data)
+      val results = textLDA("index", "text", defaultDictionaryConfig, LDAConfig(4, 2, 4, None, None, "", "", ""))(data)
 
       printResults(data, results)
     }
@@ -85,7 +87,7 @@ class LDAOperationTests extends SparkFunSpec {
       }
 
       val data = toDataFrame(sparkSession)(rddData)
-      val results = textLDA("index", "text", LDAConfig(2, 20, 2, None, None, "", "", ""))(data)
+      val results = textLDA("index", "text", defaultDictionaryConfig, LDAConfig(2, 20, 2, None, None, "", "", ""))(data)
 
       printResults(data, results)
     }
