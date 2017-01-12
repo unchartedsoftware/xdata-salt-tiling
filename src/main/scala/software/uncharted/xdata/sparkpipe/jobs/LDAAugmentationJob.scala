@@ -17,7 +17,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import software.uncharted.xdata.ops.salt.text.{DictionaryConfiguration, DictionaryConfigurationParser, LDAOp}
-import software.uncharted.xdata.sparkpipe.config.{HdfsCsvConfig, HdfsIOConfig, LDAConfig}
+import software.uncharted.xdata.sparkpipe.config.{HdfsCsvConfig, HdfsCsvConfigParser, LDAConfig}
 
 import scala.util.{Failure, Success}
 
@@ -26,7 +26,7 @@ import scala.util.{Failure, Success}
   */
 object LDAAugmentationJob extends AbstractJob {
   private def readInputConfig (config: Config): HdfsCsvConfig = {
-    HdfsIOConfig.csv("input")(config) match {
+    HdfsCsvConfigParser.parse("input")(config) match {
       case Success(c) =>
         if (c.neededColumns.length != 1) {
           error("Input configuration specifies other than 1 column")
@@ -40,7 +40,7 @@ object LDAAugmentationJob extends AbstractJob {
   }
 
   private def readOutputConfig (config: Config): HdfsCsvConfig = {
-    HdfsIOConfig.csv("output")(config) match {
+    HdfsCsvConfigParser.parse("output")(config) match {
       case Success(c) => c
       case Failure(e) =>
         error("Error reading output configuration", e)

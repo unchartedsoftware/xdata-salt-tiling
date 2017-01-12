@@ -20,10 +20,18 @@ import com.typesafe.config.Config
 
 
 
-/** config to describe a file of character-separated values */
+/**
+  * A configuration object describing a file of character-separated values in HDFS
+  *
+  * @param location The HDFS location of the file.
+  * @param partitions The number of partitions to read. If not specified, the default number of partitions will
+  *                   be used.
+  * @param separator A separator to use to separate columns in the CSV file.  Default is a comma.
+  * @param neededColumns The columns from the CSV file that we need. Not optional.
+  */
 case class HdfsCsvConfig (location: String, partitions: Option[Int], separator: String, neededColumns: Seq[Int])
 
-object HdfsIOConfig {
+object HdfsCsvConfigParser extends ConfigParser {
   private val LOCATION_KEY = "location"
   private val PARTITIONS_KEY = "partitions"
   private val SEPARATOR_KEY = "separator"
@@ -32,35 +40,15 @@ object HdfsIOConfig {
   /**
     * Read the config for a particular character-separated values file for input or output
     */
-  def csv(key: String, defaultSeparator: String = DEFAULT_SEPARATOR)(config: Config): Try[HdfsCsvConfig] = {
+  def parse(key: String, defaultSeparator: String = DEFAULT_SEPARATOR)(config: Config): Try[HdfsCsvConfig] = {
     Try {
       val fileConfig = config.getConfig(key)
-      val separator =
-        if (fileConfig.hasPath(SEPARATOR_KEY)) {
-          fileConfig.getString(SEPARATOR_KEY)
-        } else {
-          defaultSeparator
-        }
-      val neededColumns =
-        if (fileConfig.hasPath(RELEVANT_COLUMNS_KEY)) {
-          fileConfig.getIntList(RELEVANT_COLUMNS_KEY).asScala.toSeq.map(_.intValue())
-        } else {
-          Seq[Int]()
-        }
-
       HdfsCsvConfig(
         fileConfig.getString(LOCATION_KEY),
-        optionalInt(fileConfig, PARTITIONS_KEY),
-        separator,
-        neededColumns
+        getIntOption(fileConfig, PARTITIONS_KEY),
+        getString(fileConfig, SEPARATOR_KEY, defaultSeparator),
+        getIntList(fileConfig, RELEVANT_COLUMNS_KEY)
       )
     }
   }
-
-  def optionalInt (config: Config, path: String): Option[Int] =
-    if (config.hasPath(path)) {
-      Some(config.getInt(path))
-    } else {
-      None
-    }
 }
