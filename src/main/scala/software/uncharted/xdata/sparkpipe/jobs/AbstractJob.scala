@@ -133,7 +133,6 @@ trait AbstractJob extends Logging {
         base.withFallback(fallback)
       }.resolve()
 
-    config.resolve()
     if (debug) {
       debugConfig(config)
     }
