@@ -477,6 +477,9 @@ object TextOperations extends ZXYOp {
   }
 }
 
+/**
+  * An aggregator that can track counts of individual words
+  */
 object WordCounter {
   val wordSeparators = "('$|^'|'[^a-zA-Z_0-9']+|[^a-zA-Z_0-9']+'|[^a-zA-Z_0-9'])+"
 }

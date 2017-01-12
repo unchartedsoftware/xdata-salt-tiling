@@ -229,6 +229,11 @@ package object io extends Logging {
   RDD[(TC, Seq[Byte])] =
     serializeTiles(intScoreListToByteArray)(tiles)
 
+  /**
+    * Get a default tile serialization function for use by serializeElementScore
+    *
+    * @return A function that can serialize tile data that consists of scored words where the score is an integer.
+    */
   def intScoreListToByteArray: SparseArray[List[(String, Int)]] => Seq[Byte] = sparseData =>
     sparseData(0).map { case (entry, score) => s""""$entry": $score""" }.mkString("{", ", ", "}").getBytes
 
@@ -242,6 +247,11 @@ package object io extends Logging {
   RDD[(TC, Seq[Byte])] =
     serializeTiles(doubleScoreListToByteArray)(tiles)
 
+  /**
+    * Get a default tile serialization function for use by serializeElementDoubleScore
+    *
+    * @return A function that can serialize tile data that consists of scored words where the score is a real number
+    */
   def doubleScoreListToByteArray: SparseArray[List[(String, Double)]] => Seq[Byte] = sparseData =>
     sparseData(0).map { case (entry, score) => s""""$entry": $score""" }.mkString("{", ", ", "}").getBytes
 

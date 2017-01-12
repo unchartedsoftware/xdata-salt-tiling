@@ -19,6 +19,12 @@ import org.apache.spark.mllib.linalg.{DenseMatrix, DenseVector, Matrix, Vector, 
   * Some general utilities for use with MLLib matrices
   */
 object MatrixUtilities {
+  /**
+    * Pull a single column out of a matrix
+    * @param matrix The matrix from which to extract the column
+    * @param column The column index to extract
+    * @return The extracted column
+    */
   def column (matrix: Matrix, column: Int): Vector = {
     matrix match {
       case sm: SparseMatrix => sparseColumn(sm, column)
@@ -55,6 +61,12 @@ object MatrixUtilities {
     new DenseVector(matrix.values.slice(start, end))
   }
 
+  /**
+    * Pull a single row out of a matrix
+    * @param matrix The matrix from which to extract the row
+    * @param row The row index to extract
+    * @return The extracted row
+    */
   def row (matrix: Matrix, row: Int): Vector = {
     matrix match {
       case sm: SparseMatrix => sparseColumn(sm.transpose, row)
