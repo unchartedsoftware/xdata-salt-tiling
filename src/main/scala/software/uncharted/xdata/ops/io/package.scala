@@ -220,7 +220,7 @@ package object io extends Logging {
   }
 
   /**
-    * Serializes tile bins stored as a list of scored strings to tile index / byte sequence tuples.
+    * Serializes tile bins stored as a list of integer-scored strings to tile index / byte sequence tuples.
     *
     * @param tiles The input tile set.
     * @return Index/byte tuples.
@@ -238,7 +238,7 @@ package object io extends Logging {
     sparseData(0).map { case (entry, score) => s""""$entry": $score""" }.mkString("{", ", ", "}").getBytes
 
   /**
-    * Same thing, but with Doubles instead of Ints
+    * Serializes tile bins stored as a list of double-scored strings to tile index / byte sequence tuples.
     *
     * @param tiles The input tile set.
     * @return Index/byte tuples.
