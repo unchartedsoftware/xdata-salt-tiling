@@ -295,8 +295,12 @@ object TextOperations extends ZXYOp {
   }
 
   /**
-    * Create a dictionary of the terms seen in a set of documents, along with the term frequency (the number of
-    * documents in which it occurs) for each term
+    * Create a series of dictionaries of the terms seen in a set of documents, along with the term frequency (the
+    * number of documents in which it occurs) for each term.
+    *
+    * This should be used (as opposed to the above getDictionary) when the document dataset contains multiple
+    * theoretical datasets, each of which should be examined separately - for instance, a tile set where each level
+    * of tiles is considered on its own.
     *
     * @param config A description of which words are to be chosen
     * @param wordBagExtractorFcn A function to pull a dictionary index and a document (in the form of a word bag) from
@@ -304,7 +308,7 @@ object TextOperations extends ZXYOp {
     *                            the same dictionary.
     * @param input The input data, already processed into word bags by dataFrameToWordBags or rddToWordBags
     * @tparam T The type of input record
-    * @return The dictionary to use with this set of word bags
+    * @return The dictionaries to use with this set of word bags
     */
   def getDictionaries[T] (config: DictionaryConfiguration,
                                   wordBagExtractorFcn: T => (Int, Map[String, Int]))
@@ -344,7 +348,7 @@ object TextOperations extends ZXYOp {
     * all numeric).  Word vectors are still stored sparsely (i.e., as maps)
     *
     * @param data The collection of word bags (word, term frequency) to convert
-    *             ``  * @param dictionary The dictionary to use to convert them.  Dictionary form is (word, document frequency)
+    * @param dictionary The dictionary to use to convert them.  Dictionary form is (word, document frequency)
     * @return A new collection of word bags in the form of (index within dictionary, term frequency)
     */
   def wordBagToWordVector (data: RDD[(Any, Map[String, Int])],
