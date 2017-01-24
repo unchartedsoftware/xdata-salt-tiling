@@ -13,6 +13,7 @@
 package software.uncharted.xdata.ops.salt.text
 
 import com.typesafe.config.ConfigFactory
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row}
 import software.uncharted.xdata.spark.SparkFunSpec
 import software.uncharted.xdata.ops.util.DataFrameOperations
@@ -46,13 +47,20 @@ class LDAOperationTests extends SparkFunSpec {
         "ccc ddd ggg hhh",
         "eee fff ggg hhh"
       )
-      val rddData = sc.parallelize(texts.zipWithIndex).map{case (text, index) =>
+      val rddData = sc.parallelize(texts.zipWithIndex).map { case (text, index) =>
         new LDATestData(index, text)
       }
       val data = toDataFrame(sparkSession)(rddData)
-      val results = textLDA("index", "text", defaultDictionaryConfig, LDAConfig(4, 2, 4, None, None, "", "", ""))(data)
+      val rawResults = textLDA("index", "text", defaultDictionaryConfig, LDAConfig(4, 2, 4, None, None, "", "", ""))(data)
 
-      printResults(data, results)
+      // Make sure we get the right number of results
+      val results = interpretResults(rawResults).collect
+      results.foreach { case (index, topics) =>
+        assert(topics.length === 4)
+        topics.foreach { case (wordScores, topicScore) =>
+          wordScores.length === 2
+        }
+      }
     }
 
     it("should perform LDA on a complex set of texts") {
@@ -87,29 +95,33 @@ class LDAOperationTests extends SparkFunSpec {
       }
 
       val data = toDataFrame(sparkSession)(rddData)
-      val results = textLDA("index", "text", defaultDictionaryConfig, LDAConfig(2, 20, 2, None, None, "", "", ""))(data)
+      val rawResults = textLDA("index", "text", defaultDictionaryConfig, LDAConfig(2, 20, 2, None, None, "", "", ""))(data)
 
-      printResults(data, results)
+
+      // Make sure we get the right number of results
+      val results = interpretResults(rawResults).collect
+      results.foreach { case (index, topics) =>
+        assert(topics.length === 2)
+        topics.foreach { case (wordScores, topicScore) =>
+          wordScores.length === 20
+        }
+      }
     }
   }
 
-  def printResults (input: DataFrame, output: DataFrame): Unit = {
-    val outputRenamed = output.toDF("outputIndex", "outputText", "topics")
-    input.join(outputRenamed, input("index") === outputRenamed("outputIndex")).select("index", "text", "topics").collect.map{row =>
-      val id = row.getLong(0)
-      val text = row.getString(1)
-
-      val topics = row.get(2).asInstanceOf[Seq[Row]].map{topicRow =>
-        val wordScores = topicRow.get(0).asInstanceOf[Seq[Row]].map{wordScoreRow =>
-          val word = wordScoreRow.getString(0)
-          val score = wordScoreRow.getDouble(1)
+  def interpretResults(output: DataFrame): RDD[(Long, (List[(List[(String, Double)], Double)]))] = {
+    output.select("index", "topics").rdd.map { row =>
+      val index = row.getLong(0)
+      val topics = row.get(1).asInstanceOf[Seq[Row]].map { topicRow =>
+        val wordScores = topicRow.get(0).asInstanceOf[Seq[Row]].map { wordScoreRaw =>
+          val word = wordScoreRaw.getString(0)
+          val score = wordScoreRaw.getDouble(1)
           (word, score)
         }.toList
         val topicScore = topicRow.getDouble(1)
         (wordScores, topicScore)
       }.toList
-
-      println(s"""ID: $id   text: "$text"   topics: $topics""")
+      (index, topics)
     }
   }
 }
