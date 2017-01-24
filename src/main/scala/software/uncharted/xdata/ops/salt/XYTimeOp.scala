@@ -58,6 +58,7 @@ trait XYTimeOp {
 
     // Use the pipeline to cast columns to expected values and select them into a new dataframe
     val castCols = Map(xCol -> DoubleType.simpleString, yCol -> DoubleType.simpleString, rangeCol -> LongType.simpleString)
+
     val frame = Pipe(input)
       .to(convertTimes)
       .to(castColumns(castCols))
@@ -65,9 +66,9 @@ trait XYTimeOp {
 
     // Extracts lat, lon, time coordinates from row
     val coordExtractor = (r: Row) => {
-      val xIndex = input.schema.fieldIndex(xCol)
-      val yIndex = input.schema.fieldIndex(yCol)
-      val rangeIndex = input.schema.fieldIndex(rangeCol)
+      val xIndex = r.schema.fieldIndex(xCol)
+      val yIndex = r.schema.fieldIndex(yCol)
+      val rangeIndex = r.schema.fieldIndex(rangeCol)
 
       if (!r.isNullAt(xIndex) && !r.isNullAt(yIndex) && !r.isNullAt(rangeIndex)) {
         Some(r.getDouble(xIndex), r.getDouble(yIndex), r.getLong(rangeIndex))
