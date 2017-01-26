@@ -13,10 +13,9 @@
 package software.uncharted.xdata.ops.util
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{Column, DataFrame, SparkSession}
+import org.apache.spark.sql.{Column, DataFrame}
 
 import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.TypeTag
 
 
 
