@@ -26,17 +26,22 @@ object SparkConfig {
   val sparkKey = "spark"
   val checkpointDirectoryKey = sparkKey + "." + "checkpoint-directory"
 
-  def apply(config: Config): SparkSession = {
-    val conf = new SparkConf()
+  private[config] def applySparkConfigEntries (config: Config)(conf: SparkConf): SparkConf = {
     config.getConfig(sparkKey)
       .entrySet()
       .asScala
-      .foreach(e => conf.set(s"spark.${e.getKey}", e.getValue.unwrapped().asInstanceOf[String]))
+      .foreach(e => conf.set(s"spark.${e.getKey}", e.getValue.unwrapped().toString))
 
-    val session = SparkSession.builder.config(conf).getOrCreate()
+    conf
+  }
+
+  def apply(config: Config): SparkSession = {
+    val session = SparkSession.builder.config(applySparkConfigEntries(config)(new SparkConf())).getOrCreate()
+
     if (config.hasPath(checkpointDirectoryKey)) {
       session.sparkContext.setCheckpointDir(config.getString(checkpointDirectoryKey))
     }
+
     session
   }
 }

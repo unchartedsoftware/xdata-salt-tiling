@@ -24,9 +24,6 @@ import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOper
 
 // scalastyle:off method.length
 object XYTimeTopicsJob extends AbstractJob {
-
-  private val convertedTime = "convertedTime"
-
   def execute(session: SparkSession, config: Config): Unit = {
     val schema = parseSchema(config)
     val tilingConfig = parseTilingParameters(config)
