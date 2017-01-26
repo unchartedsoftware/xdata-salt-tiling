@@ -351,7 +351,7 @@ case class DictionaryConfiguration (caseSensitive: Boolean,
                                     maxDF: Option[Double],
                                     minDF: Option[Double],
                                     maxFeatures: Option[Int]) {
-  def needDocCount = if (minDF.isDefined || maxDF.isDefined) {
+  def needDocCount: Option[Boolean] = if (minDF.isDefined || maxDF.isDefined) {
     Some(true)
   } else {
     None

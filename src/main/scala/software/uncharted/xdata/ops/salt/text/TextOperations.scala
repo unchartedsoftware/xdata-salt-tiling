@@ -19,15 +19,13 @@ import org.apache.spark.mllib.linalg.{SparseVector, Vector}
 import scala.collection.mutable.{Map => MutableMap}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.DataFrame
-import software.uncharted.salt.core.analytic.Aggregator
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.generation.request.TileLevelRequest
 import software.uncharted.salt.core.projection.numeric.NumericProjection
-import software.uncharted.salt.core.util.SparseArray
 import software.uncharted.xdata.ops.salt.ZXYOp
-import software.uncharted.xdata.sparkpipe.config.LDAConfig
 
 import scala.reflect.ClassTag
+
 
 
 /**
@@ -37,12 +35,15 @@ object TextOperations extends ZXYOp {
   type TileData[T, X] = SeriesData[(Int, Int, Int), (Int, Int), T, X]
   private[text] val notWord = "('[^a-zA-Z]|[^a-zA-Z]'|[^a-zA-Z'])+"
 
+  // This method is specifically to avoid problems with null; as such, it is allowed to use null itself.
+  // scalastyle:off null
   private def nullToOption[T] (t: T): Option[T] =
     if (null == t) {
       None
     } else {
       Some(t)
     }
+  // scalastyle:on null
 
   private def getWordFile (fileNameOpt: Option[String], caseSensitive: Boolean): Option[Set[String]] = {
     fileNameOpt.map { fileName =>
@@ -478,34 +479,5 @@ object TextOperations extends ZXYOp {
         data.projection, maxBin, tileCoordinate, outputBins, data.tileMeta
       )
     }
-  }
-}
-
-/**
-  * An aggregator that can track counts of individual words
-  */
-object WordCounter {
-  val wordSeparators = "('$|^'|'[^a-zA-Z_0-9']+|[^a-zA-Z_0-9']+'|[^a-zA-Z_0-9'])+"
-}
-
-class WordCounter extends Aggregator[String, MutableMap[String, Int], Map[String, Int]] {
-  override def default(): MutableMap[String, Int] = MutableMap[String, Int]()
-
-  override def finish(intermediate: MutableMap[String, Int]): Map[String, Int] = intermediate.toMap
-
-  override def merge(left: MutableMap[String, Int], right: MutableMap[String, Int]): MutableMap[String, Int] = {
-    right.foreach { case (term, frequency) =>
-      left(term) = left.getOrElse(term, 0) + frequency
-    }
-    left
-  }
-
-  override def add(current: MutableMap[String, Int], next: Option[String]): MutableMap[String, Int] = {
-    next.foreach { input =>
-      input.split(WordCounter.wordSeparators).map(_.toLowerCase.trim).filter(!_.isEmpty).foreach(word =>
-        current(word) = current.getOrElse(word, 0) + 1
-      )
-    }
-    current
   }
 }
