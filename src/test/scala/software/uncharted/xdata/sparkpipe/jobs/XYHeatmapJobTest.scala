@@ -53,6 +53,46 @@ class XYHeatmapJobTest extends FunSpec {
           FileUtils.deleteDirectory(new File(testOutputDir))
         }
       }
+
+      it ("should use XYbounds when specified", FileIOTest) {
+        try {
+          val config = classOf[XYHeatmapJobTest].getResource("/tiling-file-io-xyBoundsSpec.conf").toURI.getPath
+          val project = "xdata-pipeline-ops"
+          val newDir = config.substring(0, config.indexOf(project) + project.length)
+          System.setProperty("user.dir", newDir)
+          XYHeatmapJob.execute(Array(config))
+
+          val files = JobTestUtils.collectFiles(testOutputDir, suffix)
+          val expected = Set(
+            (0, 0, 0), // l0
+            (1, 0, 0), (1, 0, 1), (1, 1, 0), (1, 1, 1), // l1
+            (2, 1, 1), (2, 1, 3), (2, 2, 0), (2, 2, 2)) // l2
+
+          assertResult((Set(), Set()))((expected diff files, files diff expected))
+        } finally  {
+          FileUtils.deleteDirectory(new File(testOutputDir))
+        }
+      }
+
+      it ("use defaults of Cartesian projection and xyBounds", FileIOTest) {
+        try {
+          val config = classOf[XYHeatmapJobTest].getResource("/tiling-file-io-defaultProjection.conf").toURI.getPath
+          val project = "xdata-pipeline-ops"
+          val newDir = config.substring(0, config.indexOf(project) + project.length)
+          System.setProperty("user.dir", newDir)
+          XYHeatmapJob.execute(Array(config))
+
+          val files = JobTestUtils.collectFiles(testOutputDir, suffix)
+          val expected = Set(
+            (0, 0, 0), // l0
+            (1, 0, 1), (1, 0, 0), (1, 1, 0), (1, 1, 1),
+            (2, 0, 3), (2, 0, 0), (2, 1, 0), (2, 1, 3), (2, 2, 0), (2, 2, 3), (2, 3, 0), (2, 3, 3))
+          assertResult((Set(), Set()))((expected diff files, files diff expected))
+        } finally  {
+          FileUtils.deleteDirectory(new File(testOutputDir))
+        }
+      }
+
     }
   }
 }

@@ -12,8 +12,6 @@
   */
 package software.uncharted.xdata.sparkpipe.jobs
 
-
-
 import com.typesafe.config.Config
 import org.apache.spark.sql.{SQLContext, SparkSession}
 import software.uncharted.salt.core.analytic.numeric.{MinMaxAggregator, SumAggregator}
@@ -22,15 +20,15 @@ import software.uncharted.salt.core.projection.numeric.{CartesianProjection, Mer
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.xdata.ops.io.serializeBinArray
 import software.uncharted.xdata.ops.salt.ZXYOp
+import software.uncharted.xdata.ops.salt.{MercatorHeatmapOp, CartesianHeatmapOp}
 import software.uncharted.xdata.ops.util.DebugOperations
-import software.uncharted.xdata.sparkpipe.config.{CartesianProjectionConfig, MercatorProjectionConfig, TilingConfig, XYHeatmapConfig}
+import software.uncharted.xdata.sparkpipe.config.{TilingConfig, XYHeatmapConfig}
 import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOperation, dataframeFromSparkCsv}
-
-
 
 /**
   * Simple job to do ordinary 2-d tiling
   */
+// scalastyle:off method.length
 object XYHeatmapJob extends AbstractJob {
   /**
     * This function actually executes the task the job describes
@@ -49,19 +47,37 @@ object XYHeatmapJob extends AbstractJob {
       sys.exit(-1)
     }
 
-    // create the heatmap operation based on the projection
-    val projection = createProjection(heatmapConfig.projection, tilingConfig.levels)
+
+    val exists_xyBounds = heatmapConfig.xyBounds match {
+      case ara: Some[(Double, Double, Double, Double)] => true
+      case None => false
+      case _ => logger.error("Invalid XYbounds"); sys.exit(-1)
+    }
+
     val tileSize = tilingConfig.bins.getOrElse(ZXYOp.TILE_SIZE_DEFAULT)
 
-    val heatmapOperation = ZXYOp(
-      projection,
-      tileSize,
-      heatmapConfig.xCol,
-      heatmapConfig.yCol,
-      heatmapConfig.valueCol,
-      SumAggregator,
-      Some(MinMaxAggregator)
-    )(new TileLevelRequest(tilingConfig.levels, (tc: (Int, Int, Int)) => tc._1))(_)
+    // create the heatmap operation based on the projection
+    val heatmapOperation = heatmapConfig.projection match {
+      case Some("mercator") =>
+      MercatorHeatmapOp (
+          heatmapConfig.xCol,
+          heatmapConfig.yCol,
+          heatmapConfig.valueCol,
+          tilingConfig.levels,
+          if (exists_xyBounds) heatmapConfig.xyBounds else None,
+          tileSize
+        )(_)
+      case Some("cartesian") | None =>
+        CartesianHeatmapOp(
+          heatmapConfig.xCol,
+          heatmapConfig.yCol,
+          heatmapConfig.valueCol,
+          tilingConfig.levels,
+          if (exists_xyBounds) heatmapConfig.xyBounds else None,
+          tileSize
+        )(_)
+      case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
+    }
 
     // Pipe the dataframe
     Pipe(dataframeFromSparkCsv(config, tilingConfig.source, schema, sparkSession))
