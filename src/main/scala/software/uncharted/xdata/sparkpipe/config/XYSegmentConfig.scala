@@ -26,7 +26,7 @@ case class XYSegmentConfig(arcType: ArcTypes.Value,
                            y1Col: String,
                            x2Col: String,
                            y2Col: String,
-                           xyBounds: (Double, Double, Double, Double),
+                           xyBounds: Option[(Double, Double, Double, Double)] = None,
                            tileSize: Int)
 
 object XYSegmentConfig {
@@ -51,7 +51,6 @@ object XYSegmentConfig {
         case "fullarc" => ArcTypes.FullArc
         case "leaderarc" => ArcTypes.LeaderArc
       }
-      val xyBounds = segmentConfig.getDoubleList(xyBoundsKey).toArray(Array(Double.box(0.0)))
       XYSegmentConfig(
         arcType,
         if (segmentConfig.hasPath(projectionKey)) Some(segmentConfig.getString(projectionKey)) else None,
@@ -61,7 +60,10 @@ object XYSegmentConfig {
         segmentConfig.getString(y1ColKey),
         segmentConfig.getString(x2ColKey),
         segmentConfig.getString(y2ColKey),
-        (xyBounds(0), xyBounds(1), xyBounds(2), xyBounds(3)),
+        if (segmentConfig.hasPath(xyBoundsKey)) {// scalastyle:ignore
+          val xyBounds = segmentConfig.getDoubleList(xyBoundsKey).toArray(Array(Double.box(0.0)))
+          Some(xyBounds(0), xyBounds(1), xyBounds(2), xyBounds(3))
+        } else None,
         segmentConfig.getInt(tileSizeKey)
       )
     }

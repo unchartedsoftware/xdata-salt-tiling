@@ -146,9 +146,10 @@ object BasicSaltOperations {
       x2Col,
       y2Col,
       None,
-      bounds,
+      Some(bounds),
       levels.min to levels.max,
       tileSize
     )(input)
   }
+
 }

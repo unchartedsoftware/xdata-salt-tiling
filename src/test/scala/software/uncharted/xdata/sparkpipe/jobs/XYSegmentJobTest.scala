@@ -54,6 +54,54 @@ class XYSegmentJobTest extends FunSpec {
           FileUtils.deleteDirectory(new File(testOutputDir))
         }
       }
+      it("default to Cartesian since no projection is specified and use specified xyBounds", FileIOTest) {
+        val oldDir = System.getProperty("user.dir")
+        try {
+          // run the job
+          val path = classOf[XYSegmentJobTest].getResource("/xysegment/xysegment-defaultProjection.conf").toURI.getPath
+          // Make sure to run the test from the correct directory
+          val newDir = path.substring(0, path.indexOf("xdata-pipeline-ops") + 18)
+          System.setProperty("user.dir", newDir)
+          XYSegmentJob.main(Array(path))
+
+          val files = JobTestUtils.collectFiles(testOutputDir, suffix)
+          val expected = Set(
+            (0,0,0),
+            (1,0,0),
+            (1,1,1),
+            (2,1,1), (2,2,2)
+          )
+          assertResult((Set(), Set()))((expected diff files, files diff expected))
+        } finally {
+          System.setProperty("user.dir", oldDir)
+          FileUtils.deleteDirectory(new File(testOutputDir))
+        }
+      }
+
+      it("default to Mercator xyBounds since xyBounds are not specified", FileIOTest) {
+        val oldDir = System.getProperty("user.dir")
+        try {
+          // run the job
+          val path = classOf[XYSegmentJobTest].getResource("/xysegment/xysegment-xyBoundsDefault.conf").toURI.getPath
+          // Make sure to run the test from the correct directory
+          val newDir = path.substring(0, path.indexOf("xdata-pipeline-ops") + 18)
+          System.setProperty("user.dir", newDir)
+          XYSegmentJob.main(Array(path))
+
+          val files = JobTestUtils.collectFiles(testOutputDir, suffix)
+          val expected = Set(
+            (0,0,0),
+            (1,0,0),
+            (1,1,1),
+            (2,1,1), (2,2,2)
+          )
+          assertResult((Set(), Set()))((expected diff files, files diff expected))
+        } finally {
+          System.setProperty("user.dir", oldDir)
+          FileUtils.deleteDirectory(new File(testOutputDir))
+        }
+      }
+
     }
   }
 }

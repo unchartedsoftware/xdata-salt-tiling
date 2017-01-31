@@ -36,6 +36,7 @@ import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOper
   */
 // scalastyle:off method.length
 object XYSegmentJob extends AbstractJob {
+
   def execute(sparkSession: SparkSession, config: Config): Unit = {
     val schema = parseSchema(config)
     val tilingConfig = parseTilingParameters(config)
@@ -47,21 +48,14 @@ object XYSegmentJob extends AbstractJob {
       sys.exit(-1)
     }
 
+    val exists_xyBounds  = segmentConfig.xyBounds match {
+      case ara : Some[(Double, Double, Double, Double)] => true
+      case None => false
+      case _ => logger.error("Invalid XYbounds"); sys.exit(-1)
+    }
+
     // create the segment operation based on the projection
     val segmentOperation = segmentConfig.projection match {
-      case Some("cartesian") => CartesianSegmentOp(
-        segmentConfig.arcType,
-        segmentConfig.minSegLen,
-        segmentConfig.maxSegLen,
-        segmentConfig.x1Col,
-        segmentConfig.y1Col,
-        segmentConfig.x2Col,
-        segmentConfig.y2Col,
-        None,
-        segmentConfig.xyBounds,
-        tilingConfig.levels,
-        segmentConfig.tileSize,
-        tms = tilingConfig.tms)(_)
       case Some("mercator") => MercatorSegmentOp(
         segmentConfig.minSegLen,
         segmentConfig.maxSegLen,
@@ -70,7 +64,20 @@ object XYSegmentJob extends AbstractJob {
         segmentConfig.x2Col,
         segmentConfig.y2Col,
         None,
-        segmentConfig.xyBounds,
+        if (exists_xyBounds) segmentConfig.xyBounds else None,
+        tilingConfig.levels,
+        segmentConfig.tileSize,
+        tms = tilingConfig.tms)(_)
+      case Some("cartesian") | None => CartesianSegmentOp(
+        segmentConfig.arcType,
+        segmentConfig.minSegLen,
+        segmentConfig.maxSegLen,
+        segmentConfig.x1Col,
+        segmentConfig.y1Col,
+        segmentConfig.x2Col,
+        segmentConfig.y2Col,
+        None,
+        if (exists_xyBounds) segmentConfig.xyBounds else None,
         tilingConfig.levels,
         segmentConfig.tileSize,
         tms = tilingConfig.tms)(_)

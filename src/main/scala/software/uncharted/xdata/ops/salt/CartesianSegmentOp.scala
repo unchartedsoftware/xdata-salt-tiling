@@ -53,7 +53,7 @@ object CartesianSegmentOp {
             x2Col: String,
             y2Col: String,
             valueCol: Option[String],
-            xyBounds: (Double, Double, Double, Double),
+            xyBounds: Option[(Double, Double, Double, Double)],
             zoomLevels: Seq[Int],
             tileSize: Int,
             tms: Boolean = true)
@@ -76,9 +76,14 @@ object CartesianSegmentOp {
     val coordinateExtractor = (row: Row) =>
       Try((row.getDouble(x1Pos), row.getDouble(y1Pos), row.getDouble(x2Pos), row.getDouble(y2Pos))).toOption
 
+    var minBounds = (0.0, 0.0)
+    var maxBounds = (1.0, 1.0)
     // Figure out our projection
-    val minBounds = (xyBounds._1, xyBounds._2)
-    val maxBounds = (xyBounds._3, xyBounds._4)
+    if (xyBounds.isDefined) {
+      val geo_bounds = xyBounds.get
+      minBounds = (geo_bounds._1, geo_bounds._2)
+      maxBounds = (geo_bounds._3, geo_bounds._4)
+    }
     val leaderLineLength = 1024
     val projection = arcType match {
       case ArcTypes.FullLine =>

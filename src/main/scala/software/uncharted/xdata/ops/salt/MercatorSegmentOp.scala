@@ -27,7 +27,7 @@ import scala.util.Try
   * Segment operation using the mercator projection
   */
 object MercatorSegmentOp {
-
+  // scalastyle:off method.length
   val defaultTileSize = 256
   val defaultMaxSegLen = 1024
 
@@ -56,7 +56,7 @@ object MercatorSegmentOp {
             x2Col: String,
             y2Col: String,
             valueCol: Option[String],
-            xyBounds: (Double, Double, Double, Double),
+            xyBounds: Option[(Double, Double, Double, Double)],
             zoomLevels: Seq[Int],
             tileSize: Int,
             tms: Boolean = true)
@@ -80,9 +80,13 @@ object MercatorSegmentOp {
       Try((row.getDouble(x1Pos), row.getDouble(y1Pos), row.getDouble(x2Pos), row.getDouble(y2Pos))).toOption
 
     // Figure out our projection
-    val minBounds = (xyBounds._1, xyBounds._2)
-    val maxBounds = (xyBounds._3, xyBounds._4)
-
+    var minBounds = (-180.0, -85.05112878)
+    var maxBounds = (180.0, 85.05112878)
+    if (xyBounds.isDefined) {
+      val geo_bounds = xyBounds.get
+      minBounds = (geo_bounds._1, geo_bounds._2)
+      maxBounds = (geo_bounds._3, geo_bounds._4)
+    }
     val projection = new MercatorLineProjection(zoomLevels, minBounds, maxBounds, minSegLen, maxSegLen, tms = tms)
 
     val request = new TileLevelRequest(zoomLevels, (tc: (Int, Int, Int)) => tc._1)
