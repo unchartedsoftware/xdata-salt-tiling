@@ -35,12 +35,33 @@ object XYTimeTopicsJob extends AbstractJob {
       sys.exit(-1)
     }
 
+    val exists_xyBounds  = topicsConfig.xyBounds match {
+      case ara : Some[(Double, Double, Double, Double)] => true
+      case None => false
+      case _ => logger.error("Invalid XYbounds"); sys.exit(-1)
+    }
+
     // when time format is used, need to pick up the converted time column
     val topicsOp = topicsConfig.projection match {
-      case Some("mercator") => MercatorTimeTopics(topicsConfig.yCol, topicsConfig.xCol, topicsConfig.timeCol, topicsConfig.textCol,
-        None, topicsConfig.timeRange, topicsConfig.topicLimit, tilingConfig.levels)(_)
-      case Some("cartesian") | None => CartesianTimeTopics(topicsConfig.xCol, topicsConfig.yCol, topicsConfig.timeCol, topicsConfig.textCol,
-        None, topicsConfig.timeRange, topicsConfig.topicLimit, tilingConfig.levels)(_)
+      case Some("mercator") => MercatorTimeTopics(
+        topicsConfig.yCol,
+        topicsConfig.xCol,
+        topicsConfig.timeCol,
+        topicsConfig.textCol,
+        if (exists_xyBounds) topicsConfig.xyBounds else None,
+        topicsConfig.timeRange,
+        topicsConfig.topicLimit,
+        tilingConfig.levels)(_)
+      case Some("cartesian") | None => CartesianTimeTopics(
+        topicsConfig.yCol,
+        topicsConfig.xCol,
+        topicsConfig.timeCol,
+        topicsConfig.textCol,
+        if (exists_xyBounds) topicsConfig.xyBounds else None,
+        topicsConfig.timeRange,
+        topicsConfig.topicLimit,
+        tilingConfig.levels)(_)
+
       case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
     }
 

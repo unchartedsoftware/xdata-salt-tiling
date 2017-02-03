@@ -16,7 +16,7 @@ import software.uncharted.salt.core.projection.numeric.CartesianProjection
 
 class CartesianTimeProjection(zoomLevels: Seq[Int],
                               min: (Double, Double, Long) = (0.0, 0.0, 0),
-                              max: (Double, Double, Long) = (0.0, 0.0, Long.MaxValue),
+                              max: (Double, Double, Long) = (1.0, 1.0, Long.MaxValue),
                               rangeBuckets: Long = Long.MaxValue)
   extends XYTimeProjection(min, max, rangeBuckets, new CartesianProjection(zoomLevels, (min._1, min._2), (max._1, max._2))) {
 

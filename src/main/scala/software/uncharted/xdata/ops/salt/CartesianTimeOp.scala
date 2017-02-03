@@ -31,14 +31,15 @@ trait CartesianTimeOp extends XYTimeOp {
                            tileAggregator: Option[Aggregator[V, W, X]],
                            zoomLevels: Seq[Int],
                            tileSize: Int)
-                          (request: TileRequest[(Int, Int, Int)])(input: DataFrame):
+                           (request: TileRequest[(Int, Int, Int)])(input: DataFrame):
   RDD[SeriesData[(Int, Int, Int), (Int, Int, Int), V, X]] = {
+
     // create a default projection from data-space into mercator tile space
     val projection = bounds.map { b =>
       new CartesianTimeProjection(zoomLevels, (b._1, b._2, timeRange.min), (b._3, b._4, timeRange.max), timeRange.count)
     }.getOrElse(new CartesianTimeProjection(zoomLevels, (0.0, 0.0), (1.0, 1.0), timeRange))
 
-    super.apply(xCol, yCol, rangeCol, timeRange, valueExtractor, binAggregator, tileAggregator,
+    super.apply(xCol, yCol, rangeCol, timeRange, valueExtractor, binAggregator, tileAggregator, //xCol and yCol should be switched
       zoomLevels, tileSize, projection)(request)(input)
   }
 }

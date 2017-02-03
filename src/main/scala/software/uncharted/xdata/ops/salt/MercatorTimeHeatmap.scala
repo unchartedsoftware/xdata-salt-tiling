@@ -29,9 +29,8 @@ object MercatorTimeHeatmap extends MercatorTimeOp {
             timeRange: RangeDescription[Long],
             zoomLevels: Seq[Int],
             tileSize: Int = defaultTileSize,
-            tms: Boolean = true)
-           (input: DataFrame):
-  RDD[SeriesData[(Int, Int, Int), (Int, Int, Int), Double, (Double, Double)]] = {
+            tms: Boolean = true
+           )(input: DataFrame): RDD[SeriesData[(Int, Int, Int), (Int, Int, Int), Double, (Double, Double)]] = {
 
     // Extracts value data from row
     val valueExtractor: (Row) => Option[Double] = valueCol match {

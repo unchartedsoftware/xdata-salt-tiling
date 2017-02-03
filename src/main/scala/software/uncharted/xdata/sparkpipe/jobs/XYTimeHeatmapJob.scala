@@ -37,13 +37,31 @@ object XYTimeHeatmapJob extends AbstractJob {
       sys.exit(-1)
     }
 
+    val exists_xyBounds = heatmapConfig.xyBounds match {
+      case ara : Some[(Double, Double, Double, Double)] => true
+      case None => false
+      case _ => logger.error("Invalid XYbounds"); sys.exit(-1)
+    }
+
     // create the heatmap operation based on the projection
     val heatmapOperation = heatmapConfig.projection match {
-      case Some("mercator") => MercatorTimeHeatmap(heatmapConfig.yCol, heatmapConfig.xCol, heatmapConfig.timeCol,
-        None, None, heatmapConfig.timeRange, tilingConfig.levels,
+      case Some("mercator") => MercatorTimeHeatmap(
+        heatmapConfig.yCol,
+        heatmapConfig.xCol,
+        heatmapConfig.timeCol,
+        None,
+        if (exists_xyBounds) heatmapConfig.xyBounds else None,
+        heatmapConfig.timeRange,
+        tilingConfig.levels,
         tilingConfig.bins.getOrElse(MercatorTimeHeatmap.defaultTileSize))(_)
-      case Some("cartesian") | None => CartesianTimeHeatmap(heatmapConfig.xCol, heatmapConfig.yCol, heatmapConfig.timeCol,
-        None, None, heatmapConfig.timeRange, tilingConfig.levels,
+      case Some("cartesian") | None => CartesianTimeHeatmap(
+        heatmapConfig.yCol,
+        heatmapConfig.xCol,
+        heatmapConfig.timeCol,
+        None,
+        if (exists_xyBounds) heatmapConfig.xyBounds else None,
+        heatmapConfig.timeRange,
+        tilingConfig.levels,
         tilingConfig.bins.getOrElse(CartesianTimeHeatmap.defaultTileSize))(_)
       case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
     }

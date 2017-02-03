@@ -30,7 +30,8 @@ case class XYTimeTopicsConfig(xCol: String,
                               timeRange: RangeDescription[Long],
                               topicLimit: Int,
                               termList: Map[String, String],
-                              projection: Option[String] = None)
+                              projection: Option[String] = None,
+                              xyBounds: Option[(Double, Double, Double, Double)] = None)
 
 object XYTimeTopicsConfig {
 
@@ -46,6 +47,7 @@ object XYTimeTopicsConfig {
   val textColumnKey = "textColumn"
   val topicLimitKey = "topicLimit"
   val termPathKey = "terms"
+  val xyBoundsKey = "xyBounds"
 
   def apply(config: Config): Try[XYTimeTopicsConfig] = {
     Try {
@@ -59,8 +61,11 @@ object XYTimeTopicsConfig {
         RangeDescription.fromMin(topicConfig.getLong(timeMinKey), topicConfig.getLong(timeStepKey), topicConfig.getInt(timeCountKey)),
         topicConfig.getInt(topicLimitKey),
         readTerms(topicConfig.getString(termPathKey)),
-        if (topicConfig.hasPath(projectionKey)) Some(topicConfig.getString(projectionKey)) else None
-      )
+        if (topicConfig.hasPath(projectionKey)) Some(topicConfig.getString(projectionKey)) else None,
+        if (topicConfig.hasPath(xyBoundsKey)) {// scalastyle:ignore
+          val xyBounds = topicConfig.getDoubleList(xyBoundsKey).toArray(Array(Double.box(0.0)))
+          Some(xyBounds(0), xyBounds(1), xyBounds(2), xyBounds(3))
+        } else None)
     }
   }
 

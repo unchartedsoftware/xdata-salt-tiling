@@ -14,9 +14,6 @@ package software.uncharted.xdata.sparkpipe.jobs
 
 import com.typesafe.config.Config
 import org.apache.spark.sql.{SQLContext, SparkSession}
-import software.uncharted.salt.core.analytic.numeric.{MinMaxAggregator, SumAggregator}
-import software.uncharted.salt.core.generation.request.TileLevelRequest
-import software.uncharted.salt.core.projection.numeric.{CartesianProjection, MercatorProjection}
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.xdata.ops.io.serializeBinArray
 import software.uncharted.xdata.ops.salt.ZXYOp
