@@ -33,7 +33,7 @@ class XYHeatmapJobTest extends FunSpec {
         val oldDir = System.getProperty("user.dir")
         try {
           // run the job
-          val config = classOf[XYHeatmapJobTest].getResource("/tiling-file-io.conf").toURI.getPath
+          val config = classOf[XYHeatmapJobTest].getResource("/XYHeatmapJobTest/tiling-file-io.conf").toURI.getPath
           // Make sure to run the test from the correct directory
           val project = "xdata-pipeline-ops"
           val newDir = config.substring(0, config.indexOf(project) + project.length)
@@ -56,7 +56,7 @@ class XYHeatmapJobTest extends FunSpec {
 
       it ("should use XYbounds when specified", FileIOTest) {
         try {
-          val config = classOf[XYHeatmapJobTest].getResource("/tiling-file-io-xyBoundsSpec.conf").toURI.getPath
+          val config = classOf[XYHeatmapJobTest].getResource("/XYHeatmapJobTest/tiling-file-io-xyBoundsSpec.conf").toURI.getPath
           val project = "xdata-pipeline-ops"
           val newDir = config.substring(0, config.indexOf(project) + project.length)
           System.setProperty("user.dir", newDir)
@@ -76,7 +76,7 @@ class XYHeatmapJobTest extends FunSpec {
 
       it ("use defaults of Cartesian projection and xyBounds", FileIOTest) {
         try {
-          val config = classOf[XYHeatmapJobTest].getResource("/tiling-file-io-defaultProjection.conf").toURI.getPath
+          val config = classOf[XYHeatmapJobTest].getResource("/XYHeatmapJobTest/tiling-file-io-defaultProjection.conf").toURI.getPath
           val project = "xdata-pipeline-ops"
           val newDir = config.substring(0, config.indexOf(project) + project.length)
           System.setProperty("user.dir", newDir)

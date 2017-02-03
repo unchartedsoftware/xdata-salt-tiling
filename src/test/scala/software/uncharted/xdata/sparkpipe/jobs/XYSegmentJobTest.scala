@@ -35,7 +35,7 @@ class XYSegmentJobTest extends FunSpec {
         val oldDir = System.getProperty("user.dir")
         try {
           // run the job
-          val path = classOf[XYSegmentJobTest].getResource("/xysegment/xysegment.conf").toURI.getPath
+          val path = classOf[XYSegmentJobTest].getResource("/XYSegmentJobTest/xysegment.conf").toURI.getPath
           // Make sure to run the test from the correct directory
           val newDir = path.substring(0, path.indexOf("xdata-pipeline-ops") + 18)
           System.setProperty("user.dir", newDir)
@@ -58,7 +58,7 @@ class XYSegmentJobTest extends FunSpec {
         val oldDir = System.getProperty("user.dir")
         try {
           // run the job
-          val path = classOf[XYSegmentJobTest].getResource("/xysegment/xysegment-defaultProjection.conf").toURI.getPath
+          val path = classOf[XYSegmentJobTest].getResource("/XYSegmentJobTest/xysegment-defaultProjection.conf").toURI.getPath
           // Make sure to run the test from the correct directory
           val newDir = path.substring(0, path.indexOf("xdata-pipeline-ops") + 18)
           System.setProperty("user.dir", newDir)
@@ -82,7 +82,7 @@ class XYSegmentJobTest extends FunSpec {
         val oldDir = System.getProperty("user.dir")
         try {
           // run the job
-          val path = classOf[XYSegmentJobTest].getResource("/xysegment/xysegment-xyBoundsDefault.conf").toURI.getPath
+          val path = classOf[XYSegmentJobTest].getResource("/XYSegmentJobTest/xysegment-xyBoundsDefault.conf").toURI.getPath
           // Make sure to run the test from the correct directory
           val newDir = path.substring(0, path.indexOf("xdata-pipeline-ops") + 18)
           System.setProperty("user.dir", newDir)
