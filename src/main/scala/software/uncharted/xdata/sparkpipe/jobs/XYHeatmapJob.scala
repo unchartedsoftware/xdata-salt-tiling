@@ -50,12 +50,7 @@ object XYHeatmapJob extends AbstractJob {
     }
 
     // create the heatmap operation based on the projection
-    val projection = heatmapConfig.projection match {
-      case p: MercatorProjectionConfig =>
-        new MercatorProjection(tilingConfig.levels)
-      case p: CartesianProjectionConfig =>
-        new CartesianProjection(tilingConfig.levels, (p.minX, p.minY), (p.maxX, p.maxY))
-    }
+    val projection = createProjection(heatmapConfig.projection, tilingConfig.levels)
     val tileSize = tilingConfig.bins.getOrElse(ZXYOp.TILE_SIZE_DEFAULT)
 
     val heatmapOperation = ZXYOp(

@@ -207,6 +207,9 @@ class LeaderLineProjectionStageOne(zoomLevels: Seq[Int],
     bin._1._1 + bin._1._2*(maxBin._1._1 + 1)
   }
 
+  override def binFrom1D(index: Int, maxBin: ((Int, Int), (Int, Int))): ((Int, Int), (Int, Int)) = {
+    throw new UnsupportedOperationException("Stage one leader line projection doesn't support retrieving bins from indices")
+  }
 }
 
 /**

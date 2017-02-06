@@ -79,6 +79,12 @@ class SimpleLineProjection(zoomLevels: Seq[Int],
   override def binTo1D(bin: (Int, Int), maxBin: (Int, Int)): Int = {
     bin._1 + bin._2 * (maxBin._1 + 1)
   }
+
+  override def binFrom1D(index: Int, maxBin: (Int, Int)): (Int, Int) = {
+    val maxX = maxBin._1 + 1
+    val x = index % maxX
+    (x, (index - x) / maxX)
+  }
 }
 
 
@@ -196,6 +202,12 @@ class SimpleLeaderLineProjection(zoomLevels: Seq[Int],
     */
   override def binTo1D(bin: (Int, Int), maxBin: (Int, Int)): Int = {
     bin._1 + bin._2 * (maxBin._1 + 1)
+  }
+
+  override def binFrom1D(index: Int, maxBin: (Int, Int)): (Int, Int) = {
+    val maxX = maxBin._1 + 1
+    val x = index % maxX
+    (x, (index - x) / maxX)
   }
 }
 
@@ -322,6 +334,12 @@ class SimpleArcProjection(zoomLevels: Seq[Int],
   override def binTo1D(bin: (Int, Int), maxBin: (Int, Int)): Int = {
     bin._1 + bin._2 * (maxBin._1 + 1)
   }
+
+  override def binFrom1D(index: Int, maxBin: (Int, Int)): (Int, Int) = {
+    val maxX = maxBin._1 + 1
+    val x = index % maxX
+    (x, (index - x) / maxX)
+  }
 }
 
 
@@ -418,6 +436,12 @@ class SimpleLeaderArcProjection(zoomLevels: Seq[Int],
   override def binTo1D(bin: (Int, Int), maxBin: (Int, Int)): Int = {
     bin._1 + bin._2 * (maxBin._1 + 1)
   }
+
+  override def binFrom1D(index: Int, maxBin: (Int, Int)): (Int, Int) = {
+    val maxX = maxBin._1 + 1
+    val x = index % maxX
+    (x, (index - x) / maxX)
+  }
 }
 
 
@@ -481,6 +505,12 @@ class MercatorLineProjection(zoomLevels: Seq[Int],
 
   override def binTo1D(bin: (Int, Int), maxBin: (Int, Int)): Int = {
     bin._1 + bin._2 * (maxBin._1 + 1)
+  }
+
+  override def binFrom1D(index: Int, maxBin: (Int, Int)): (Int, Int) = {
+    val maxX = maxBin._1 + 1
+    val x = index % maxX
+    (x, (index - x) / maxX)
   }
 }
 

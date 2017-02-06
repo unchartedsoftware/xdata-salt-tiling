@@ -220,18 +220,40 @@ package object io extends Logging {
   }
 
   /**
-    * Serializes tile bins stored as a list of scored strings to tile index / byte sequence tuples.
+    * Serializes tile bins stored as a list of integer-scored strings to tile index / byte sequence tuples.
     *
     * @param tiles The input tile set.
     * @return Index/byte tuples.
     */
   def serializeElementScore[TC, BC, X](tiles: RDD[SeriesData[TC, BC, List[(String, Int)], X]]):
   RDD[(TC, Seq[Byte])] =
-  serializeTiles(scoreListToByteArray)(tiles)
+    serializeTiles(intScoreListToByteArray)(tiles)
 
-  def scoreListToByteArray: SparseArray[List[(String, Int)]] => Seq[Byte] = {
-    sparseData => compactRender(decompose(sparseData.head.toMap)).toString().getBytes
-  }
+  /**
+    * Get a default tile serialization function for use by serializeElementScore
+    *
+    * @return A function that can serialize tile data that consists of scored words where the score is an integer.
+    */
+  def intScoreListToByteArray: SparseArray[List[(String, Int)]] => Seq[Byte] = sparseData =>
+    sparseData(0).map { case (entry, score) => s""""$entry": $score""" }.mkString("{", ", ", "}").getBytes
+
+  /**
+    * Serializes tile bins stored as a list of double-scored strings to tile index / byte sequence tuples.
+    *
+    * @param tiles The input tile set.
+    * @return Index/byte tuples.
+    */
+  def serializeElementDoubleScore[TC, BC, X](tiles: RDD[SeriesData[TC, BC, List[(String, Double)], X]]):
+  RDD[(TC, Seq[Byte])] =
+    serializeTiles(doubleScoreListToByteArray)(tiles)
+
+  /**
+    * Get a default tile serialization function for use by serializeElementDoubleScore
+    *
+    * @return A function that can serialize tile data that consists of scored words where the score is a real number
+    */
+  def doubleScoreListToByteArray: SparseArray[List[(String, Double)]] => Seq[Byte] = sparseData =>
+    sparseData(0).map { case (entry, score) => s""""$entry": $score""" }.mkString("{", ", ", "}").getBytes
 
   /**
     * Serializes tile bins according to an arbitrarily specified serialization function

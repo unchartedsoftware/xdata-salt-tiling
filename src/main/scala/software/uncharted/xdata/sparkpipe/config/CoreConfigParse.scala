@@ -12,8 +12,8 @@
  */
 package software.uncharted.xdata.sparkpipe.config
 
-import org.apache.spark.sql.{SQLContext, SparkSession}
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.sql.SparkSession
+import org.apache.spark.SparkConf
 import com.typesafe.config.Config
 import scala.collection.JavaConverters._ // scalastyle:ignore
 import scala.util.Try
@@ -24,18 +24,28 @@ import scala.util.Try
 // Parse spark configuration and instantiate context from it
 object SparkConfig {
   val sparkKey = "spark"
+  val checkpointDirectoryKey = sparkKey + "." + "checkpoint-directory"
 
   private[config] def applySparkConfigEntries (config: Config)(conf: SparkConf): SparkConf = {
     config.getConfig(sparkKey)
       .entrySet()
       .asScala
       .foreach(e => conf.set(s"spark.${e.getKey}", e.getValue.unwrapped().toString))
+
     conf
   }
+
   def apply(config: Config): SparkSession = {
-    SparkSession.builder.config(applySparkConfigEntries(config)(new SparkConf())).getOrCreate()
+    val session = SparkSession.builder.config(applySparkConfigEntries(config)(new SparkConf())).getOrCreate()
+
+    if (config.hasPath(checkpointDirectoryKey)) {
+      session.sparkContext.setCheckpointDir(config.getString(checkpointDirectoryKey))
+    }
+
+    session
   }
 }
+
 
 
 // Parse tiling parameter and store results

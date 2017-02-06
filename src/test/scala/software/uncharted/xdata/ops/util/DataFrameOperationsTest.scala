@@ -70,4 +70,26 @@ class DataFrameOperationsTest extends SparkFunSpec {
       assertResult(List("one*two", "  two  ", "three", "four"))(converted.select("c").rdd.map(_(0).asInstanceOf[String]).collect.toList)
     }
   }
+
+  describe("#joinDataFrames") {
+    it("Should combine two dataframes correctly") {
+      val left = toDataFrame(sparkSession)(sc.parallelize(Seq(TestRow(1, 0.5, "a"), TestRow(2, 1.5, "b"), TestRow(3, 2.5, "c"))))
+      val right = toDataFrame(sparkSession)(sc.parallelize(Seq(TestRow(1, 1.0, "e"), TestRow(2, 2.0, "d"), TestRow(3, 3.0, "c"), TestRow(4, 4.0, "b"))))
+
+      val rawJoined = joinDataFrames("a", "a")(left, right).rdd.collect
+      val joined = joinDataFrames("a", "a")(left, right).rdd.collect.map { row =>
+        assert(row(0) === row(3))
+        (
+          row(0).asInstanceOf[Int],
+          row(1).asInstanceOf[Double], row(2).asInstanceOf[String],
+          row(4).asInstanceOf[Double], row(5).asInstanceOf[String]
+        )
+      }.sortBy(_._1)
+
+      assert(3 === joined.length)
+      assert((1, 0.5, "a", 1.0, "e") === joined(0))
+      assert((2, 1.5, "b", 2.0, "d") === joined(1))
+      assert((3, 2.5, "c", 3.0, "c") === joined(2))
+    }
+  }
 }

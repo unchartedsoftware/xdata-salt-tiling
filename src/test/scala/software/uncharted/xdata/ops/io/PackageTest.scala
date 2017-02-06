@@ -13,26 +13,26 @@
 package software.uncharted.xdata.ops.io
 
 import java.io.File
-import java.nio.file.{Paths, Files}
+import java.nio.file.{Files, Paths}
 
 import org.apache.commons.io.FileUtils
-import software.uncharted.salt.core.generation.output.TestSeriesData
+import software.uncharted.salt.core.generation.output.SeriesData
+import software.uncharted.salt.core.projection.Projection
+import software.uncharted.salt.core.projection.numeric.MercatorProjection
 import software.uncharted.salt.core.util.SparseArray
 import software.uncharted.xdata.ops.salt.MercatorTimeProjection
 import software.uncharted.xdata.spark.SparkFunSpec
-
-import org.apache.hadoop.hbase.client._;
-import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hbase.TableName;
-
-import net.liftweb.json.JsonAST.compactRender
-import net.liftweb.json.Extraction.decompose
+import org.apache.hadoop.hbase.client._
+import org.apache.hadoop.hbase.HBaseConfiguration
+import org.apache.hadoop.hbase.TableName
+import net.liftweb.json.JsonAST.JValue
+import net.liftweb.json.{JsonDSL, parse}
 
 
 
 // scalastyle:off magic.number
 // scalastyle:off multiple.string.literals
-class PackageTest extends SparkFunSpec {
+class PackageTest extends SparkFunSpec with JsonDSL {
 
   private val testDir = "build/tmp/test_file_output/test_data"
   private val testLayer = "test_layer"
@@ -48,8 +48,8 @@ class PackageTest extends SparkFunSpec {
 
   private val configFile = Seq("/home/asuri/Documents/hbase-site.xml")
 
-  def genHeatmapArray(in: Double*) = in.foldLeft(new SparseArray(0, 0.0))(_ += _)
-  def genTopicArray(in: List[(String, Int)]*) = in.foldLeft(new SparseArray(0, List[(String, Int)]()))(_ += _)
+  def genHeatmapArray(in: Double*) = SparseArray(in.length, 0.0)(in.zipWithIndex.map(_.swap):_*)
+  def genTopicArray[T](in: List[(String, T)]*) = SparseArray(in.length, List[(String, T)]())(in.zipWithIndex.map(_.swap):_*)
 
   implicit val formats = net.liftweb.json.DefaultFormats
 
@@ -213,8 +213,8 @@ class PackageTest extends SparkFunSpec {
     it("should create an RDD of bin coordinate / byte array tuples from series data") {
       val series = sc.parallelize(
         Seq(
-          TestSeriesData(new MercatorTimeProjection(Seq(0)), (3, 1, 1), (1, 2, 3), arr0, Some(0.0, 1.0)),
-          TestSeriesData(new MercatorTimeProjection(Seq(0)), (3, 1, 1), (4, 5, 6), arr1, Some(0.0, 1.0))
+          new SeriesData(new MercatorTimeProjection(Seq(0)), (3, 1, 1), (1, 2, 3), arr0, Some(0.0, 1.0)),
+          new SeriesData(new MercatorTimeProjection(Seq(0)), (3, 1, 1), (4, 5, 6), arr1, Some(0.0, 1.0))
         ))
       val result = serializeBinArray(series).collect()
       assertResult(2)(result.length)
@@ -252,7 +252,7 @@ class PackageTest extends SparkFunSpec {
   describe("#serializeBinArray") {
     it("should ignore tiles with no updated bins") {
       val series = sc.parallelize(
-        Seq(TestSeriesData(
+        Seq(new SeriesData(
           new MercatorTimeProjection(Seq(0)), (3, 1, 1), (1, 2, 3), genHeatmapArray(0.0, 0.0, 0.0, 0.0), Some(0.0, 1.0))))
       val result = serializeBinArray(series).collect()
       assertResult(0)(result.length)
@@ -277,6 +277,10 @@ class PackageTest extends SparkFunSpec {
     }
   }
 
+
+  def getJSON (from: Array[((Int, Int, Int), Seq[Byte])], index: Int): JValue =
+    parse(new String(from(index)._2.toArray))
+
   describe("#serializeElementScore") {
     it("should create an RDD of JSON strings serialized to bytes from series data ") {
       val arr0 = genTopicArray(List("aa" -> 1, "bb" -> 2))
@@ -284,29 +288,95 @@ class PackageTest extends SparkFunSpec {
 
       val series = sc.parallelize(
         Seq(
-          TestSeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (1, 2, 3), arr0, None),
-          TestSeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (4, 5, 6), arr1, None)
+          new SeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (1, 2, 3), arr0, None),
+          new SeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (4, 5, 6), arr1, None)
         ))
-
-      val json = List(compactRender(decompose((Map("aa" -> 1, "bb" -> 2)))).toString().getBytes, compactRender(decompose(Map("cc" -> 3, "dd" -> 4))).toString().getBytes)
 
       val result = serializeElementScore(series).collect()
       assertResult(2)(result.length)
 
       assertResult(result(0)._1)((1, 2, 3))
-      assertResult(json.head)(result(0)._2)
+      val expected0: JValue = Map("aa" -> 1, "bb" -> 2)
+      assertResult(expected0)(getJSON(result, 0))
 
       assertResult(result(1)._1)((4, 5, 6))
-      assertResult(json(1))(result(1)._2)
+      val expected1: JValue = Map("cc" -> 3, "dd" -> 4)
+      assertResult(expected1)(getJSON(result, 1))
+    }
+
+    it("Should leave the order of the list alone") {
+      val list = SparseArray(4, List[(String, Int)](), 0.0f)(0 -> List(
+        "rudabega" -> 1, "watermelon" -> -1, "canteloupe" -> 2, "honeydew" -> 3, "kholrabi" -> 0,
+        "broccoli" -> 12, "mustard~greens" -> 8, "rappini" -> 4, "okra" -> -23, "gai~lan" -> 15))
+      val projection: Projection[_, (Int, Int, Int), (Int, Int)] = new MercatorProjection(Seq(0))
+      val data = new SeriesData[(Int, Int, Int), (Int, Int), List[(String, Int)], Nothing](projection, (1, 1), (0, 0, 0), list, None)
+      val series = sc.parallelize(Seq(data))
+      val tile = serializeElementScore(series).collect
+      assertResult(1)(tile.length)
+      assertResult((0, 0, 0))(tile(0)._1)
+      val result = new String(tile(0)._2.toArray).split("[{} :0-9,\"-]+").drop(1)
+      assertResult(10)(result.length)
+      assertResult(List(
+        "rudabega", "watermelon", "canteloupe", "honeydew", "kholrabi",
+        "broccoli", "mustard~greens", "rappini", "okra", "gai~lan"))(result.toList)
+    }
+
+    it("should ignore tiles with no updated bins ") {
+      val series = sc.parallelize(
+        Seq(new SeriesData[(Int, Int, Int), (Int, Int, Int), List[(String, Int)], Nothing](new MercatorTimeProjection(
+          Seq(0)), (1, 1, 1), (1, 2, 3), genTopicArray(List()), None)))
+      val result = serializeElementScore(series).collect()
+      assertResult(0)(result.length)
     }
   }
 
-  describe("#serializeElementScore") {
+  describe("#serializeElementDoubleScore") {
+    it("should create an RDD of JSON strings serialized to bytes from series data ") {
+      val arr0 = genTopicArray(List("aa" -> 1.0, "bb" -> 2.0))
+      val arr1 = genTopicArray(List("cc" -> 3.0, "dd" -> 4.0))
+
+      val series = sc.parallelize(
+        Seq(
+          new SeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (1, 2, 3), arr0, None),
+          new SeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (4, 5, 6), arr1, None)
+        ))
+
+      val result = serializeElementDoubleScore(series).collect()
+      assertResult(2)(result.length)
+
+      assertResult(result(0)._1)((1, 2, 3))
+      val expected0: JValue = Map("aa" -> 1.0, "bb" -> 2.0)
+      assertResult(expected0)(getJSON(result, 0))
+
+      assertResult(result(1)._1)((4, 5, 6))
+      val expected1: JValue = Map("cc" -> 3.0, "dd" -> 4.0)
+      assertResult(expected1)(getJSON(result, 1))
+    }
+
+    it("Should leave the order of the list alone") {
+      val list = SparseArray(4, List[(String, Double)](), 0.0f)(0 -> List(
+        "rudabega" -> 1.0, "watermelon" -> -1.1, "canteloupe" -> 2.2, "honeydew" -> 3.3, "kholrabi" -> 0.4,
+        "broccoli" -> 12.5, "mustard~greens" -> 8.6, "rappini" -> 4.7, "okra" -> -23.8, "gai~lan" -> 15.9))
+      val projection: Projection[_, (Int, Int, Int), (Int, Int)] = new MercatorProjection(Seq(0))
+      val data = new SeriesData[(Int, Int, Int), (Int, Int), List[(String, Double)], Nothing](projection, (1, 1), (0, 0, 0), list, None)
+      val series = sc.parallelize(Seq(data))
+      val tile = serializeElementDoubleScore(series).collect
+      assertResult(1)(tile.length)
+      assertResult((0, 0, 0))(tile(0)._1)
+      val result = new String(tile(0)._2.toArray).split("[{} :0-9.,\"-]+").drop(1)
+      println(new String(tile(0)._2.toArray))
+      println(result.toList)
+      assertResult(10)(result.length)
+      assertResult(List(
+        "rudabega", "watermelon", "canteloupe", "honeydew", "kholrabi",
+        "broccoli", "mustard~greens", "rappini", "okra", "gai~lan"))(result.toList)
+    }
+
     it("should ignore tiles with no updated bins ") {
       val series = sc.parallelize(
-        Seq(TestSeriesData(new MercatorTimeProjection(
+        Seq(new SeriesData[(Int, Int, Int), (Int, Int, Int), List[(String, Double)], Nothing](new MercatorTimeProjection(
           Seq(0)), (1, 1, 1), (1, 2, 3), genTopicArray(List()), None)))
-      val result = serializeElementScore(series).collect()
+      val result = serializeElementDoubleScore(series).collect()
       assertResult(0)(result.length)
     }
   }

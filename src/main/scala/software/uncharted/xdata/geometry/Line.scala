@@ -13,6 +13,11 @@
 package software.uncharted.xdata.geometry
 
 
+
+import scala.language.implicitConversions
+
+
+
 /**
   * A line of the form Ax + By = C
   */

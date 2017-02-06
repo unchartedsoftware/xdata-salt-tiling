@@ -40,7 +40,7 @@ class BasicOperationsTest extends SparkFunSpec {
     }
 
     describe("#regexFilter") {
-      it("SHould pass through only strings that match the given regular expression") {
+      it("Should pass through only strings that match the given regular expression") {
         val data = sc.parallelize(Seq("abc def ghi", "abc d e f ghi", "the def quick", "def ghi", "abc def"))
         assertResult(List("abc def ghi", "the def quick", "def ghi"))(regexFilter(".*def.+")(data).collect.toList)
         assertResult(List("abc d e f ghi", "def ghi"))(regexFilter(".+def.*", true)(data).collect.toList)
@@ -56,4 +56,4 @@ class BasicOperationsTest extends SparkFunSpec {
   }
 }
 
-case class TestRow (a: Int, b: Double, c: String)
+case class TestRow(a: Int, b: Double, c: String)

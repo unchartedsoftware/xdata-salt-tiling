@@ -23,7 +23,7 @@ import software.uncharted.salt.core.projection.numeric.CartesianProjection
   * An operation for generating a cartesian-projected
   * tile layer from a DataFrame, using Salt
   */
-object CartesianOp extends ZXYOp {
+trait CartesianOp extends ZXYOp {
   // scalastyle:off parameter.number
 
   /**
@@ -53,3 +53,4 @@ object CartesianOp extends ZXYOp {
     super.apply(projection, tileSize, xCol, yCol, vCol, binAggregator, tileAggregator)(request)(input)
   }
 }
+object CartesianOp extends CartesianOp

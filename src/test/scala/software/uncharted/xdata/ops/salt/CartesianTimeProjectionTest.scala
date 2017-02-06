@@ -40,9 +40,16 @@ class CartesianTimeProjectionTest extends FunSpec {
     }
 
     describe("#binTo1D()") {
-      it("should convert a (lon,lat,time) tuple into a linear coordinate") {
+      it("should convert an (x, y, time) tuple into a linear coordinate") {
         val proj = new CartesianTimeProjection(Seq(0))
         assertResult(8064)(proj.binTo1D((4, 8, 12), (30, 20, 10)))
+      }
+    }
+
+    describe("#binFrom1D()") {
+      it("should convert a linear coordinate into an (x, y, time) triple") {
+        val proj = new CartesianTimeProjection(Seq(0))
+        assertResult((4, 8, 12))(proj.binFrom1D(8064, (30, 20, 10)))
       }
     }
   }
