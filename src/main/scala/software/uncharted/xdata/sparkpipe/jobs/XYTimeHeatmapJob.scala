@@ -42,7 +42,7 @@ object XYTimeHeatmapJob extends AbstractJob {
       case Some("mercator") => MercatorTimeHeatmap(heatmapConfig.yCol, heatmapConfig.xCol, heatmapConfig.timeCol,
         None, None, heatmapConfig.timeRange, tilingConfig.levels,
         tilingConfig.bins.getOrElse(MercatorTimeHeatmap.defaultTileSize))(_)
-      case Some("cartesian") | None => CartesianTimeHeatmap(heatmapConfig.yCol, heatmapConfig.xCol, heatmapConfig.timeCol,
+      case Some("cartesian") | None => CartesianTimeHeatmap(heatmapConfig.xCol, heatmapConfig.yCol, heatmapConfig.timeCol,
         None, None, heatmapConfig.timeRange, tilingConfig.levels,
         tilingConfig.bins.getOrElse(CartesianTimeHeatmap.defaultTileSize))(_)
       case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)

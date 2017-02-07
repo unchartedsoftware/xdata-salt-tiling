@@ -39,7 +39,7 @@ object XYTimeTopicsJob extends AbstractJob {
     val topicsOp = topicsConfig.projection match {
       case Some("mercator") => MercatorTimeTopics(topicsConfig.yCol, topicsConfig.xCol, topicsConfig.timeCol, topicsConfig.textCol,
         None, topicsConfig.timeRange, topicsConfig.topicLimit, tilingConfig.levels)(_)
-      case Some("cartesian") | None => CartesianTimeTopics(topicsConfig.yCol, topicsConfig.xCol, topicsConfig.timeCol, topicsConfig.textCol,
+      case Some("cartesian") | None => CartesianTimeTopics(topicsConfig.xCol, topicsConfig.yCol, topicsConfig.timeCol, topicsConfig.textCol,
         None, topicsConfig.timeRange, topicsConfig.topicLimit, tilingConfig.levels)(_)
       case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
     }
