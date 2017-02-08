@@ -13,10 +13,10 @@
 package software.uncharted.xdata.ops.salt
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.DataFrame
 import software.uncharted.salt.core.analytic.Aggregator
 import software.uncharted.salt.core.generation.output.SeriesData
-import software.uncharted.salt.core.generation.request.{TileLevelRequest, TileRequest}
+import software.uncharted.salt.core.generation.request.TileRequest
 import software.uncharted.salt.core.projection.numeric.MercatorProjection
 
 trait MercatorOp extends ZXYOp {
@@ -26,7 +26,6 @@ trait MercatorOp extends ZXYOp {
                            lonCol: String,
                            valueCol: String,
                            lonLatBounds: Option[(Double, Double, Double, Double)],
-                           valueExtractor: (Row) => Option[T],
                            binAggregator: Aggregator[T, U, V],
                            tileAggregator: Option[Aggregator[V, W, X]],
                            zoomLevels: Seq[Int],
@@ -40,20 +39,12 @@ trait MercatorOp extends ZXYOp {
       new MercatorProjection(zoomLevels, (b._1, b._2),(b._3, b._4), tms)
     }.getOrElse(new MercatorProjection(zoomLevels))
 
-    val vExtractor = (r: Row) => {
-      if (!r.isNullAt(2)) {
-        Some(r.getAs[T](2))
-      } else {
-        None
-      }
-    }
     super.apply(
                 projection,
                 tileSize,
                 lonCol,
                 latCol,
                 valueCol,
-                valueExtractor,
                 binAggregator,
                 tileAggregator)(request)(input)
   }

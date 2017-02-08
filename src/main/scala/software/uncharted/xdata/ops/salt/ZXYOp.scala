@@ -91,7 +91,6 @@ trait ZXYOp {
     * @param xCol           the name of the x column
     * @param yCol           the name of the y column
     * @param vCol           the name of the value column (the value for aggregation)
-    * @param vExtractor     Extracts value data from row
     * @param binAggregator  an Aggregator which aggregates values from the ValueExtractor
     * @param tileAggregator an optional Aggregator which aggregates bin values
     */
@@ -100,7 +99,6 @@ trait ZXYOp {
                            xCol: String,
                            yCol: String,
                            vCol: String,
-                           vExtractor: (Row) => Option[T],
                            binAggregator: Aggregator[T, U, V],
                            tileAggregator: Option[Aggregator[V, W, X]]
                           )(request: TileRequest[(Int, Int, Int)])(input: DataFrame): RDD[SeriesData[(Int, Int, Int), (Int, Int), V, X]] = {
@@ -117,6 +115,15 @@ trait ZXYOp {
     val cExtractor = (r: Row) => {
       if (!r.isNullAt(0) && !r.isNullAt(1)) {
         Some((r.getDouble(0), r.getDouble(1)))
+      } else {
+        None
+      }
+    }
+
+    // v will always be column 2
+    val vExtractor = (r: Row) => {
+      if (!r.isNullAt(2)) {
+        Some(r.getAs[T](2))
       } else {
         None
       }

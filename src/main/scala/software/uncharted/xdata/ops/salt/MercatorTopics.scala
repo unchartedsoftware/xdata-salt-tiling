@@ -13,7 +13,7 @@
 package software.uncharted.xdata.ops.salt
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.DataFrame
 import software.uncharted.salt.core.analytic.collection.TopElementsAggregator
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.generation.request.TileLevelRequest
@@ -31,12 +31,6 @@ object MercatorTopics extends MercatorOp {
             (input: DataFrame):
   RDD[SeriesData[(Int, Int, Int), (Int, Int), List[(String, Int)], Nothing]] = {
 
-    // Extracts value data from row
-    val valueExtractor: (Row) => Option[Seq[String]] = (r: Row) => {
-      val rowIndex = r.schema.fieldIndex(textCol)
-      if (!r.isNullAt(rowIndex) && r.getSeq(rowIndex).nonEmpty) Some(r.getSeq(rowIndex)) else None
-    }
-
     val aggregator = new TopElementsAggregator[String](topicLimit)
 
     val request = new TileLevelRequest(zoomLevels, (tc: (Int, Int, Int)) => tc._1)
@@ -45,7 +39,6 @@ object MercatorTopics extends MercatorOp {
       lonCol,
       textCol,
       latLonBounds,
-      valueExtractor,
       aggregator,
       None,
       zoomLevels,

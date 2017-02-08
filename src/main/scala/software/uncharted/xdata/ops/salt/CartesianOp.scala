@@ -13,7 +13,7 @@
 package software.uncharted.xdata.ops.salt
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.DataFrame
 import software.uncharted.salt.core.analytic.Aggregator
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.generation.request.TileRequest
@@ -53,15 +53,8 @@ class CartesianOp extends ZXYOp {
                           )(request: TileRequest[(Int, Int, Int)])(input: DataFrame): RDD[SeriesData[(Int, Int, Int), (Int, Int), V, X]] = {
 
     val projection = new CartesianProjection(zoomLevels, (xyBounds._1, xyBounds._2), (xyBounds._3, xyBounds._4))
-    val vExtractor = (r: Row) => {
-      if (!r.isNullAt(2)) {
-        Some(r.getAs[T](2))
-      } else {
-        None
-      }
-    }
 
-    super.apply(projection, tileSize, xCol, yCol, vCol, vExtractor, binAggregator, tileAggregator)(request)(input)
+    super.apply(projection, tileSize, xCol, yCol, vCol, binAggregator, tileAggregator)(request)(input)
   }
 }
 object CartesianOp extends CartesianOp

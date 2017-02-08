@@ -40,13 +40,6 @@ object MercatorHeatmapOp {
       }
     }
 
-    val vExtractor = (r: Row) => {
-      if (!r.isNullAt(2)) {
-        Some(r.getAs[Double](2))
-      } else {
-        None
-      }
-    }
     val request = new TileLevelRequest(zoomLevels, (tc: (Int, Int, Int)) => tc._1)
 
     ZXYOp(
@@ -55,7 +48,6 @@ object MercatorHeatmapOp {
       latCol,
       lonCol,
       valueCol,
-      vExtractor,
       SumAggregator,
       Some(MinMaxAggregator)
     )(request)(input)

@@ -13,7 +13,6 @@
 package software.uncharted.xdata.sparkpipe.jobs
 
 import java.io.File
-
 import org.apache.commons.io.FileUtils
 import org.scalatest.FunSpec
 
@@ -33,7 +32,7 @@ class XYTopicsJobTest extends FunSpec {
           val path = classOf[XYTopicsJobTest].getResource("/XYTopicsJobTest/tiling-topic-file-io.conf").toURI.getPath
           XYTopicsJob.execute(Array(path))
 
-          //validate create tiles
+          //validate created tiles
           val files = JobTestUtils.collectFiles(testOutputDir, suffix)
           val expected = Set(
             (0, 0, 0), // l0
@@ -46,12 +45,13 @@ class XYTopicsJobTest extends FunSpec {
           val termsFileStr = FileUtils.readFileToString(new File(s"$testOutputDir/terms.json"))
           val termsJsonObject = parse(termsFileStr)
           val expectedTermsJson = ("a" -> "alpha") ~ ("b" -> "bravo") ~ ("e" -> "echo")
+
           assertResult(expectedTermsJson)(termsJsonObject)
         } finally {
           FileUtils.deleteDirectory(new File(testOutputDir))
         }
       }
-      it("should using the xyBounds specified in configuration file", FileIOTest) {
+      it("should use xyBounds specified in configuration file", FileIOTest) {
         try {
           val path = classOf[XYTopicsJobTest].getResource("/XYTopicsJobTest/tiling-topic-file-io-xyBoundsSpec.conf").toURI.getPath
           XYTopicsJob.execute(Array(path))
@@ -64,7 +64,6 @@ class XYTopicsJobTest extends FunSpec {
             (2, 1, 1), (2, 1, 3), (2, 2, 0), (2, 2, 2)) // l2
 
           assertResult((Set(), Set()))((expected diff files, files diff expected))
-
         } finally {
           FileUtils.deleteDirectory(new File(testOutputDir))
         }
@@ -82,6 +81,7 @@ class XYTopicsJobTest extends FunSpec {
             (0, 0, 0), // l0
             (1, 0, 1), (1, 0, 0), (1, 1, 0), (1, 1, 1),
             (2, 0, 3), (2, 0, 0), (2, 1, 0), (2, 1, 3), (2, 2, 0), (2, 2, 3), (2, 3, 0), (2, 3, 3))
+
           assertResult((Set(), Set()))((expected diff files, files diff expected))
         } finally  {
           FileUtils.deleteDirectory(new File(testOutputDir))
