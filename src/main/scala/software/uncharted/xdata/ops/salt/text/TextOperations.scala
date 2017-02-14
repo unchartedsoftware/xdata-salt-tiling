@@ -272,7 +272,7 @@ object TextOperations extends ZXYOp {
     }.getOrElse {
       // No word maximum; take them all.
       dictionaryRDD.collect
-    }.sorted
+    }.sortWith(_._2 > _._2)
   }
 
   // Helper function for getDictionaries.  This limits values to indexed minima and maxima - so if the index of the
