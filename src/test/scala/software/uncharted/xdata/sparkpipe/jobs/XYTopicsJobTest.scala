@@ -13,6 +13,7 @@
 package software.uncharted.xdata.sparkpipe.jobs
 
 import java.io.File
+
 import org.apache.commons.io.FileUtils
 import org.scalatest.FunSpec
 
@@ -84,6 +85,39 @@ class XYTopicsJobTest extends FunSpec {
 
           assertResult((Set(), Set()))((expected diff files, files diff expected))
         } finally  {
+          FileUtils.deleteDirectory(new File(testOutputDir))
+        }
+      }
+      it ("should test content and existence of tiles from source csv data") {
+
+        try {
+          val path = classOf[XYTopicsJobTest].getResource("/XYTopicsJobTest/tiling-topic-file-io-detailed.conf").toURI.getPath
+          XYTopicsJob.execute(Array(path))
+
+          // validate created tiles
+          val files = JobTestUtils.collectFiles(testOutputDir, suffix)
+          val expected = Set( //expected level 2 output in 7th column and expected bin coord for level 2 tiles in 8th column
+            (0, 0, 0), // l0
+            (1, 0, 0), (1, 1, 1), (1, 1, 0), (1, 0, 1), // l1
+            (2, 0, 0), (2, 3, 2), (2, 3, 1), (2, 0, 2)) // l2
+
+          val binValues = JobTestUtils.getBinValues(testOutputDir, suffix).filter { input =>
+            input._1 match {
+              case Tuple3(2,0,0) => true
+              case Tuple3(2,0,2) => true
+              case _ => false
+            }
+          }
+          val BinVal_check = List(
+            (Tuple3(2,0,0), ("a" -> 4) ~ ("b" -> 2)),
+            (Tuple3(2,0,2), parse("{\"a\":6}"))
+          )
+          val expected_binValues = binValues match {
+              case BinVal_check => true
+              case _ =>  throw new Exception("did not pass bin values check")
+            }
+          assertResult((Set(), Set()))((expected diff files, files diff expected))
+        } finally {
           FileUtils.deleteDirectory(new File(testOutputDir))
         }
       }

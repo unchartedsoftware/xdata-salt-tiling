@@ -16,9 +16,8 @@ import java.io.File
 
 import org.apache.commons.io.FileUtils
 import org.scalatest.Tag
-
+import net.liftweb.json._
 import scala.collection.JavaConversions._ // scalastyle:ignore
-
 
 object FileIOTest extends Tag("fileio.test")
 
@@ -33,5 +32,20 @@ object JobTestUtils {
       })
       .toSet
     files
+  }
+
+  def getBinValues(rootDir: String, suffix: String): List[((Int, Int, Int), JValue)] = {
+    val file_Name = s""".*[/\\\\](\\d+)[/\\\\](\\d+)[/\\\\](\\d+)\\.$suffix""".r
+    val files_pre = FileUtils.listFiles(new File(rootDir), Array(suffix), true)
+    val files_result = files_pre.map { inputFile =>
+      val byteAra = FileUtils.readFileToByteArray(inputFile)
+      val binValue = new String(byteAra)
+      val coord = Array(inputFile).flatMap(_.toString match {
+          case file_Name(level, x, y) => Some((level.toInt, x.toInt, y.toInt))
+          case _ => None
+        }).head
+      (coord, parse(binValue))
+    }.toList
+    files_result
   }
 }
