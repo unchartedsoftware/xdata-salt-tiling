@@ -34,18 +34,25 @@ object JobTestUtils {
     files
   }
 
+  /**
+    * Get coordinates (of all zoom levels) and their corresponding bin values
+    *
+    * @param rootDir Directory of generated tile data
+    * @param suffix File suffix for extraction of data
+    * @return List of tile coordinates and their bin values
+    */
   def getBinValues(rootDir: String, suffix: String): List[((Int, Int, Int), JValue)] = {
-    val file_Name = s""".*[/\\\\](\\d+)[/\\\\](\\d+)[/\\\\](\\d+)\\.$suffix""".r
-    val files_pre = FileUtils.listFiles(new File(rootDir), Array(suffix), true)
-    val files_result = files_pre.map { inputFile =>
-      val byteAra = FileUtils.readFileToByteArray(inputFile)
-      val binValue = new String(byteAra)
-      val coord = Array(inputFile).flatMap(_.toString match {
-          case file_Name(level, x, y) => Some((level.toInt, x.toInt, y.toInt))
-          case _ => None
-        }).head
-      (coord, parse(binValue))
-    }.toList
-    files_result
+    val filename = s""".*[/\\\\](\\d+)[/\\\\](\\d+)[/\\\\](\\d+)\\.$suffix""".r
+    val results = FileUtils.listFiles(new File(rootDir), Array(suffix), true)
+      .map { inputFile =>
+        val byteAra = FileUtils.readFileToByteArray(inputFile)
+        val binValue = new String(byteAra)
+        val coord = Array(inputFile).flatMap(_.toString match {
+            case filename(level, x, y) => Some((level.toInt, x.toInt, y.toInt))
+            case _ => None
+          }).head
+        (coord, parse(binValue))
+      }.toList
+    results
   }
 }
