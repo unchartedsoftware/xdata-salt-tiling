@@ -231,7 +231,9 @@ dependencies {
   compile "joda-time:joda-time:2.9.4"
   compile "org.joda:joda-convert:1.8.1"
   compile "net.liftweb:lift-json_$dependencyScalaVersion:2.6.2"
-  compile "com.typesafe:config:1.3.1"
+  // Any version of typesafe config over 1.2.1 REQUIRES java 1.8.
+  // XData cluster nodes only have java 1.7.
+  compile "com.typesafe:config:1.2.1"
   compile "org.apache.hbase:hbase-client:$cdhVersion"
   compile "org.apache.hbase:hbase-common:$cdhVersion"
   compile "org.apache.commons:commons-csv:1.4"
