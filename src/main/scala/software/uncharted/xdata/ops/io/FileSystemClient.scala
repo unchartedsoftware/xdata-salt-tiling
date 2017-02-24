@@ -12,12 +12,9 @@
   */
 package software.uncharted.xdata.ops.io
 
-import java.io.{BufferedOutputStream, FileOutputStream, File}
-
+import java.io.{FileOutputStream, File}
 import grizzled.slf4j.Logging
-import org.apache.spark.rdd.RDD
 
-import scala.util.{Failure, Success, Try}
 
 /**
   * A i/o client for writing a single tile set directly to the local file system.

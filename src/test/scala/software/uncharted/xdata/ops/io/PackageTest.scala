@@ -28,8 +28,6 @@ import org.apache.hadoop.hbase.TableName
 import net.liftweb.json.JsonAST.JValue
 import net.liftweb.json.{JsonDSL, parse}
 
-
-
 // scalastyle:off magic.number
 // scalastyle:off multiple.string.literals
 class PackageTest extends SparkFunSpec with JsonDSL {
@@ -275,8 +273,14 @@ class PackageTest extends SparkFunSpec with JsonDSL {
       assertResult(ba1.length)(ba2.length)
       for (i <- ba1.indices) assertResult(ba1(i))(ba2(i))
     }
+    it("should test byteArrayDenseToDoubleTile functionality") {
+      val data = genHeatmapArray(1.0, 2.0, 3.0, 4.0)
+      val byteSequence = doubleTileToByteArrayDense(data)
+      val data2 = byteArrayDenseToDoubleTile(byteSequence)
+      assertResult(data.length)(data2.length)
+      for (i <- data.indices) assertResult(data(i))(data2(i))
+    }
   }
-
 
   def getJSON (from: Array[((Int, Int, Int), Seq[Byte])], index: Int): JValue =
     parse(new String(from(index)._2.toArray))
@@ -302,6 +306,35 @@ class PackageTest extends SparkFunSpec with JsonDSL {
       assertResult(result(1)._1)((4, 5, 6))
       val expected1: JValue = Map("cc" -> 3, "dd" -> 4)
       assertResult(expected1)(getJSON(result, 1))
+    }
+
+    it("should test byteArrayToIntScore deserialization function") {
+      val arr0 = genTopicArray(List("aa" -> 1, "bb" -> 2))
+      val arr1 = genTopicArray(List("cc" -> 3, "dd" -> 4))
+
+      val series = sc.parallelize(
+        Seq(
+          new SeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (1, 2, 3), arr0, None),
+          new SeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (4, 5, 6), arr1, None)
+        ))
+
+      val expected = series.filter(t => t.bins.density() > 0)
+        .map { tile =>
+          (tile.coords, tile.bins)
+        }.collect()
+
+      val result = serializeElementScore(series).collect().map {tile =>
+        (tile._1, byteArrayToIntScoreList(tile._2))
+      }
+      assertResult(result(0)._1)(expected(0)._1)
+      val expected0 = Map("aa" -> 1, "bb" -> 2)
+      val result0 = result(0)._2(0).toMap
+      assertResult(expected0)(result0)
+
+      assertResult(result(1)._1)(expected(1)._1)
+      val expected1 = Map("cc" -> 3, "dd" -> 4)
+      val result1 = result(1)._2(0).toMap
+      assertResult(expected1)(result1)
     }
 
     it("Should leave the order of the list alone") {
@@ -353,6 +386,36 @@ class PackageTest extends SparkFunSpec with JsonDSL {
       assertResult(expected1)(getJSON(result, 1))
     }
 
+    it("should test byteArrayToDoubleScoreList deserialization function") {
+      val arr0 = genTopicArray(List("aa" -> 1.0, "bb" -> 2.0))
+      val arr1 = genTopicArray(List("cc" -> 3.0, "dd" -> 4.0))
+
+      val series = sc.parallelize(
+        Seq(
+          new SeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (1, 2, 3), arr0, None),
+          new SeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (4, 5, 6), arr1, None)
+        ))
+
+      val expected = series.filter(t => t.bins.density() > 0)
+        .map { tile =>
+          (tile.coords, tile.bins)
+        }.collect()
+
+      val result = serializeElementDoubleScore(series).collect().map { tile =>
+        (tile._1, byteArrayToDoubleScoreList(tile._2))
+      }
+
+      assertResult(result(0)._1)(expected(0)._1)
+      val expected0 = Map("aa" -> 1, "bb" -> 2)
+      val result0 = result(0)._2(0).toMap
+      assertResult(expected0)(result0)
+
+      assertResult(result(1)._1)(expected(1)._1)
+      val expected1 = Map("cc" -> 3, "dd" -> 4)
+      val result1 = result(1)._2(0).toMap
+      assertResult(expected1)(result1)
+    }
+
     it("Should leave the order of the list alone") {
       val list = SparseArray(4, List[(String, Double)](), 0.0f)(0 -> List(
         "rudabega" -> 1.0, "watermelon" -> -1.1, "canteloupe" -> 2.2, "honeydew" -> 3.3, "kholrabi" -> 0.4,
@@ -380,4 +443,5 @@ class PackageTest extends SparkFunSpec with JsonDSL {
       assertResult(0)(result.length)
     }
   }
+
 }
