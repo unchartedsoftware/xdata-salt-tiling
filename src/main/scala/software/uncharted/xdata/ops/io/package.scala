@@ -12,7 +12,7 @@
   */
 package software.uncharted.xdata.ops
 
-import java.io.{File, FileOutputStream}
+import java.io.{File, FileInputStream, FileOutputStream}
 import java.nio.{ByteBuffer, ByteOrder, DoubleBuffer}
 import java.util.zip.ZipOutputStream
 
@@ -21,6 +21,8 @@ import org.apache.spark.rdd.RDD
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.util.SparseArray
 import net.liftweb.json.parse
+import org.apache.commons.io.IOUtils
+
 
 package object io extends Logging {
 
@@ -218,13 +220,13 @@ package object io extends Logging {
   }
 
   // Deserialize a bytesequence to a SparseArray of type Double
-  def byteArrayDenseToDoubleTile: Seq[Byte] => SparseArray[Double] = byteSeq => {
+  def byteArrayDenseToDoubleTile: Seq[Byte] => Array[Double] = byteSeq => {
     val byteBuffer = ByteBuffer.allocate(byteSeq.length).order(ByteOrder.LITTLE_ENDIAN)
     byteBuffer.put(ByteBuffer.wrap(byteSeq.toArray))
     byteBuffer.flip()
     val resultantArray: Array[Double] = Array.fill(byteSeq.length / doubleBytes){0}
     byteBuffer.asDoubleBuffer().get(resultantArray)
-    SparseArray(resultantArray.length, 0.0)(resultantArray.zipWithIndex.map(_.swap) :_*)
+    resultantArray
   }
 
   /**
@@ -280,7 +282,7 @@ package object io extends Logging {
     */
   def byteArrayToDoubleScoreList: Seq[Byte] => SparseArray[List[(String, Double)]] = byteSeq => {
     val scoreList = parse(new String(byteSeq.toArray)).values.asInstanceOf[Map[String, Double]].toList
-    SparseArray(1, List[(String, Double)]())(0 -> scoreList) //the 0 represents how many elements in sparsestorage and 1 represents the #elements in densestorage
+    SparseArray(1, List[(String, Double)]())(0 -> scoreList)
 
   }
 
@@ -301,4 +303,5 @@ package object io extends Logging {
         (tile.coords, serializationFcn(tile.bins))
       }
   }
+
 }

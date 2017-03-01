@@ -28,6 +28,7 @@ import org.apache.hadoop.hbase.TableName
 import net.liftweb.json.JsonAST.JValue
 import net.liftweb.json.{JsonDSL, parse}
 
+
 // scalastyle:off magic.number
 // scalastyle:off multiple.string.literals
 class PackageTest extends SparkFunSpec with JsonDSL {
@@ -276,7 +277,8 @@ class PackageTest extends SparkFunSpec with JsonDSL {
     it("should test byteArrayDenseToDoubleTile functionality") {
       val data = genHeatmapArray(1.0, 2.0, 3.0, 4.0)
       val byteSequence = doubleTileToByteArrayDense(data)
-      val data2 = byteArrayDenseToDoubleTile(byteSequence)
+      val resultantArray = byteArrayDenseToDoubleTile(byteSequence)
+      val data2 = SparseArray(resultantArray.length, 0.0)(resultantArray.zipWithIndex.map(_.swap) :_*)
       assertResult(data.length)(data2.length)
       for (i <- data.indices) assertResult(data(i))(data2(i))
     }
