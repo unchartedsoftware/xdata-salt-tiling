@@ -19,30 +19,26 @@ import scala.util.Try
 case class XYHeatmapConfig(xCol: String,
                            yCol: String,
                            valueCol: String,
-                           projection: Option[String] = None,
-                           xyBounds: Option[(Double, Double, Double, Double)] = None)
+                           projection: ProjectionConfig)
 
 // Parse config for geoheatmap sparkpipe op
 object XYHeatmapConfig {
   val xyHeatmapKey = "xyHeatmap"
-  val projectionKey = "projection"
   val xColumnKey = "xColumn"
   val yColumnKey = "yColumn"
   val valueColumnKey = "valueColumn"
-  val xyBoundsKey = "xyBounds"
 
   def apply(config: Config): Try[XYHeatmapConfig] = {
-    Try {
-      val heatmapConfig = config.getConfig(xyHeatmapKey)
+    for (
+      heatmapConfig <- Try(config.getConfig(xyHeatmapKey));
+      projection <- ProjectionConfig(heatmapConfig)
+    ) yield {
       XYHeatmapConfig(
         heatmapConfig.getString(xColumnKey),
         heatmapConfig.getString(yColumnKey),
         heatmapConfig.getString(valueColumnKey),
-        if (heatmapConfig.hasPath(projectionKey)) Some(heatmapConfig.getString(projectionKey)) else None,
-        if (heatmapConfig.hasPath(xyBoundsKey)) { // scalastyle:ignore
-          val xyBounds = heatmapConfig.getDoubleList(xyBoundsKey).toArray(Array(Double.box(0.0)))
-          Some((xyBounds(0), xyBounds(1), xyBounds(2), xyBounds(3)))
-        } else None )
+        projection
+      )
     }
   }
 }

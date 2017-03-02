@@ -39,7 +39,7 @@ trait CartesianTimeOp extends XYTimeOp {
       new CartesianTimeProjection(zoomLevels, (b._1, b._2, timeRange.min), (b._3, b._4, timeRange.max), timeRange.count)
     }.getOrElse(new CartesianTimeProjection(zoomLevels, (0.0, 0.0), (1.0, 1.0), timeRange))
 
-    super.apply(xCol, yCol, rangeCol, timeRange, valueExtractor, binAggregator, tileAggregator, //xCol and yCol should be switched
+    super.apply(xCol, yCol, rangeCol, timeRange, valueExtractor, binAggregator, tileAggregator,
       zoomLevels, tileSize, projection)(request)(input)
   }
 }

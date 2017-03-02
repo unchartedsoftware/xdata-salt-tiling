@@ -12,14 +12,15 @@
  */
 package software.uncharted.xdata.sparkpipe.jobs
 
-import com.typesafe.config.{Config, ConfigFactory}
-import grizzled.slf4j.Logging
+
+import com.typesafe.config.Config
+
 import org.apache.spark.sql.SparkSession
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.text.{includeTermFilter, split}
 import software.uncharted.xdata.ops.io.serializeElementScore
 import software.uncharted.xdata.ops.salt.{CartesianTimeTopics, MercatorTimeHeatmap, MercatorTimeTopics}
-import software.uncharted.xdata.sparkpipe.config.{TilingConfig, XYTimeTopicsConfig}
+import software.uncharted.xdata.sparkpipe.config.{CartesianProjectionConfig, MercatorProjectionConfig, TilingConfig, XYTimeTopicsConfig}
 import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOperation, dataframeFromSparkCsv}
 
 // scalastyle:off method.length
@@ -35,29 +36,32 @@ object XYTimeTopicsJob extends AbstractJob {
       sys.exit(-1)
     }
 
-    val exists_xyBounds  = topicsConfig.xyBounds match {
+    val exists_xyBounds  = topicsConfig.projection.xyBounds match {
       case ara : Some[(Double, Double, Double, Double)] => true
       case None => false
       case _ => logger.error("Invalid XYbounds"); sys.exit(-1)
     }
 
+    val MercatorProj = classOf[MercatorProjectionConfig]
+    val CartesianProj = classOf[CartesianProjectionConfig]
+
     // when time format is used, need to pick up the converted time column
-    val topicsOp = topicsConfig.projection match {
-      case Some("mercator") => MercatorTimeTopics(
+    val topicsOp = topicsConfig.projection.getClass match {
+      case MercatorProj => MercatorTimeTopics(
         topicsConfig.yCol,
         topicsConfig.xCol,
         topicsConfig.timeCol,
         topicsConfig.textCol,
-        if (exists_xyBounds) topicsConfig.xyBounds else None,
+        if (exists_xyBounds) topicsConfig.projection.xyBounds else None,
         topicsConfig.timeRange,
         topicsConfig.topicLimit,
         tilingConfig.levels)(_)
-      case Some("cartesian") | None => CartesianTimeTopics(
-        topicsConfig.yCol,
+      case CartesianProj => CartesianTimeTopics(
         topicsConfig.xCol,
+        topicsConfig.yCol,
         topicsConfig.timeCol,
         topicsConfig.textCol,
-        if (exists_xyBounds) topicsConfig.xyBounds else None,
+        if (exists_xyBounds) topicsConfig.projection.xyBounds else None,
         topicsConfig.timeRange,
         topicsConfig.topicLimit,
         tilingConfig.levels)(_)

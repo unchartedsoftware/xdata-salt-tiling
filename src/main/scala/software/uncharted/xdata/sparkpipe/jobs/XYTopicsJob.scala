@@ -18,7 +18,7 @@ import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.text.{includeTermFilter, split}
 import software.uncharted.xdata.ops.io.serializeElementScore
 import software.uncharted.xdata.ops.salt._
-import software.uncharted.xdata.sparkpipe.config.{TilingConfig, XYTopicsConfig}
+import software.uncharted.xdata.sparkpipe.config.{CartesianProjectionConfig, MercatorProjectionConfig, TilingConfig, XYTopicsConfig}
 import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOperation, dataframeFromSparkCsv}
 
 object XYTopicsJob extends AbstractJob {
@@ -34,26 +34,29 @@ object XYTopicsJob extends AbstractJob {
       sys.exit(-1)
     }
 
-    val exists_xyBounds  = topicsConfig.xyBounds match {
+    val exists_xyBounds  = topicsConfig.projection.xyBounds match {
       case ara : Some[(Double, Double, Double, Double)] => true
       case None => false
       case _ => logger.error("Invalid XYbounds"); sys.exit(-1)
     }
 
+    val MercatorProj = classOf[MercatorProjectionConfig]
+    val CartesianProj = classOf[CartesianProjectionConfig]
+
     // when time format is used, need to pick up the converted time column
-    val topicsOp = topicsConfig.projection match {
-      case Some("mercator") => MercatorTopics(
+    val topicsOp = topicsConfig.projection.getClass match {
+      case MercatorProj => MercatorTopics(
         topicsConfig.yCol,
         topicsConfig.xCol,
         topicsConfig.textCol,
-        if (exists_xyBounds) topicsConfig.xyBounds else None,
+        if (exists_xyBounds) topicsConfig.projection.xyBounds else None,
         topicsConfig.topicLimit,
         tilingConfig.levels)(_)
-      case Some("cartesian") | None => CartesianTopics(
+      case CartesianProj => CartesianTopics(
         topicsConfig.xCol,
         topicsConfig.yCol,
         topicsConfig.textCol,
-        if (exists_xyBounds) topicsConfig.xyBounds else None,
+        if (exists_xyBounds) topicsConfig.projection.xyBounds else None,
         topicsConfig.topicLimit,
         tilingConfig.levels)(_)
       case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)

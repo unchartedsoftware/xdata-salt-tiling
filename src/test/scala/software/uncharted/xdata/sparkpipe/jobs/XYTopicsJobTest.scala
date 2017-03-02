@@ -90,6 +90,7 @@ class XYTopicsJobTest extends FunSpec {
       }
       it ("should test content and existence of tiles from source csv data") {
         try {
+          //expected level 2 output in 7th column and expected bin coord for level 2 tiles in 8th column of csv data file
           val path = classOf[XYTopicsJobTest].getResource("/XYTopicsJobTest/tiling-topic-file-io-detailed.conf").toURI.getPath
           XYTopicsJob.execute(Array(path))
 

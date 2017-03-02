@@ -102,11 +102,9 @@ class XYTimeTopicsJobTest extends FunSpec {
         }
       }
 
-
-      //ignored, potential issue in CartesianTimeOp where xCol and yCol switched
-      ignore("should default to Cartesian since no projection is specified", FileIOTest) {
+      it("should default to Cartesian since no projection is specified", FileIOTest) {
         try {
-          val path = classOf[XYTimeTopicsJobTest].getResource("/tiling-time-topic-file-io-defaultProjection.conf").toURI.getPath
+          val path = classOf[XYTimeTopicsJobTest].getResource("/XYTimeTopicsJobTest/tiling-time-topic-file-io-defaultProjection.conf").toURI.getPath
           XYTimeTopicsJob.execute(Array(path))
 
           // validate created tiles

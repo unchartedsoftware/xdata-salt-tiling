@@ -22,33 +22,28 @@ case class XYTimeHeatmapConfig(xCol: String,
                                yCol: String,
                                timeCol: String,
                                timeRange: RangeDescription[Long],
-                               projection: Option[String] = None,
-                               xyBounds: Option[(Double, Double, Double, Double)] = None )
+                               projection: ProjectionConfig)
 object XYTimeHeatmapConfig {
 
   val xyTimeHeatmapKey = "xyTimeHeatmap"
-  val projectionKey = "projection"
   val xColumnKey = "xColumn"
   val yColumnKey = "yColumn"
   val timeColumnKey = "timeColumn"
   val timeMinKey = "min"
   val timeStepKey = "step"
   val timeCountKey =  "count"
-  val xyBoundsKey = "xyBounds"
 
   def apply(config: Config): Try[XYTimeHeatmapConfig] = {
-    Try {
-      val heatmapConfig = config.getConfig(xyTimeHeatmapKey)
+    for (
+      heatmapConfig <- Try(config.getConfig(xyTimeHeatmapKey));
+      projection <- ProjectionConfig(heatmapConfig)
+    ) yield {
       XYTimeHeatmapConfig(
         heatmapConfig.getString(xColumnKey),
         heatmapConfig.getString(yColumnKey),
         heatmapConfig.getString(timeColumnKey),
         RangeDescription.fromMin(heatmapConfig.getLong(timeMinKey), heatmapConfig.getLong(timeStepKey), heatmapConfig.getInt(timeCountKey)),
-        if (heatmapConfig.hasPath(projectionKey)) Some(heatmapConfig.getString(projectionKey)) else None,
-        if (heatmapConfig.hasPath(xyBoundsKey)) {// scalastyle:ignore
-          val xyBounds = heatmapConfig.getDoubleList(xyBoundsKey).toArray(Array(Double.box(0.0)))
-          Some(xyBounds(0), xyBounds(1), xyBounds(2), xyBounds(3))
-        } else None
+        projection
       )
     }
   }

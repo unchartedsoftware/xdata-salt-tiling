@@ -12,13 +12,10 @@
   */
 package software.uncharted.xdata.sparkpipe.jobs
 
-
 import java.io.File
 
 import org.apache.commons.io.FileUtils
 import org.scalatest.FunSpec
-
-
 
 class XYHeatmapJobTest extends FunSpec {
   private val testOutputDir: String = "build/tmp/test_file_output/test_heatmap"
