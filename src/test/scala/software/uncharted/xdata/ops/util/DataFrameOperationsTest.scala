@@ -92,4 +92,45 @@ class DataFrameOperationsTest extends SparkFunSpec {
       assert((3, 2.5, "c", 3.0, "c") === joined(2))
     }
   }
+  describe("#rowTermFilterTest") {
+    it("should filter out rows if selected text field doesn't contain the input term") {
+      val terms = List("cat")
+      val testSchema = StructType(Seq(
+        StructField("animalType", StringType),
+        StructField("petName", StringType))
+      )
+      val data = sc.parallelize(Seq("dog,choco", "cat,fluffy", "dog,doom", "rabbit,snowy"))
+      val inputDF = toDataFrame(sparkSession, Map[String, String](), testSchema)(data)
+      val resultDF = rowTermFilter(terms, "animalType")(inputDF)
+
+      //compare result with expected
+      assertResult(List("cat"))(resultDF.select("animalType").rdd.map(_(0).asInstanceOf[String]).collect.toList)
+    }
+    it("should filter out rows when selected text field doesn't contain multiple input terms") {
+      val terms = List("cat", "mouse")
+      val testSchema = StructType(Seq(
+        StructField("lineNumber", StringType),
+        StructField("sentence", StringType))
+      )
+      val data = sc.parallelize(Seq("1,The cat was looking for the mouse.", "2,But the mouse was sleeping away in a different corner.", "3,It was a sunny day."))
+      val inputDF = toDataFrame(sparkSession, Map[String, String](), testSchema)(data)
+      val resultDF = rowTermFilter(terms, "sentence")(inputDF)
+
+      //compare result with expected
+      assertResult(List("1", "2"))(resultDF.select("lineNumber").rdd.map(_(0).asInstanceOf[String]).collect.toList)
+    }
+    it("should test rowTermFilter function with regex boundaries considered") {
+      val terms = List("cat", "mouse")
+      val testSchema = StructType(Seq(
+        StructField("lineNumber", StringType),
+        StructField("sentence", StringType))
+      )
+      val data = sc.parallelize(Seq("1,Thecatwaslookingforthemouse.", "2,But the mouse was sleeping away in a different corner.", "3,It was a sunny day."))
+      val inputDF = toDataFrame(sparkSession, Map[String, String](), testSchema)(data)
+      val resultDF = rowTermFilter(terms, "sentence")(inputDF)
+
+      //compare result with expected
+      assertResult(List("2"))(resultDF.select("lineNumber").rdd.map(_(0).asInstanceOf[String]).collect.toList)
+    }
+  }
 }

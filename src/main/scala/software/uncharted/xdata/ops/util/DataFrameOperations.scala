@@ -14,11 +14,12 @@ package software.uncharted.xdata.ops.util
 
 import com.univocity.parsers.csv.{CsvFormat, CsvParser, CsvParserSettings}
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.functions.udf
 import org.apache.spark.sql.types.{StructField, StructType}
-import org.apache.spark.sql.{DataFrame, Row, SparkSession}
-
+import org.apache.spark.sql.{DataFrame, Row, Column, SparkSession}
 import scala.reflect.runtime.universe.TypeTag
 import scala.util.Try
+import scala.util.matching.Regex
 
 object DataFrameOperations {
   /**
@@ -139,4 +140,28 @@ object DataFrameOperations {
       }
     ).getOrElse(None)
   }
+
+  /**
+    * Checks for keyword matches in a text field, and filters out rows without hits. The test
+    * is based on the following regex, assuming input keywords foo, bar:  (\bfoo\b|\bbar\b)
+    *
+    * @param terms Keywords to hit.
+    * @param stringCol Column containing text to match against.
+    * @param input DataFrame from previous stage
+    * @return Filtered DataFrame
+    */
+  def rowTermFilter(terms: Seq[String], stringCol: String, caseSensitive: Boolean = false)(input: DataFrame): DataFrame = {
+    val adjustedKeys = terms.map(keywords => s"\\b$keywords\\b")
+    val regexPattern = adjustedKeys.mkString(if (caseSensitive) "(" else "(?i)(", "|", ")").r
+    rowTermFilter(regexPattern, stringCol)(input)
+  }
+
+  def rowTermFilter(pattern: Regex, stringCol: String)(input: DataFrame): DataFrame = {
+    val broadcastPattern = input.sqlContext.sparkContext.broadcast(pattern)
+    val filterFunc = udf((keyword: String) => {
+      broadcastPattern.value.findFirstIn(keyword).isDefined
+    })
+    input.filter(filterFunc(new Column(stringCol)))
+  }
+
 }
