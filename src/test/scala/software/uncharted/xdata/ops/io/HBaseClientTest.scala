@@ -20,7 +20,6 @@ import org.apache.hadoop.hbase.HColumnDescriptor
 import org.apache.hadoop.hbase.HTableDescriptor
 import org.apache.hadoop.hbase.TableName
 import org.apache.spark.rdd.RDD
-
 import software.uncharted.xdata.spark.SparkFunSpec
 
 object HBaseTest extends Tag("hbc.test")
@@ -29,10 +28,11 @@ class HBaseConnectorTest extends SparkFunSpec with BeforeAndAfterAll {
 
   private def createConfig() = {
     val config = HBaseConfiguration.create()
-    config.set("hbase.zookeeper.quorum", sys.env("HBASE_ZOOKEEPER_QUORUM"))
-    config.set("hbase.zookeeper.property.clientPort", sys.env("HBASE_ZOOKEEPER_CLIENTPORT"))
-    config.set("hbase.master", sys.env("HBASE_MASTER"))
-    config.set("hbase.client.keyvalue.maxsize", sys.env("HBASE_CLIENT_KEYVALUE_MAXSIZE"))
+
+    config.set("hbase.zookeeper.quorum", sys.env.getOrElse("HBASE_ZOOKEEPER_QUORUM", throw new Exception("hbase.zookeeper.quorum is unset")))
+    config.set("hbase.zookeeper.property.clientPort", sys.env.getOrElse("HBASE_ZOOKEEPER_CLIENTPORT", "2181"))
+    config.set("hbase.master", sys.env.getOrElse("HBASE_MASTER", throw new Exception("hbase.master is unset")))
+    config.set("hbase.client.keyvalue.maxsize", sys.env.getOrElse("HBASE_CLIENT_KEYVALUE_MAXSIZE", "0"))
     ConnectionFactory.createConnection(config)
   }
 
