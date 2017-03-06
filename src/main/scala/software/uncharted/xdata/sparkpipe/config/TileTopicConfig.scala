@@ -26,17 +26,15 @@ object TileTopicConfig extends Logging {
   val X_COLUMN_KEY = "xColumn"
   val Y_COLUMN_KEY = "yColumn"
   val TEXT_COLUMN_KEY = "textColumn"
-  val PROJECTION_KEY = "projection"
 
   def apply (config: Config): Try[TileTopicConfig] = {
     for (
       section <- Try(config.getConfig(SECTION_KEY));
-      projectionConfig <- Try(section.getConfig(PROJECTION_KEY));
-      projection <- ProjectionConfig(projectionConfig)
+      projection <- ProjectionConfig(section)
     ) yield {
-      val xColumn = config.getString(X_COLUMN_KEY)
-      val yColumn = config.getString(Y_COLUMN_KEY)
-      val textColumn = config.getString(TEXT_COLUMN_KEY)
+      val xColumn = section.getString(X_COLUMN_KEY)
+      val yColumn = section.getString(Y_COLUMN_KEY)
+      val textColumn = section.getString(TEXT_COLUMN_KEY)
 
       TileTopicConfig(xColumn, yColumn, textColumn, projection)
     }

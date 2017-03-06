@@ -12,24 +12,18 @@
   */
 package software.uncharted.xdata.sparkpipe.jobs
 
-
-
 import java.io.File
 
 import scala.io.Source
 import scala.collection.JavaConverters._ // scalastyle:ignore
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
-import org.apache.spark.sql.{SQLContext, SparkSession}
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types.StructType
 import software.uncharted.salt.core.projection.numeric.{CartesianProjection, MercatorProjection, NumericProjection}
 import software.uncharted.xdata.sparkpipe.config.{ProjectionConfig, CartesianProjectionConfig, MercatorProjectionConfig}
 import software.uncharted.xdata.sparkpipe.config.{TilingConfig, Schema, SparkConfig}
 import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{OutputOperation, createTileOutputOperation}
-
-import scala.util.Try
-
-
 
 /**
   * A basic job trait that standardizes reading and combining config files and execution
@@ -81,11 +75,10 @@ trait AbstractJob extends Logging {
       case p: MercatorProjectionConfig =>
         new MercatorProjection(levels)
       case p: CartesianProjectionConfig =>
-        new CartesianProjection(levels, (p.minX, p.minY), (p.maxX, p.maxY))
+        val xyBounds = p.xyBounds.get
+        new CartesianProjection(levels, (xyBounds._1, xyBounds._2), (xyBounds._3, xyBounds._4))
     }
   }
-
-
 
   /**
     * This function actually executes the task the job describes

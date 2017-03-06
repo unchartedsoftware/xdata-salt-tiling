@@ -66,7 +66,7 @@ object XYTileLDAJob extends AbstractJob {
     val tilingConfig = parseTilingParameters(config)
     val outputOperation = parseOutputOperation(config)
     val tileTopicConfig = parseTileTopicConfig(config)
-    val dictionayrConfig = parseDictionaryConfig(config)
+    val dictionaryConfig = parseDictionaryConfig(config)
     val ldaConfig = parseLDAConfig(config)
 
     val projection = createProjection(tileTopicConfig.projectionConfig, tilingConfig.levels)
@@ -77,7 +77,7 @@ object XYTileLDAJob extends AbstractJob {
       projection,
       tilingConfig.levels
     )(_)
-    val ldaOperation = LDAOp.ldaWordsByTile[Nothing](dictionayrConfig, ldaConfig)(_)
+    val ldaOperation = LDAOp.ldaWordsByTile[Nothing](dictionaryConfig, ldaConfig)(_)
 
     // Create the dataframe from the input config
     val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, session)
