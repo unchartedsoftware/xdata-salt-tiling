@@ -39,20 +39,16 @@ object XYTopicsJob extends AbstractJob {
       case None => false
       case _ => logger.error("Invalid XYbounds"); sys.exit(-1)
     }
-
-    val MercatorProj = classOf[MercatorProjectionConfig]
-    val CartesianProj = classOf[CartesianProjectionConfig]
-
     // when time format is used, need to pick up the converted time column
-    val topicsOp = topicsConfig.projection.getClass match {
-      case MercatorProj => MercatorTopics(
+    val topicsOp = topicsConfig.projection match {
+      case _: MercatorProjectionConfig => MercatorTopics(
         topicsConfig.yCol,
         topicsConfig.xCol,
         topicsConfig.textCol,
         if (exists_xyBounds) topicsConfig.projection.xyBounds else None,
         topicsConfig.topicLimit,
         tilingConfig.levels)(_)
-      case CartesianProj => CartesianTopics(
+      case _: CartesianProjectionConfig => CartesianTopics(
         topicsConfig.xCol,
         topicsConfig.yCol,
         topicsConfig.textCol,

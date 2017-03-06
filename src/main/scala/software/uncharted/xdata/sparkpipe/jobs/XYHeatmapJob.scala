@@ -52,28 +52,23 @@ object XYHeatmapJob extends AbstractJob {
     val tileSize = tilingConfig.bins.getOrElse(ZXYOp.TILE_SIZE_DEFAULT)
 
     // create the heatmap operation based on the projection
-    val MercatorProj = classOf[MercatorProjectionConfig]
-    val CartesianProj = classOf[CartesianProjectionConfig]
-
-    val heatmapOperation = heatmapConfig.projection.getClass match {
-      case MercatorProj =>
-      MercatorHeatmapOp (
-          heatmapConfig.xCol,
-          heatmapConfig.yCol,
-          heatmapConfig.valueCol,
-          tilingConfig.levels,
-          if (exists_xyBounds) heatmapConfig.projection.xyBounds else None,
-          tileSize
-        )(_)
-      case CartesianProj  =>
-        CartesianHeatmapOp(
-          heatmapConfig.xCol,
-          heatmapConfig.yCol,
-          heatmapConfig.valueCol,
-          tilingConfig.levels,
-          if (exists_xyBounds) heatmapConfig.projection.xyBounds else None,
-          tileSize
-        )(_)
+    val heatmapOperation = heatmapConfig.projection match {
+      case _: MercatorProjectionConfig => MercatorHeatmapOp(
+        heatmapConfig.xCol,
+        heatmapConfig.yCol,
+        heatmapConfig.valueCol,
+        tilingConfig.levels,
+        if (exists_xyBounds) heatmapConfig.projection.xyBounds else None,
+        tileSize
+      )(_)
+      case _: CartesianProjectionConfig  => CartesianHeatmapOp(
+        heatmapConfig.xCol,
+        heatmapConfig.yCol,
+        heatmapConfig.valueCol,
+        tilingConfig.levels,
+        if (exists_xyBounds) heatmapConfig.projection.xyBounds else None,
+        tileSize
+      )(_)
       case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
     }
 

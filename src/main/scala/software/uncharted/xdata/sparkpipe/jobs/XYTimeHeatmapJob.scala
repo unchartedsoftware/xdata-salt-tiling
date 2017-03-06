@@ -43,11 +43,8 @@ object XYTimeHeatmapJob extends AbstractJob {
     }
 
     // create the heatmap operation based on the projection
-    val MercatorProj = classOf[MercatorProjectionConfig]
-    val CartesianProj = classOf[CartesianProjectionConfig]
-
-    val heatmapOperation = heatmapConfig.projection.getClass match {
-      case MercatorProj => MercatorTimeHeatmap(
+    val heatmapOperation = heatmapConfig.projection match {
+      case _: MercatorProjectionConfig=> MercatorTimeHeatmap(
         heatmapConfig.yCol,
         heatmapConfig.xCol,
         heatmapConfig.timeCol,
@@ -56,7 +53,7 @@ object XYTimeHeatmapJob extends AbstractJob {
         heatmapConfig.timeRange,
         tilingConfig.levels,
         tilingConfig.bins.getOrElse(MercatorTimeHeatmap.defaultTileSize))(_)
-      case CartesianProj => CartesianTimeHeatmap(
+      case _: CartesianProjectionConfig => CartesianTimeHeatmap(
         heatmapConfig.xCol,
         heatmapConfig.yCol,
         heatmapConfig.timeCol,

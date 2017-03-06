@@ -51,12 +51,9 @@ object XYSegmentJob extends AbstractJob {
       case _ => logger.error("Invalid XYbounds"); sys.exit(-1)
     }
 
-    val MercatorProj = classOf[MercatorProjectionConfig]
-    val CartesianProj = classOf[CartesianProjectionConfig]
-
     // create the segment operation based on the projection
-    val segmentOperation = segmentConfig.projectionConfig.getClass match {
-      case MercatorProj => MercatorSegmentOp(
+    val segmentOperation = segmentConfig.projectionConfig match {
+      case _: MercatorProjectionConfig => MercatorSegmentOp(
         segmentConfig.minSegLen,
         segmentConfig.maxSegLen,
         segmentConfig.x1Col,
@@ -68,7 +65,7 @@ object XYSegmentJob extends AbstractJob {
         tilingConfig.levels,
         segmentConfig.tileSize,
         tms = tilingConfig.tms)(_)
-      case CartesianProj => CartesianSegmentOp(
+      case _: CartesianProjectionConfig => CartesianSegmentOp(
         segmentConfig.arcType,
         segmentConfig.minSegLen,
         segmentConfig.maxSegLen,
