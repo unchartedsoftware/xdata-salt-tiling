@@ -11,13 +11,14 @@
  * with Uncharted Software Inc.
  */
 package software.uncharted.xdata.ops.io
+
 import org.scalatest.{BeforeAndAfterAll, Tag}
+
 import org.apache.hadoop.hbase.client._ //scalastyle:ignore
 import org.apache.hadoop.hbase.HBaseConfiguration
 import org.apache.hadoop.hbase.HColumnDescriptor
 import org.apache.hadoop.hbase.HTableDescriptor
 import org.apache.hadoop.hbase.TableName
-
 import org.apache.spark.rdd.RDD
 
 import software.uncharted.xdata.spark.SparkFunSpec
@@ -28,10 +29,10 @@ class HBaseConnectorTest extends SparkFunSpec with BeforeAndAfterAll {
 
   private def createConfig() = {
     val config = HBaseConfiguration.create()
-    config.set("hbase.zookeeper.quorum", "uscc0-node08.uncharted.software")
-    config.set("hbase.zookeeper.property.clientPort", "2181")
-    config.set("hbase.master", "hdfs://uscc0-master0.uncharted.software:60000")
-    config.set("hbase.client.keyvalue.maxsize", "0")
+    config.set("hbase.zookeeper.quorum", sys.env("HBASE_ZOOKEEPER_QUORUM"))
+    config.set("hbase.zookeeper.property.clientPort", sys.env("HBASE_ZOOKEEPER_CLIENTPORT"))
+    config.set("hbase.master", sys.env("HBASE_MASTER"))
+    config.set("hbase.client.keyvalue.maxsize", sys.env("HBASE_CLIENT_KEYVALUE_MAXSIZE"))
     ConnectionFactory.createConnection(config)
   }
 
