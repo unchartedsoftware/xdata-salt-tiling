@@ -12,18 +12,15 @@
   */
 package software.uncharted.xdata.sparkpipe.jobs
 
-import java.io.{File, FileOutputStream, PrintWriter}
-
-import com.typesafe.config.{Config, ConfigFactory}
-import grizzled.slf4j.Logging
+import com.typesafe.config.Config
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.xdata.ops.salt.{CartesianSegmentOp, MercatorSegmentOp}
-import software.uncharted.xdata.sparkpipe.config.{Schema, SparkConfig, TilingConfig, XYSegmentConfig}
 import software.uncharted.xdata.ops.io.serializeBinArray
-import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOperation, createTileOutputOperation, dataframeFromSparkCsv}
+import software.uncharted.xdata.sparkpipe.config.{CartesianProjectionConfig, MercatorProjectionConfig, XYSegmentConfig}
+import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOperation, dataframeFromSparkCsv}
 
 /**
   * Executes the a segment job configured given a path to a configuration file
@@ -36,6 +33,7 @@ import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOper
   */
 // scalastyle:off method.length
 object XYSegmentJob extends AbstractJob {
+
   def execute(sparkSession: SparkSession, config: Config): Unit = {
     val schema = parseSchema(config)
     val tilingConfig = parseTilingParameters(config)
@@ -47,9 +45,27 @@ object XYSegmentJob extends AbstractJob {
       sys.exit(-1)
     }
 
+    val exists_xyBounds  = segmentConfig.projectionConfig.xyBounds match {
+      case ara : Some[(Double, Double, Double, Double)] => true
+      case None => false
+      case _ => logger.error("Invalid XYbounds"); sys.exit(-1)
+    }
+
     // create the segment operation based on the projection
-    val segmentOperation = segmentConfig.projection match {
-      case Some("cartesian") => CartesianSegmentOp(
+    val segmentOperation = segmentConfig.projectionConfig match {
+      case _: MercatorProjectionConfig => MercatorSegmentOp(
+        segmentConfig.minSegLen,
+        segmentConfig.maxSegLen,
+        segmentConfig.x1Col,
+        segmentConfig.y1Col,
+        segmentConfig.x2Col,
+        segmentConfig.y2Col,
+        None,
+        if (exists_xyBounds) segmentConfig.projectionConfig.xyBounds else None,
+        tilingConfig.levels,
+        segmentConfig.tileSize,
+        tms = tilingConfig.tms)(_)
+      case _: CartesianProjectionConfig => CartesianSegmentOp(
         segmentConfig.arcType,
         segmentConfig.minSegLen,
         segmentConfig.maxSegLen,
@@ -58,19 +74,7 @@ object XYSegmentJob extends AbstractJob {
         segmentConfig.x2Col,
         segmentConfig.y2Col,
         None,
-        segmentConfig.xyBounds,
-        tilingConfig.levels,
-        segmentConfig.tileSize,
-        tms = tilingConfig.tms)(_)
-      case Some("mercator") => MercatorSegmentOp(
-        segmentConfig.minSegLen,
-        segmentConfig.maxSegLen,
-        segmentConfig.x1Col,
-        segmentConfig.y1Col,
-        segmentConfig.x2Col,
-        segmentConfig.y2Col,
-        None,
-        segmentConfig.xyBounds,
+        if (exists_xyBounds) segmentConfig.projectionConfig.xyBounds else None,
         tilingConfig.levels,
         segmentConfig.tileSize,
         tms = tilingConfig.tms)(_)

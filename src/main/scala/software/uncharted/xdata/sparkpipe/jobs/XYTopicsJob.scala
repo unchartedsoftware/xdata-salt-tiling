@@ -11,27 +11,25 @@
  * with Uncharted Software Inc.
  */
 package software.uncharted.xdata.sparkpipe.jobs
-
-
+// scalastyle:off
 import com.typesafe.config.Config
-
 import org.apache.spark.sql.SparkSession
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.text.{includeTermFilter, split}
 import software.uncharted.xdata.ops.io.serializeElementScore
-import software.uncharted.xdata.ops.salt.{CartesianTimeTopics, MercatorTimeHeatmap, MercatorTimeTopics}
-import software.uncharted.xdata.sparkpipe.config.{CartesianProjectionConfig, MercatorProjectionConfig, TilingConfig, XYTimeTopicsConfig}
+import software.uncharted.xdata.ops.salt._
+import software.uncharted.xdata.sparkpipe.config.{CartesianProjectionConfig, MercatorProjectionConfig, TilingConfig, XYTopicsConfig}
 import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOperation, dataframeFromSparkCsv}
 
-// scalastyle:off method.length
-object XYTimeTopicsJob extends AbstractJob {
-  def execute(session: SparkSession, config: Config): Unit = {
+object XYTopicsJob extends AbstractJob {
+
+  def execute(sparkSession: SparkSession, config: Config): Unit = {
     val schema = parseSchema(config)
     val tilingConfig = parseTilingParameters(config)
     val outputOperation = parseOutputOperation(config)
 
     // Parse geo heatmap parameters out of supplied config
-    val topicsConfig = XYTimeTopicsConfig(config).getOrElse {
+    val topicsConfig = XYTopicsConfig(config).getOrElse {
       logger.error("Invalid heatmap op config")
       sys.exit(-1)
     }
@@ -41,40 +39,30 @@ object XYTimeTopicsJob extends AbstractJob {
       case None => false
       case _ => logger.error("Invalid XYbounds"); sys.exit(-1)
     }
-
     // when time format is used, need to pick up the converted time column
     val topicsOp = topicsConfig.projection match {
-      case _: MercatorProjectionConfig => MercatorTimeTopics(
+      case _: MercatorProjectionConfig => MercatorTopics(
         topicsConfig.yCol,
         topicsConfig.xCol,
-        topicsConfig.timeCol,
         topicsConfig.textCol,
         if (exists_xyBounds) topicsConfig.projection.xyBounds else None,
-        topicsConfig.timeRange,
         topicsConfig.topicLimit,
         tilingConfig.levels)(_)
-      case _: CartesianProjectionConfig => CartesianTimeTopics(
+      case _: CartesianProjectionConfig => CartesianTopics(
         topicsConfig.xCol,
         topicsConfig.yCol,
-        topicsConfig.timeCol,
         topicsConfig.textCol,
         if (exists_xyBounds) topicsConfig.projection.xyBounds else None,
-        topicsConfig.timeRange,
         topicsConfig.topicLimit,
         tilingConfig.levels)(_)
-
       case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
     }
 
-    // Create the spark context from the supplied config
-    // Create the dataframe from the input config
-    val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, session)
-
     // Pipe the dataframe
-    Pipe(df)
+    Pipe(dataframeFromSparkCsv(config, tilingConfig.source, schema, sparkSession))
       .to(split(topicsConfig.textCol, "\\b+"))
       .to(includeTermFilter(topicsConfig.textCol, topicsConfig.termList.keySet))
-      .to(_.select(topicsConfig.xCol, topicsConfig.yCol, topicsConfig.timeCol, topicsConfig.textCol))
+      .to(_.select(topicsConfig.xCol, topicsConfig.yCol, topicsConfig.textCol))
       .to(_.cache())
       .to(topicsOp)
       .to(serializeElementScore)
@@ -83,20 +71,14 @@ object XYTimeTopicsJob extends AbstractJob {
 
     writeMetadata(config, tilingConfig, topicsConfig)
   }
-
-  private def writeMetadata(baseConfig: Config, tilingConfig: TilingConfig, topicsConfig: XYTimeTopicsConfig): Unit = {
+  private def writeMetadata(baseConfig: Config, tilingConfig: TilingConfig, topicsConfig: XYTopicsConfig): Unit = {
     import net.liftweb.json.JsonDSL._ // scalastyle:ignore
     import net.liftweb.json.JsonAST._ // scalastyle:ignore
 
     val outputOp = createMetadataOutputOperation(baseConfig)
 
-    val binCount = tilingConfig.bins.getOrElse(MercatorTimeHeatmap.defaultTileSize)
-    val levelMetadata =
-      ("bins" -> binCount) ~
-        ("range" ->
-          (("start" -> topicsConfig.timeRange.min) ~
-            ("count" -> topicsConfig.timeRange.count) ~
-            ("step" -> topicsConfig.timeRange.step)))
+    val binCount = tilingConfig.bins.getOrElse(ZXYOp.TILE_SIZE_DEFAULT)
+    val levelMetadata = ("bins" -> binCount)
     val jsonBytes = compactRender(levelMetadata).getBytes.toSeq
     outputOp.foreach(_("metadata.json", jsonBytes))
 

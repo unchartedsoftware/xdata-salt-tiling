@@ -30,7 +30,7 @@ case class XYTimeTopicsConfig(xCol: String,
                               timeRange: RangeDescription[Long],
                               topicLimit: Int,
                               termList: Map[String, String],
-                              projection: Option[String] = None)
+                              projection: ProjectionConfig)
 
 object XYTimeTopicsConfig {
 
@@ -38,7 +38,6 @@ object XYTimeTopicsConfig {
   val timeFormatKey = "timeFormat"
   val xColumnKey = "xColumn"
   val yColumnKey = "yColumn"
-  val projectionKey = "projection"
   val timeColumnKey = "timeColumn"
   val timeMinKey = "min"
   val timeStepKey = "step"
@@ -48,9 +47,10 @@ object XYTimeTopicsConfig {
   val termPathKey = "terms"
 
   def apply(config: Config): Try[XYTimeTopicsConfig] = {
-    Try {
-      val topicConfig = config.getConfig(xyTimeTopicsKey)
-
+    for (
+      topicConfig <- Try(config.getConfig(xyTimeTopicsKey));
+      projection <- ProjectionConfig(topicConfig)
+    ) yield {
       XYTimeTopicsConfig(
         topicConfig.getString(xColumnKey),
         topicConfig.getString(yColumnKey),
@@ -59,7 +59,7 @@ object XYTimeTopicsConfig {
         RangeDescription.fromMin(topicConfig.getLong(timeMinKey), topicConfig.getLong(timeStepKey), topicConfig.getInt(timeCountKey)),
         topicConfig.getInt(topicLimitKey),
         readTerms(topicConfig.getString(termPathKey)),
-        if (topicConfig.hasPath(projectionKey)) Some(topicConfig.getString(projectionKey)) else None
+        projection
       )
     }
   }

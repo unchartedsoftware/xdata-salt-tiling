@@ -12,14 +12,13 @@
  */
 package software.uncharted.xdata.sparkpipe.jobs
 
-import com.typesafe.config.{Config, ConfigFactory}
-import grizzled.slf4j.Logging
-import org.apache.spark.sql.{SQLContext, SparkSession}
+import com.typesafe.config.Config
+import org.apache.spark.sql.SparkSession
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.xdata.ops.io.serializeBinArray
 import software.uncharted.xdata.ops.salt.{CartesianTimeHeatmap, MercatorTimeHeatmap}
-import software.uncharted.xdata.sparkpipe.config.{Schema, SparkConfig, TilingConfig, XYTimeHeatmapConfig}
-import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOperation, createTileOutputOperation, dataframeFromSparkCsv}
+import software.uncharted.xdata.sparkpipe.config.{CartesianProjectionConfig, MercatorProjectionConfig, TilingConfig, XYTimeHeatmapConfig}
+import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOperation, dataframeFromSparkCsv}
 
 // scalastyle:off method.length
 object XYTimeHeatmapJob extends AbstractJob {
@@ -37,13 +36,31 @@ object XYTimeHeatmapJob extends AbstractJob {
       sys.exit(-1)
     }
 
+    val exists_xyBounds = heatmapConfig.projection.xyBounds match {
+      case ara : Some[(Double, Double, Double, Double)] => true
+      case None => false
+      case _ => logger.error("Invalid XYbounds"); sys.exit(-1)
+    }
+
     // create the heatmap operation based on the projection
     val heatmapOperation = heatmapConfig.projection match {
-      case Some("mercator") => MercatorTimeHeatmap(heatmapConfig.yCol, heatmapConfig.xCol, heatmapConfig.timeCol,
-        None, None, heatmapConfig.timeRange, tilingConfig.levels,
+      case _: MercatorProjectionConfig=> MercatorTimeHeatmap(
+        heatmapConfig.yCol,
+        heatmapConfig.xCol,
+        heatmapConfig.timeCol,
+        None,
+        if (exists_xyBounds) heatmapConfig.projection.xyBounds else None,
+        heatmapConfig.timeRange,
+        tilingConfig.levels,
         tilingConfig.bins.getOrElse(MercatorTimeHeatmap.defaultTileSize))(_)
-      case Some("cartesian") | None => CartesianTimeHeatmap(heatmapConfig.xCol, heatmapConfig.yCol, heatmapConfig.timeCol,
-        None, None, heatmapConfig.timeRange, tilingConfig.levels,
+      case _: CartesianProjectionConfig => CartesianTimeHeatmap(
+        heatmapConfig.xCol,
+        heatmapConfig.yCol,
+        heatmapConfig.timeCol,
+        None,
+        if (exists_xyBounds) heatmapConfig.projection.xyBounds else None,
+        heatmapConfig.timeRange,
+        tilingConfig.levels,
         tilingConfig.bins.getOrElse(CartesianTimeHeatmap.defaultTileSize))(_)
       case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
     }

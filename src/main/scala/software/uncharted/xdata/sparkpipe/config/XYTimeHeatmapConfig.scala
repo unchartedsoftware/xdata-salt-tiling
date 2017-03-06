@@ -22,11 +22,10 @@ case class XYTimeHeatmapConfig(xCol: String,
                                yCol: String,
                                timeCol: String,
                                timeRange: RangeDescription[Long],
-                               projection: Option[String] = None)
+                               projection: ProjectionConfig)
 object XYTimeHeatmapConfig {
 
   val xyTimeHeatmapKey = "xyTimeHeatmap"
-  val projectionKey = "projection"
   val xColumnKey = "xColumn"
   val yColumnKey = "yColumn"
   val timeColumnKey = "timeColumn"
@@ -35,14 +34,16 @@ object XYTimeHeatmapConfig {
   val timeCountKey =  "count"
 
   def apply(config: Config): Try[XYTimeHeatmapConfig] = {
-    Try {
-      val heatmapConfig = config.getConfig(xyTimeHeatmapKey)
+    for (
+      heatmapConfig <- Try(config.getConfig(xyTimeHeatmapKey));
+      projection <- ProjectionConfig(heatmapConfig)
+    ) yield {
       XYTimeHeatmapConfig(
         heatmapConfig.getString(xColumnKey),
         heatmapConfig.getString(yColumnKey),
         heatmapConfig.getString(timeColumnKey),
         RangeDescription.fromMin(heatmapConfig.getLong(timeMinKey), heatmapConfig.getLong(timeStepKey), heatmapConfig.getInt(timeCountKey)),
-        if (heatmapConfig.hasPath(projectionKey)) Some(heatmapConfig.getString(projectionKey)) else None
+        projection
       )
     }
   }

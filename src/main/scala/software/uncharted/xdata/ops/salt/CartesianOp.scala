@@ -23,7 +23,11 @@ import software.uncharted.salt.core.projection.numeric.CartesianProjection
   * An operation for generating a cartesian-projected
   * tile layer from a DataFrame, using Salt
   */
-trait CartesianOp extends ZXYOp {
+
+
+
+class CartesianOp extends ZXYOp {
+
   // scalastyle:off parameter.number
 
   /**
@@ -33,8 +37,8 @@ trait CartesianOp extends ZXYOp {
     * @param xCol           the name of the x column
     * @param yCol           the name of the y column
     * @param vCol           the name of the value column (the value for aggregation)
-    * @param xYBounds       the y/X bounds of the "world" for this tileset, specified as (minX, minY, maxX, maxY)
-    * @param zoomBounds     the zoom bounds of the "world" for this tileset, specified as a Seq of Integer zoom levels
+    * @param xyBounds       the y/X bounds of the "world" for this tileset, specified as (minX, minY, maxX, maxY)
+    * @param zoomLevels     the zoom bounds of the "world" for this tileset, specified as a Seq of Integer zoom levels
     * @param binAggregator  an Aggregator which aggregates values from the ValueExtractor
     * @param tileAggregator an optional Aggregator which aggregates bin values
     */
@@ -42,13 +46,13 @@ trait CartesianOp extends ZXYOp {
                            xCol: String,
                            yCol: String,
                            vCol: String,
-                           xYBounds: (Double, Double, Double, Double),
-                           zoomBounds: Seq[Int],
+                           xyBounds: (Double, Double, Double, Double),
+                           zoomLevels: Seq[Int],
                            binAggregator: Aggregator[T, U, V],
                            tileAggregator: Option[Aggregator[V, W, X]]
                           )(request: TileRequest[(Int, Int, Int)])(input: DataFrame): RDD[SeriesData[(Int, Int, Int), (Int, Int), V, X]] = {
 
-    val projection = new CartesianProjection(zoomBounds, (xYBounds._1, xYBounds._2), (xYBounds._3, xYBounds._4))
+    val projection = new CartesianProjection(zoomLevels, (xyBounds._1, xyBounds._2), (xyBounds._3, xyBounds._4))
 
     super.apply(projection, tileSize, xCol, yCol, vCol, binAggregator, tileAggregator)(request)(input)
   }

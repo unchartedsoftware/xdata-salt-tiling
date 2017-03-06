@@ -32,7 +32,7 @@ class XYTimeTopicsJobTest extends FunSpec {
       it("should create tiles from source csv data with time filter applied", FileIOTest) {
         try {
           // run the job
-          val path = classOf[XYTimeTopicsJobTest].getResource("/tiling-topic-file-io.conf").toURI.getPath
+          val path = classOf[XYTimeTopicsJobTest].getResource("/XYTimeTopicsJobTest/tiling-time-topic-file-io.conf").toURI.getPath
           XYTimeTopicsJob.execute(Array(path))
 
           // validate created tiles
@@ -68,7 +68,7 @@ class XYTimeTopicsJobTest extends FunSpec {
 
       it("should convert string date to timestamp", FileIOTest) {
         try {
-          val path = classOf[XYTimeTopicsJobTest].getResource("/tiling-topic-file-io.conf").toURI.getPath
+          val path = classOf[XYTimeTopicsJobTest].getResource("/XYTimeTopicsJobTest/tiling-time-topic-file-io.conf").toURI.getPath
           XYTimeTopicsJob.execute(Array(path))
 
           val files = JobTestUtils.collectFiles(testOutputDir, suffix)
@@ -82,6 +82,45 @@ class XYTimeTopicsJobTest extends FunSpec {
           FileUtils.deleteDirectory(new File(testOutputDir))
         }
       }
+
+      it("should using the xyBounds specified in configuration file", FileIOTest) {
+        try {
+          val path = classOf[XYTimeTopicsJobTest].getResource("/XYTimeTopicsJobTest/tiling-time-topic-file-io-xyBoundsSpec.conf").toURI.getPath
+          XYTimeTopicsJob.execute(Array(path))
+
+          // validate created tiles
+          val files = JobTestUtils.collectFiles(testOutputDir, suffix)
+          val expected = Set(
+            (0,0,0), // l0
+            (1,0,0), (1,1,0), (1,1,1), (1,0,1), // l1
+            (2, 1, 1), (2, 1, 3), (2, 2, 0), (2, 2, 2)) // l2
+
+          assertResult((Set(), Set()))((expected diff files, files diff expected))
+
+        } finally {
+          FileUtils.deleteDirectory(new File(testOutputDir))
+        }
+      }
+
+      it("should default to Cartesian since no projection is specified", FileIOTest) {
+        try {
+          val path = classOf[XYTimeTopicsJobTest].getResource("/XYTimeTopicsJobTest/tiling-time-topic-file-io-defaultProjection.conf").toURI.getPath
+          XYTimeTopicsJob.execute(Array(path))
+
+          // validate created tiles
+          val files = JobTestUtils.collectFiles(testOutputDir, suffix)
+          val expected = Set(
+            (0,0,0), // l0
+            (1, 0, 0), (1, 1, 1), // l1
+            (2, 0, 0), (2, 3, 3)) // l2
+
+          assertResult((Set(), Set()))((expected diff files, files diff expected))
+
+        } finally {
+          FileUtils.deleteDirectory(new File(testOutputDir))
+        }
+      }
+
     }
   }
 }

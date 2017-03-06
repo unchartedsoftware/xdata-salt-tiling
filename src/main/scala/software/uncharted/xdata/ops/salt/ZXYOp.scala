@@ -120,10 +120,10 @@ trait ZXYOp {
       }
     }
 
-    // v will always be column 2
     val vExtractor = (r: Row) => {
-      if (!r.isNullAt(2)) {
-        Some(r.getAs[T](2))
+      val rowIndex = r.schema.fieldIndex(vCol)
+      if (!r.isNullAt(rowIndex)) {
+        Some(r.getAs[T](rowIndex))
       } else {
         None
       }

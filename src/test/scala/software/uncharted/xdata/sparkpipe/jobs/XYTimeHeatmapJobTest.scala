@@ -34,7 +34,7 @@ class XYTimeHeatmapJobTest extends FunSpec {
         val oldDir = System.getProperty("user.dir")
         try {
           // run the job
-          val path = classOf[XYTimeHeatmapJobTest].getResource("/tiling-time-file-io.conf").toURI.getPath
+          val path = classOf[XYTimeHeatmapJobTest].getResource("/XYTimeHeatmapJobTest/tiling-time-file-io.conf").toURI.getPath
           // Make sure to run the test from the correct directory
           val newDir = path.substring(0, path.indexOf("xdata-pipeline-ops") + 18)
           System.setProperty("user.dir", newDir)
@@ -67,7 +67,7 @@ class XYTimeHeatmapJobTest extends FunSpec {
 
       it("should convert string date to timestamp", FileIOTest) {
         try {
-          val path = classOf[XYTimeHeatmapJobTest].getResource("/tiling-date-file-io.conf").toURI.getPath
+          val path = classOf[XYTimeHeatmapJobTest].getResource("/XYTimeHeatmapJobTest/tiling-date-file-io.conf").toURI.getPath
           XYTimeHeatmapJob.execute(Array(path))
 
           val files = JobTestUtils.collectFiles(testOutputDir, suffix)
@@ -78,6 +78,80 @@ class XYTimeHeatmapJobTest extends FunSpec {
 
           assertResult((Set(), Set()))((expected diff files, files diff expected))
         } finally {
+          FileUtils.deleteDirectory(new File(testOutputDir))
+        }
+      }
+
+      it("should use the specified xyBounds", FileIOTest) {
+
+        val oldDir = System.getProperty("user.dir")
+        try {
+          // run the job
+          val path = classOf[XYTimeHeatmapJobTest].getResource("/XYTimeHeatmapJobTest/tiling-time-file-io-xyBoundsSpec.conf").toURI.getPath
+          // Make sure to run the test from the correct directory
+          val newDir = path.substring(0, path.indexOf("xdata-pipeline-ops") + 18)
+          System.setProperty("user.dir", newDir)
+          XYTimeHeatmapJob.execute(Array(path))
+
+          val files = JobTestUtils.collectFiles(testOutputDir, suffix)
+          val expected = Set(
+            (0, 0, 0), // l0
+            (1, 0, 0), (1, 1, 1), // l1
+            (2, 1, 1), (2, 2, 2)) // l2
+
+          assertResult((Set(), Set()))((expected diff files, files diff expected))
+
+          // check metadata
+          val fileStr = FileUtils.readFileToString(new File(s"$testOutputDir/metadata.json"))
+          val jsonObject = parse(fileStr)
+          val expectedJson =
+            ("bins" -> 4) ~
+              ("range" ->
+                (("start" -> 1357016400000L) ~
+                  ("step" -> 86400000) ~
+                  ("count" -> 8)))
+          assertResult(expectedJson)(jsonObject)
+
+        } finally {
+          System.setProperty("user.dir", oldDir)
+          FileUtils.deleteDirectory(new File(testOutputDir))
+        }
+      }
+
+      it("should use default projection when no projection is specified", FileIOTest) {
+        // When test are run from another project that includes this project, the current working directory is set such
+        // that the data files referenced in tiling-file-io.conf can't be found.  We reset the CWD to the
+        // xdata-pipeline-ops directory, and reset it afterwards, to get around this problem.
+        val oldDir = System.getProperty("user.dir")
+        try {
+          // run the job
+          val path = classOf[XYTimeHeatmapJobTest].getResource("/XYTimeHeatmapJobTest/tiling-time-file-io-defaultProjection.conf").toURI.getPath
+          // Make sure to run the test from the correct directory
+          val newDir = path.substring(0, path.indexOf("xdata-pipeline-ops") + 18)
+          System.setProperty("user.dir", newDir)
+          XYTimeHeatmapJob.execute(Array(path))
+
+          val files = JobTestUtils.collectFiles(testOutputDir, suffix)
+          val expected = Set(
+            (0, 0, 0), // l0
+            (1, 0, 0), (1, 1, 1), // l1
+            (2, 0, 0), (2, 3, 3)) // l2
+
+          assertResult((Set(), Set()))((expected diff files, files diff expected))
+
+          // check metadata
+          val fileStr = FileUtils.readFileToString(new File(s"$testOutputDir/metadata.json"))
+          val jsonObject = parse(fileStr)
+          val expectedJson =
+            ("bins" -> 4) ~
+              ("range" ->
+                (("start" -> 1357016400000L) ~
+                  ("step" -> 86400000) ~
+                  ("count" -> 8)))
+          assertResult(expectedJson)(jsonObject)
+
+        } finally {
+          System.setProperty("user.dir", oldDir)
           FileUtils.deleteDirectory(new File(testOutputDir))
         }
       }

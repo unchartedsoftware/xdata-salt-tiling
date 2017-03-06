@@ -8,11 +8,11 @@ import org.scalatest.FunSpec
 /**
   * Created by nkronenfeld on 25/10/16.
   */
-class IPHeatmapJobTest  extends FunSpec {
+class IPHeatmapJobTest extends FunSpec {
   private val testOutputDir: String = "build/tmp/test_file_output/test_ip_heatmap"
   private val suffix: String = "bin"
 
-  describe("XYHeatmapJobTest") {
+  describe("IPHeatmapJobTest") {
     describe("#execute") {
       it("should create tiles from source csv data", FileIOTest) {
         // When test are run from another project that includes this project, the current working directory is set such
@@ -21,7 +21,7 @@ class IPHeatmapJobTest  extends FunSpec {
         val oldDir = System.getProperty("user.dir")
         try {
           // run the job
-          val config = classOf[IPHeatmapJobTest].getResource("/tiling-ip.conf").toURI.getPath
+          val config = classOf[IPHeatmapJobTest].getResource("/IPHeatmapJobTest/tiling-ip.conf").toURI.getPath
           // Make sure to run the test from the correct directory
           val project = "xdata-pipeline-ops"
           val newDir = config.substring(0, config.indexOf(project) + project.length)
