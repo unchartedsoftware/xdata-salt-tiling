@@ -42,11 +42,12 @@ class PackageTest extends SparkFunSpec with JsonDSL {
   lazy val awsAccessKey = sys.env("AWS_ACCESS_KEY")
   lazy val awsSecretKey = sys.env("AWS_SECRET_KEY")
 
-  lazy val zookeeperQuorum = "uscc0-node08.uncharted.software"
-  lazy val zookeeperPort = "2181"
-  lazy val hBaseMaster = "hdfs://uscc0-master0.uncharted.software:60000"
+  lazy val zookeeperQuorum = sys.env.getOrElse("HBASE_ZOOKEEPER_QUORUM", throw new Exception("hbase.zookeeper.quorum is unset"))
+  lazy val zookeeperPort = sys.env.getOrElse("HBASE_ZOOKEEPER_CLIENTPORT", "2181")
+  lazy val hBaseMaster = sys.env("HBASE_MASTER")
+  lazy val hBaseClientKeyValMaxSize = sys.env.getOrElse("HBASE_CLIENT_KEYVALUE_MAXSIZE", "0")
 
-  private val configFile = Seq("/home/asuri/Documents/hbase-site.xml")
+  private val configFile = Seq(classOf[PackageTest].getResource("/hbase-site.xml").toURI.getPath)
 
   def genHeatmapArray(in: Double*) = SparseArray(in.length, 0.0)(in.zipWithIndex.map(_.swap):_*)
   def genTopicArray[T](in: List[(String, T)]*) = SparseArray(in.length, List[(String, T)]())(in.zipWithIndex.map(_.swap):_*)
@@ -147,7 +148,7 @@ class PackageTest extends SparkFunSpec with JsonDSL {
       config.set("hbase.zookeeper.quorum", zookeeperQuorum)
       config.set("hbase.zookeeper.property.clientPort", zookeeperPort)
       config.set("hbase.master", hBaseMaster)
-      config.set("hbase.client.keyvalue.maxsize", "0")
+      config.set("hbase.client.keyvalue.maxsize", hBaseClientKeyValMaxSize)
       val connection = ConnectionFactory.createConnection(config)
       val admin = connection.getAdmin
       assertResult(true)(connection.getTable(TableName.valueOf(testLayer)).exists(new Get (s"${testLayer}/02/2/2.bin".getBytes())))
@@ -171,7 +172,7 @@ class PackageTest extends SparkFunSpec with JsonDSL {
       config.set("hbase.zookeeper.quorum", zookeeperQuorum)
       config.set("hbase.zookeeper.property.clientPort", zookeeperPort)
       config.set("hbase.master", hBaseMaster)
-      config.set("hbase.client.keyvalue.maxsize", "0")
+      config.set("hbase.client.keyvalue.maxsize", hBaseClientKeyValMaxSize)
       val connection = ConnectionFactory.createConnection(config)
       val admin = connection.getAdmin
 
@@ -194,7 +195,7 @@ class PackageTest extends SparkFunSpec with JsonDSL {
       config.set("hbase.zookeeper.quorum", zookeeperQuorum)
       config.set("hbase.zookeeper.property.clientPort", zookeeperPort)
       config.set("hbase.master", hBaseMaster)
-      config.set("hbase.client.keyvalue.maxsize", "0")
+      config.set("hbase.client.keyvalue.maxsize", hBaseClientKeyValMaxSize)
       val connection = ConnectionFactory.createConnection(config)
       val admin = connection.getAdmin
 
