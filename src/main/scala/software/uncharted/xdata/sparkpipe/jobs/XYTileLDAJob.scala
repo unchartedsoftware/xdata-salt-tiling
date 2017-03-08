@@ -69,7 +69,7 @@ object XYTileLDAJob extends AbstractJob {
     val dictionaryConfig = parseDictionaryConfig(config)
     val ldaConfig = parseLDAConfig(config)
 
-    val projection = createProjection(tileTopicConfig.projectionConfig, tilingConfig.levels)
+    val projection = tileTopicConfig.projectionConfig.createProjection(tilingConfig.levels)
     val wordCloudTileOp = TextOperations.termFrequencyOp(
       tileTopicConfig.xColumn,
       tileTopicConfig.yColumn,

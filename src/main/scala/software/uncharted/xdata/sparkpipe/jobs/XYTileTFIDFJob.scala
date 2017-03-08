@@ -58,7 +58,7 @@ object XYTileTFIDFJob extends AbstractJob {
     val tileTopicConfig = parseTileTopicConfig(config)
     val tfidfConfig = parseTFIDFConfig(config)
 
-    val projection = createProjection(tileTopicConfig.projectionConfig, tilingConfig.levels)
+    val projection = tileTopicConfig.projectionConfig.createProjection(tilingConfig.levels)
     val wordCloudTileOp = TextOperations.termFrequencyOp(
       tileTopicConfig.xColumn,
       tileTopicConfig.yColumn,
