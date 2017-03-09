@@ -121,7 +121,6 @@ test {
       exclude 'hbc.test'
     }
   }
-
 }
 
 testScoverage {
@@ -132,6 +131,7 @@ testScoverage {
       exclude 's3.test'
       exclude 'hbc.test'
       exclude 'fileio.test'
+    }
   } else if (!project.hasProperty('includeExternalTests')) {
     tags {
       exclude 's3.test'
