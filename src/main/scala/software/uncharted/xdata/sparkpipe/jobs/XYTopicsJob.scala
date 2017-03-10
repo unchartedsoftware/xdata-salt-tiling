@@ -47,14 +47,16 @@ object XYTopicsJob extends AbstractJob {
         topicsConfig.textCol,
         if (exists_xyBounds) topicsConfig.projection.xyBounds else None,
         topicsConfig.topicLimit,
-        tilingConfig.levels)(_)
+        tilingConfig.levels,
+        tilingConfig.bins.getOrElse(1))(_)
       case _: CartesianProjectionConfig => CartesianTopics(
         topicsConfig.xCol,
         topicsConfig.yCol,
         topicsConfig.textCol,
         if (exists_xyBounds) topicsConfig.projection.xyBounds else None,
         topicsConfig.topicLimit,
-        tilingConfig.levels)(_)
+        tilingConfig.levels,
+        tilingConfig.bins.getOrElse(1))(_)
       case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
     }
 

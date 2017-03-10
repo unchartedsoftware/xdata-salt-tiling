@@ -278,7 +278,6 @@ class PackageTest extends SparkFunSpec with JsonDSL {
     }
   }
 
-
   def getJSON (from: Array[((Int, Int, Int), Seq[Byte])], index: Int): JValue =
     parse(new String(from(index)._2.toArray))
 

@@ -20,8 +20,6 @@ import grizzled.slf4j.Logging
 import org.apache.spark.rdd.RDD
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.util.SparseArray
-import net.liftweb.json.JsonAST.compactRender
-import net.liftweb.json.Extraction.decompose
 
 package object io extends Logging {
 
@@ -208,7 +206,7 @@ package object io extends Logging {
     */
   def serializeBinArray[TC, BC, X](tiles: RDD[SeriesData[TC, BC, Double, X]]):
   RDD[(TC, Seq[Byte])] =
-  serializeTiles(doubleTileToByteArrayDense)(tiles)
+    serializeTiles(doubleTileToByteArrayDense)(tiles)
 
   // Serialize a single tile's data - an alternate version that does the same thing in a tenth the time
   // See unit test in PackageTest for confirmation
@@ -234,8 +232,17 @@ package object io extends Logging {
     *
     * @return A function that can serialize tile data that consists of scored words where the score is an integer.
     */
-  def intScoreListToByteArray: SparseArray[List[(String, Int)]] => Seq[Byte] = sparseData =>
-    sparseData(0).map { case (entry, score) => s""""$entry": $score""" }.mkString("{", ", ", "}").getBytes
+  def intScoreListToByteArray: SparseArray[List[(String, Int)]] => Seq[Byte] = sparseData => {
+    val filteredData = sparseData.seq.zipWithIndex.filter(_._1.nonEmpty)
+    val stringSeq = filteredData.map {
+      case (elem, binIndex) =>
+        var result = elem.map {
+          case (entry, score) => s""""$entry": $score"""
+        }.mkString("{", ", ", "}")
+        s"""{"binIndex1D": ${binIndex}, "topics": """ + result + "}"
+    }
+    stringSeq.mkString("[", ",", "]").getBytes
+  }
 
   /**
     * Serializes tile bins stored as a list of double-scored strings to tile index / byte sequence tuples.
