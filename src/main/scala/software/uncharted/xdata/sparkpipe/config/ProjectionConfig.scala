@@ -24,14 +24,14 @@ trait ProjectionConfig {
   def createProjection (levels: Seq[Int]): NumericProjection[(Double, Double), (Int, Int, Int), (Int, Int)]
 }
 
-class MercatorProjectionConfig(bounds: Option[(Double, Double, Double, Double)])extends ProjectionConfig {
+case class MercatorProjectionConfig(bounds: Option[(Double, Double, Double, Double)])extends ProjectionConfig {
   override def xyBounds: Option[(Double, Double, Double, Double)] = bounds
 
   override def createProjection(levels: Seq[Int]): NumericProjection[(Double, Double), (Int, Int, Int), (Int, Int)] =
     new MercatorProjection(levels)
 }
 
-class CartesianProjectionConfig (bounds: Option[(Double, Double, Double, Double)]) extends ProjectionConfig {
+case class CartesianProjectionConfig (bounds: Option[(Double, Double, Double, Double)]) extends ProjectionConfig {
   override def xyBounds: Option[(Double, Double, Double, Double)] = bounds
   override def createProjection(levels: Seq[Int]): NumericProjection[(Double, Double), (Int, Int, Int), (Int, Int)] = {
     val xyBounds = bounds.get
@@ -47,19 +47,18 @@ object ProjectionConfig {
     Try {
       var xyBounds: Option[(Double, Double, Double, Double)] = None
       if (config.hasPath(xyBoundsKey)) {
-        // scalastyle:ignore
-        val xyBoundsAra = config.getDoubleList(xyBoundsKey).toArray(Array(Double.box(0.0)))
-        xyBounds = Some(xyBoundsAra(0), xyBoundsAra(1), xyBoundsAra(2), xyBoundsAra(3))
+        val xyBoundsArray = config.getDoubleList(xyBoundsKey).toArray(Array(Double.box(0.0)))
+        xyBounds = Some(xyBoundsArray(0), xyBoundsArray(1), xyBoundsArray(2), xyBoundsArray(3))
       }
       if (config.hasPath(projectionKey)) {
         config.getString(projectionKey).toLowerCase.trim match {
           case "mercator" =>
-            new MercatorProjectionConfig(xyBounds)
+            MercatorProjectionConfig(xyBounds)
           case "cartesian" =>
-            new CartesianProjectionConfig(xyBounds)
+            CartesianProjectionConfig(xyBounds)
         }
       } else {
-        new CartesianProjectionConfig(xyBounds)
+        CartesianProjectionConfig(xyBounds)
       }
     }
   }
