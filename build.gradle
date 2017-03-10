@@ -15,15 +15,9 @@ ext {
 buildscript {
   repositories {
     mavenCentral()
-      jcenter()
-      maven {
-        url = "https://repository.cloudera.com/artifactory/cloudera-repos"
-      }
+    jcenter()
     maven {
-      url = "http://maven.oculus.local:8080/archiva/repository/snapshots"
-    }
-    maven {
-      url = "http://maven.oculus.local:8080/archiva/repository/internal"
+      url = "https://repository.cloudera.com/artifactory/cloudera-repos"
     }
   }
 
@@ -179,6 +173,12 @@ repositories {
   mavenLocal()
   maven {
     url = "https://repository.cloudera.com/artifactory/cloudera-repos"
+  }
+  maven {
+    url = "http://maven.oculus.local:8080/archiva/repository/snapshots"
+  }
+  maven {
+    url = "http://maven.oculus.local:8080/archiva/repository/internal"
   }
 }
 
