@@ -28,7 +28,8 @@ object CartesianTimeTopics extends CartesianTimeOp {
             latLonBounds: Option[(Double, Double, Double, Double)],
             timeRange: RangeDescription[Long],
             topicLimit: Int,
-            zoomLevels: Seq[Int])
+            zoomLevels: Seq[Int],
+            tileSize: Int)
            (input: DataFrame):
   RDD[SeriesData[(Int, Int, Int), (Int, Int, Int), List[(String, Int)], Nothing]] = {
 
@@ -41,6 +42,6 @@ object CartesianTimeTopics extends CartesianTimeOp {
     val aggregator = new TopElementsAggregator[String](topicLimit)
 
     val request = new TileLevelRequest(zoomLevels, (tc: (Int, Int, Int)) => tc._1)
-    super.apply(xCol, yCol, rangeCol, latLonBounds, timeRange, valueExtractor, aggregator, None, zoomLevels, 1)(request)(input)
+    super.apply(xCol, yCol, rangeCol, latLonBounds, timeRange, valueExtractor, aggregator, None, zoomLevels, tileSize)(request)(input)
   }
 }

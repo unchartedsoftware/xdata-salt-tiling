@@ -290,17 +290,17 @@ class PackageTest extends SparkFunSpec with JsonDSL {
         Seq(
           new SeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (1, 2, 3), arr0, None),
           new SeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (4, 5, 6), arr1, None)
-        ))
 
+        ))
       val result = serializeElementScore(series).collect()
       assertResult(2)(result.length)
 
       assertResult(result(0)._1)((1, 2, 3))
-      val expected0: JValue = Map("aa" -> 1, "bb" -> 2)
+      val expected0: JValue = parse("""[{"binIndex": 0, "topics": {"aa": 1, "bb": 2}}]""")
       assertResult(expected0)(getJSON(result, 0))
 
       assertResult(result(1)._1)((4, 5, 6))
-      val expected1: JValue = Map("cc" -> 3, "dd" -> 4)
+      val expected1: JValue =  parse("""[{"binIndex": 0, "topics": {"cc": 3, "dd": 4}}]""")
       assertResult(expected1)(getJSON(result, 1))
     }
 
@@ -314,7 +314,7 @@ class PackageTest extends SparkFunSpec with JsonDSL {
       val tile = serializeElementScore(series).collect
       assertResult(1)(tile.length)
       assertResult((0, 0, 0))(tile(0)._1)
-      val result = new String(tile(0)._2.toArray).split("[{} :0-9,\"-]+").drop(1)
+      val result = new String(tile(0)._2.toArray).split("[{} :0-9,\"-]+").slice(3, 13)
       assertResult(10)(result.length)
       assertResult(List(
         "rudabega", "watermelon", "canteloupe", "honeydew", "kholrabi",

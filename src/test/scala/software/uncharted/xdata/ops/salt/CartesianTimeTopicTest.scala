@@ -60,7 +60,7 @@ class CartesianTimeTopicTest extends SparkFunSpec {
 
   describe("CartesianTimeTopics") {
     it("\"should create a quadtree of tiles where empty tiles are skipped") {
-      val result = CartesianTimeTopics(xCol, yCol, timeCol, textCol, Some((0.0, 0.0, 1.0, 1.0)), RangeDescription.fromCount(0, 800, 10), 3, 0 until 3)(genData)
+      val result = CartesianTimeTopics(xCol, yCol, timeCol, textCol, Some((0.0, 0.0, 1.0, 1.0)), RangeDescription.fromCount(0, 800, 10), 3, 0 until 3, 1)(genData)
         .collect()
         .map(_.coords)
         .toSet
@@ -72,18 +72,18 @@ class CartesianTimeTopicTest extends SparkFunSpec {
     }
 
     it("should create time bins from a range and bucket count") {
-      val result = CartesianTimeTopics(xCol, yCol, timeCol, textCol, Some((0.0, 0.0, 1.0, 1.0)), RangeDescription.fromCount(0, 800, 10), 3, 0 until 3)(genData).collect()
+      val result = CartesianTimeTopics(xCol, yCol, timeCol, textCol, Some((0.0, 0.0, 1.0, 1.0)), RangeDescription.fromCount(0, 800, 10), 3, 0 until 3, 1)(genData).collect()
       assertResult(10)(result(0).bins.length())
     }
 
     it("should sum values that are in the same same tile") {
-      val result = CartesianTimeTopics(xCol, yCol, timeCol, textCol, Some((0.0, 0.0, 1.0, 1.0)), RangeDescription.fromCount(0, 800, 10), 3, Seq(0))(genData).collect()
+      val result = CartesianTimeTopics(xCol, yCol, timeCol, textCol, Some((0.0, 0.0, 1.0, 1.0)), RangeDescription.fromCount(0, 800, 10), 3, Seq(0),1)(genData).collect()
       val proj = new CartesianTimeProjection(Seq(0), (0.0, 0.0), (1.0, 1.0), RangeDescription.fromCount(0L, 800L, 10))
       assertResult(List("b" -> 3535, "a" -> 35))(result(0).bins(proj.binTo1D((0, 0, 3), (0, 0, 9))))
     }
 
     it("should not aggregate across time buckets") {
-      val result = CartesianTimeTopics(xCol, yCol, timeCol, textCol, Some((0.0, 0.0, 1.0, 1.0)), RangeDescription.fromCount(0, 800, 10), 3, 0 until 3)(genData).collect()
+      val result = CartesianTimeTopics(xCol, yCol, timeCol, textCol, Some((0.0, 0.0, 1.0, 1.0)), RangeDescription.fromCount(0, 800, 10), 3, 0 until 3, 1)(genData).collect()
       val proj = new CartesianTimeProjection(Seq(0), (0.0, 0.0), (1.0, 1.0), RangeDescription.fromCount(0L, 800L, 10))
 
       val tile = (t: (Int, Int, Int)) => result.find(s => s.coords == t)

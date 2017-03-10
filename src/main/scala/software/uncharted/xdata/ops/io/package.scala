@@ -228,18 +228,17 @@ package object io extends Logging {
     serializeTiles(intScoreListToByteArray)(tiles)
 
   /**
-    * Get a default tile serialization function for use by serializeElementScore
+    * Get a default tile serialization function for use by serializeElementScore. In the output format, the binIndex is
+    * the 1D version.
     *
     * @return A function that can serialize tile data that consists of scored words where the score is an integer.
     */
   def intScoreListToByteArray: SparseArray[List[(String, Int)]] => Seq[Byte] = sparseData => {
     val filteredData = sparseData.seq.zipWithIndex.filter(_._1.nonEmpty)
-    val stringSeq = filteredData.map {
+    val stringSeq = filteredData.map {// scalastyle:off
       case (elem, binIndex) =>
-        var result = elem.map {
-          case (entry, score) => s""""$entry": $score"""
-        }.mkString("{", ", ", "}")
-        s"""{"binIndex1D": ${binIndex}, "topics": """ + result + "}"
+        var result = elem.map {case (entry, score) => s""""$entry": $score"""}.mkString("{", ", ", "}")
+        s"""{"binIndex": $binIndex, "topics": """ + result + "}"
     }
     stringSeq.mkString("[", ",", "]").getBytes
   }

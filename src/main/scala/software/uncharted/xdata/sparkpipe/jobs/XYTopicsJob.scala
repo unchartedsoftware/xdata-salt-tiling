@@ -79,7 +79,7 @@ object XYTopicsJob extends AbstractJob {
 
     val outputOp = createMetadataOutputOperation(baseConfig)
 
-    val binCount = tilingConfig.bins.getOrElse(ZXYOp.TILE_SIZE_DEFAULT)
+    val binCount = tilingConfig.bins.getOrElse(1)
     val levelMetadata = ("bins" -> binCount)
     val jsonBytes = compactRender(levelMetadata).getBytes.toSeq
     outputOp.foreach(_("metadata.json", jsonBytes))

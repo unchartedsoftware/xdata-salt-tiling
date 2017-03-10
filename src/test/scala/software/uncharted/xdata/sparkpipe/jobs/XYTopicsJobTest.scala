@@ -100,6 +100,7 @@ class XYTopicsJobTest extends FunSpec {
             (0, 0, 0), // l0
             (1, 0, 0), (1, 1, 1), (1, 1, 0), (1, 0, 1), // l1
             (2, 0, 0), (2, 3, 2), (2, 3, 1), (2, 0, 2)) // l2
+          assertResult((Set(), Set()))((expected diff files, files diff expected))
 
           val binValues = JobTestUtils.getBinValues(testOutputDir, suffix).filter { input =>
             input._1 match { //extract some level two coordinates and their bin values
@@ -109,14 +110,13 @@ class XYTopicsJobTest extends FunSpec {
             }
           }
           val BinValCheck = List(
-            (Tuple3(2,0,0), parse("""[{"binIndex1D": 0, "topics": {"a": 4, "b": 2}}]""")),
-            (Tuple3(2,0,2), parse("""[{"binIndex1D": 0, "topics": {"a":6}}]"""))
+            (Tuple3(2,0,0), parse("""[{"binIndex": 0, "topics": {"a": 4, "b": 2}}]""")),
+            (Tuple3(2,0,2), parse("""[{"binIndex": 0, "topics": {"a":6}}]"""))
           )
           val expectedBinVal = binValues match {
               case BinValCheck => true
               case _ =>  throw new Exception("did not pass bin values check")
           }
-          assertResult((Set(), Set()))((expected diff files, files diff expected))
         } finally {
           FileUtils.deleteDirectory(new File(testOutputDir))
         }
@@ -133,6 +133,7 @@ class XYTopicsJobTest extends FunSpec {
             (0, 0, 0), // l0
             (1, 1, 0), (1, 0, 1), // l1
             (2, 3, 0), (2, 0, 2)) // l2
+          assertResult((Set(), Set()))((expected diff files, files diff expected))
 
           val binValues = JobTestUtils.getBinValues(testOutputDir, suffix).filter { input =>
             input._1 match { //extract some level two coordinates and their bin values
@@ -141,13 +142,12 @@ class XYTopicsJobTest extends FunSpec {
             }
           }
           val BinValCheck = List(
-            (Tuple3(2,0,2), parse("""[{"binIndex1D": 11, "topics": {"a": 6}}, {"binIndex1D": 15, "topics": {"b": 4, "a": 1}}]"""))
+            (Tuple3(2,0,2), parse("""[{"binIndex": 11, "topics": {"a": 6}}, {"binIndex": 15, "topics": {"b": 4, "a": 1}}]"""))
           )
           val expectedBinVal = binValues match {
             case BinValCheck => true
             case _ =>  throw new Exception("did not pass bin values check")
           }
-          assertResult((Set(), Set()))((expected diff files, files diff expected))
         } finally {
           FileUtils.deleteDirectory(new File(testOutputDir))
         }
