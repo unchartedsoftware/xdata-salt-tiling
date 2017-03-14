@@ -175,10 +175,10 @@ repositories {
     url = "https://repository.cloudera.com/artifactory/cloudera-repos"
   }
   maven {
-    url = "http://maven.oculus.local:8080/archiva/repository/snapshots"
+    url = "${System.env.MAVEN_REPO_URL}/snapshots"
   }
   maven {
-    url = "http://maven.oculus.local:8080/archiva/repository/internal"
+    url = "${System.env.MAVEN_REPO_URL}/internal"
   }
 }
 
