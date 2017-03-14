@@ -13,15 +13,15 @@
 package software.uncharted.xdata.sparkpipe.jobs
 
 import com.typesafe.config.Config
-import org.apache.spark.sql.{SQLContext, SparkSession}
+import org.apache.spark.sql.SparkSession
 import software.uncharted.salt.core.analytic.numeric.{MinMaxAggregator, SumAggregator}
 import software.uncharted.salt.core.generation.request.TileLevelRequest
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.xdata.geometry.IPProjection
 import software.uncharted.xdata.ops.io.serializeBinArray
 import software.uncharted.xdata.ops.salt.IPHeatmapOp
-import software.uncharted.xdata.sparkpipe.config.{IPHeatmapConfig, Schema, TilingConfig}
-import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOperation, createTileOutputOperation, dataframeFromSparkCsv}
+import software.uncharted.xdata.sparkpipe.config.IPHeatmapConfig
+import software.uncharted.xdata.sparkpipe.jobs.JobUtil.dataframeFromSparkCsv
 
 
 /**
@@ -31,7 +31,7 @@ object IPHeatmapJob extends AbstractJob {
   /**
     * This function actually executes the task the job describes
     *
-    * @param sqlc   An SQL context in which to run spark processes in our job
+    * @param sparkSession   Apache Spark session to access input data
     * @param config The job configuration
     */
   override def execute(sparkSession: SparkSession, config: Config): Unit = {

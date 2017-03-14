@@ -12,8 +12,6 @@
   */
 package software.uncharted.xdata.sparkpipe.jobs
 
-
-
 import scala.util.{Failure, Success}
 import com.typesafe.config.Config
 import org.apache.spark.sql.SparkSession
@@ -22,8 +20,6 @@ import software.uncharted.xdata.ops.io.serializeElementDoubleScore
 import software.uncharted.xdata.ops.salt.text.{DictionaryConfigurationParser, LDAOp, TextOperations}
 import software.uncharted.xdata.sparkpipe.config.{LDAConfig, TileTopicConfig}
 import software.uncharted.xdata.sparkpipe.jobs.JobUtil.dataframeFromSparkCsv
-
-
 
 /**
   * A job that takes tsv data, breaks out a document from each entry as a word bag, tiles the documents into

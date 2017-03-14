@@ -15,13 +15,11 @@ package software.uncharted.xdata.sparkpipe.jobs
 import com.typesafe.config.Config
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, SQLContext, SparkSession}
+import org.apache.spark.sql.{DataFrame, SparkSession}
 import software.uncharted.xdata.ops.io.{writeBytesToFile, writeBytesToS3, writeBytesToHBase, writeToFile, writeToS3, writeToHBase}
 import software.uncharted.xdata.sparkpipe.config.{HBaseOutputConfig, FileOutputConfig, S3OutputConfig}
 import scala.collection.JavaConverters._ // scalastyle:ignore
 import scala.util.{Failure, Try}
-
-
 
 object JobUtil {
   type OutputOperation = (RDD[((Int, Int, Int), Seq[Byte])]) => RDD[((Int, Int, Int), Seq[Byte])]
@@ -39,7 +37,6 @@ object JobUtil {
       .schema(schema)
       .load(source)
   }
-
 
   def createTileOutputOperation(config: Config): Try[OutputOperation] = {
     if (config.hasPath(FileOutputConfig.fileOutputKey)) {
