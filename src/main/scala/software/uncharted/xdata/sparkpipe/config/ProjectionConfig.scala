@@ -24,9 +24,8 @@ trait ProjectionConfig {
   def createProjection (levels: Seq[Int]): NumericProjection[(Double, Double), (Int, Int, Int), (Int, Int)]
 }
 
-case class MercatorProjectionConfig(bounds: Option[(Double, Double, Double, Double)])extends ProjectionConfig {
+case class MercatorProjectionConfig(bounds: Option[(Double, Double, Double, Double)]) extends ProjectionConfig {
   override def xyBounds: Option[(Double, Double, Double, Double)] = bounds
-
   override def createProjection(levels: Seq[Int]): NumericProjection[(Double, Double), (Int, Int, Int), (Int, Int)] =
     new MercatorProjection(levels)
 }
@@ -39,17 +38,19 @@ case class CartesianProjectionConfig (bounds: Option[(Double, Double, Double, Do
   }
 }
 
-object ProjectionConfig {
-  val projectionKey = "projection"
-  val xyBoundsKey = "xyBounds"
+object ProjectionConfig extends ConfigParser {
+  private val projectionKey = "projection"
+  private val xyBoundsKey = "xyBounds"
 
-  def apply(config: Config): Try[ProjectionConfig] = {
+  def parse(config: Config): Try[ProjectionConfig] = {
     Try {
       var xyBounds: Option[(Double, Double, Double, Double)] = None
+
       if (config.hasPath(xyBoundsKey)) {
         val xyBoundsArray = config.getDoubleList(xyBoundsKey).toArray(Array(Double.box(0.0)))
         xyBounds = Some(xyBoundsArray(0), xyBoundsArray(1), xyBoundsArray(2), xyBoundsArray(3))
       }
+
       if (config.hasPath(projectionKey)) {
         config.getString(projectionKey).toLowerCase.trim match {
           case "mercator" =>

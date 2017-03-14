@@ -16,7 +16,6 @@ import java.text.SimpleDateFormat
 
 import scala.util.Try
 import com.typesafe.config.Config
-import grizzled.slf4j.Logging
 import software.uncharted.xdata.ops.salt.RangeDescription
 import software.uncharted.xdata.ops.topics.twitter.util.WordDict
 
@@ -42,50 +41,40 @@ case class TopicModellingConfig (
   */
 // scalastyle:off method.length
 // scalastyle:off magic.number
-object TopicModellingConfigParser extends Logging {
-  def apply(config: Config): Try[TopicModellingConfig] = {
+object TopicModellingConfigParser extends ConfigParser {
+
+  def parse(config: Config): Try[TopicModellingConfig] = {
     Try {
       val topicsConfig = config.getConfig("topics")
+
       //I think alpha should be optional.
       val alphaStr = topicsConfig.getString("alpha")
       val alpha = if (alphaStr == "1/Math.E") 1/Math.E else alphaStr.toDouble
-      val beta = if (topicsConfig.hasPath("beta")) Some(topicsConfig.getDouble("beta")) else None
-      val computeCoherence = topicsConfig.getBoolean("computeCoherence")
-      val dateCol = topicsConfig.getString("dateColumn")
-      val endDate = topicsConfig.getString("endDate")
-      val idCol = topicsConfig.getString("idColumn")
-      val iterN = if (topicsConfig.hasPath("iterN")) Some(topicsConfig.getInt("iterN")) else None
-      val k = if (topicsConfig.hasPath("k")) Some(topicsConfig.getInt("k")) else None
-      val numTopTopics = Some(topicsConfig.getInt("numTopTopics"))
-      val pathToCorpus = topicsConfig.getString("pathToCorpus")
-      val pathToTfidf = if (topicsConfig.hasPath("pathToTfidf")) topicsConfig.getString("pathToTfidf") else ""
+
       val startDate = topicsConfig.getString("startDate")
-      val swfiles : List[String] = topicsConfig.getStringList("stopWordFiles").toArray[String](Array()).toList
-      val stopwords = WordDict.loadStopwords(swfiles)
-      val textCol = topicsConfig.getString("textColumn")
-      val pathToWrite = topicsConfig.getString("pathToWrite")
-
-
+      val endDate = topicsConfig.getString("endDate")
       val formatter = new SimpleDateFormat("yyyy-MM-dd")
       val minTime = formatter.parse(startDate).getTime
       val maxTime = formatter.parse(endDate).getTime
       val timeRange = RangeDescription.fromStep(minTime, maxTime, 24 * 60 * 60 * 1000).asInstanceOf[RangeDescription[Long]]
 
+      val swfiles : List[String] = topicsConfig.getStringList("stopWordFiles").toArray[String](Array()).toList
+
       TopicModellingConfig(
         Some(alpha),
-        beta,
-        computeCoherence,
+        getDoubleOption(topicsConfig, "beta"),
+        topicsConfig.getBoolean("computeCoherence"),
         timeRange,
-        dateCol,
-        idCol,
-        iterN,
-        k,
-        numTopTopics,
-        pathToCorpus,
-        pathToTfidf,
-        stopwords,
-        textCol,
-        pathToWrite
+        topicsConfig.getString("dateColumn"),
+        topicsConfig.getString("idColumn"),
+        getIntOption(topicsConfig, "iterN"),
+        getIntOption(topicsConfig, "k"),
+        getIntOption(topicsConfig, "numTopTopics"),
+        topicsConfig.getString("pathToCorpus"),
+        getString(topicsConfig, "pathToTfidf", ""),
+        WordDict.loadStopwords(swfiles),
+        topicsConfig.getString("textColumn"),
+        topicsConfig.getString("pathToWrite")
       )
     }
   }

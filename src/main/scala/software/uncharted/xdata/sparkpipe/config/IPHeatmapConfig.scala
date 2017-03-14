@@ -13,7 +13,6 @@
 package software.uncharted.xdata.sparkpipe.config
 
 import com.typesafe.config.Config
-import grizzled.slf4j.Logging
 
 import scala.util.Try
 
@@ -23,14 +22,15 @@ import scala.util.Try
   * @param valueCol The column in which the value to be used is found
   */
 case class IPHeatmapConfig (ipCol: String, valueCol: String)
-object IPHeatmapConfig extends Logging {
-  val CATEGORY_KEY = "ip-tiling"
-  val IP_COLUMN_KEY = "ipColumn"
-  val VALUE_COLUMN_KEY = "valueColumn"
+object IPHeatmapConfig extends ConfigParser {//extends Logging {
+  private val CATEGORY_KEY = "ip-tiling"
+  private val IP_COLUMN_KEY = "ipColumn"
+  private val VALUE_COLUMN_KEY = "valueColumn"
 
-  def apply (config: Config): Try[IPHeatmapConfig] = {
+  def parse (config: Config): Try[IPHeatmapConfig] = {
     Try{
       val ipConfig = config.getConfig(CATEGORY_KEY)
+
       IPHeatmapConfig(
         ipConfig.getString(IP_COLUMN_KEY),
         ipConfig.getString(VALUE_COLUMN_KEY)

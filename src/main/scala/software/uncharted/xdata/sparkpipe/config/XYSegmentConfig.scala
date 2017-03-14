@@ -28,21 +28,21 @@ case class XYSegmentConfig(arcType: ArcTypes.Value,
                            tileSize: Int,
                            projectionConfig: ProjectionConfig)
 
-object XYSegmentConfig {
-  val xySegmentKey = "xySegment"
-  val arcTypeKey = "arcType"
-  val minSegLenKey = "minSegLen"
-  val maxSegLenKey = "maxSegLen"
-  val x1ColKey = "x1Column"
-  val y1ColKey = "y1Column"
-  val x2ColKey = "x2Column"
-  val y2ColKey = "y2Column"
-  val tileSizeKey = "tileSize"
+object XYSegmentConfig extends ConfigParser {
+  private val xySegmentKey = "xySegment"
+  private val arcTypeKey = "arcType"
+  private val minSegLenKey = "minSegLen"
+  private val maxSegLenKey = "maxSegLen"
+  private val x1ColKey = "x1Column"
+  private val y1ColKey = "y1Column"
+  private val x2ColKey = "x2Column"
+  private val y2ColKey = "y2Column"
+  private val tileSizeKey = "tileSize"
 
-  def apply(config: Config): Try[XYSegmentConfig] = {
+  def parse(config: Config): Try[XYSegmentConfig] = {
     for (
       segmentConfig <- Try(config.getConfig(xySegmentKey));
-      projection <- ProjectionConfig(segmentConfig)
+      projection <- ProjectionConfig.parse(segmentConfig)
     ) yield {
       val arcType: ArcTypes.Value = segmentConfig.getString(arcTypeKey).toLowerCase match {
         case "fullline" => ArcTypes.FullLine

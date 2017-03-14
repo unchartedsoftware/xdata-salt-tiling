@@ -32,7 +32,7 @@ import software.uncharted.xdata.sparkpipe.jobs.JobUtil.dataframeFromSparkCsv
 object XYTileLDAJob extends AbstractJob {
   // Parse tile topic parameters out of supplied config
   private def parseTileTopicConfig (config: Config) = {
-    TileTopicConfig(config) match {
+    TileTopicConfig.parse(config) match {
       case Success(c) => c
       case Failure(e) =>
         logger.error("Error getting topic tiling configuration", e)
@@ -42,7 +42,7 @@ object XYTileLDAJob extends AbstractJob {
 
   // Get LDA-specific configuration
   private def parseLDAConfig (config: Config) = {
-    LDAConfig(config) match {
+    LDAConfig.parse(config) match {
       case Success(c) => c
       case Failure(e) =>
         logger.error("Error getting LDA configuration")

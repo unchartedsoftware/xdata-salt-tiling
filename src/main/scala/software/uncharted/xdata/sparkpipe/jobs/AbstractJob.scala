@@ -50,7 +50,7 @@ trait AbstractJob extends Logging {
     * @return A fully determined set of tiling parameters
     */
   protected def parseTilingParameters (config: Config): TilingConfig = {
-    TilingConfig(config).recover { case err: Exception =>
+    TilingConfig.parse(config).recover { case err: Exception =>
       logger.error("Invalid tiling config", err)
       sys.exit(-1)
     }.get

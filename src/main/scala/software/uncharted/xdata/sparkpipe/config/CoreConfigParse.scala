@@ -18,7 +18,6 @@ import com.typesafe.config.Config
 import scala.collection.JavaConverters._ // scalastyle:ignore
 import scala.util.Try
 
-
 // scalastyle:off multiple.string.literals
 
 // Parse spark configuration and instantiate context from it
@@ -46,93 +45,92 @@ object SparkConfig {
   }
 }
 
-
-
 // Parse tiling parameter and store results
 case class TilingConfig(levels: List[Int], source: String, bins: Option[Int] = None, tms: Boolean)
-object TilingConfig {
-  val tilingKey= "tiling"
-  val levelsKey = "levels"
-  val binsKey = "bins"
-  val sourceKey = "source"
-  val tmsKey = "tms"
-  val defaultTMS = false
+object TilingConfig extends ConfigParser{
+  private val tilingKey= "tiling"
+  private val levelsKey = "levels"
+  private val binsKey = "bins"
+  private val sourceKey = "source"
+  private val tmsKey = "tms"
+  private val defaultTMS = false
 
-  def apply(config: Config): Try[TilingConfig] = {
+  def parse(config: Config): Try[TilingConfig] = {
     Try {
       val tilingConfig = config.getConfig(tilingKey)
       TilingConfig(
         tilingConfig.getIntList(levelsKey).asScala.map(_.asInstanceOf[Int]).toList,
         tilingConfig.getString(sourceKey),
-        if (tilingConfig.hasPath(binsKey)) Some(tilingConfig.getInt(binsKey)) else None,
-        if (tilingConfig.hasPath(tmsKey)) tilingConfig.getBoolean(tmsKey) else defaultTMS
+        getIntOption(tilingConfig, binsKey),
+        getBoolean(tilingConfig, tmsKey, defaultTMS)
       )
     }
   }
 }
 
-
-
 case class FileOutputConfig(destPath: String, layer: String, extension: String)
-object FileOutputConfig {
+object FileOutputConfig extends ConfigParser{
   val fileOutputKey = "fileOutput"
-  val pathKey = "dest"
-  val layerKey = "layer"
-  val extensionKey = "ext"
-  val defaultExtensionKey = ".bin"
+  private val pathKey = "dest"
+  private val layerKey = "layer"
+  private val extensionKey = "ext"
+  private val defaultExtensionKey = ".bin"
 
-  def apply(config: Config): Try[FileOutputConfig] = {
+  def parse(config: Config): Try[FileOutputConfig] = {
     Try {
       val fileConfig = config.getConfig(fileOutputKey)
-      val path = fileConfig.getString(pathKey)
-      val layer = fileConfig.getString(layerKey)
-      val extension = if (fileConfig.hasPath(extensionKey)) fileConfig.getString(extensionKey) else defaultExtensionKey
-      FileOutputConfig(path, layer, extension)
+
+      FileOutputConfig(
+        fileConfig.getString(pathKey),
+        fileConfig.getString(layerKey),
+        getString(fileConfig, extensionKey, defaultExtensionKey)
+      )
     }
   }
 }
 
-
-
 // parse S3 output config
 case class S3OutputConfig(accessKey: String, secretKey: String, bucket: String, layer: String, extension: String)
-object S3OutputConfig {
+object S3OutputConfig extends ConfigParser{
   val s3OutputKey = "s3Output"
-  val awsAccessKey = "awsAccessKey"
-  val awsSecretKey = "awsSecretKey"
-  val bucketKey = "bucket"
-  val layerKey = "layer"
-  val extensionKey = "ext"
-  val defaultExtension = "bin"
+  private val awsAccessKey = "awsAccessKey"
+  private val awsSecretKey = "awsSecretKey"
+  private val bucketKey = "bucket"
+  private val layerKey = "layer"
+  private val extensionKey = "ext"
+  private val defaultExtension = "bin"
 
-  def apply(config: Config): Try[S3OutputConfig] = {
+  def parse(config: Config): Try[S3OutputConfig] = {
     Try {
       val s3Config = config.getConfig(s3OutputKey)
-      val awsAccess = s3Config.getString(awsAccessKey)
-      val awsSecret = s3Config.getString(awsSecretKey)
-      val bucket = s3Config.getString(bucketKey)
-      val layer = s3Config.getString(layerKey)
-      val extension = if (s3Config.hasPath(extensionKey)) s3Config.getString(extensionKey) else defaultExtension
-      S3OutputConfig(awsAccess, awsSecret, bucket, layer, extension)
+      S3OutputConfig(
+        s3Config.getString(awsAccessKey),
+        s3Config.getString(awsSecretKey),
+        s3Config.getString(bucketKey),
+        s3Config.getString(layerKey),
+        getString(s3Config, extensionKey, defaultExtension))
     }
   }
 }
 
 case class HBaseOutputConfig (configFiles: Seq[String], layer: String, qualifier: String)
-object HBaseOutputConfig {
+object HBaseOutputConfig extends ConfigParser{
   val hBaseOutputKey = "hbaseOutput"
-  val configFilesKey = "configFiles"
-  val layerKey = "layer"
-  val qualifierKey = "qualifier"
+  private val configFilesKey = "configFiles"
+  private val layerKey = "layer"
+  private val qualifierKey = "qualifier"
 
-  def apply (config: Config): Try[HBaseOutputConfig] = {
+  def parse (config: Config): Try[HBaseOutputConfig] = {
     Try {
       val hbaseConfig = config.getConfig(hBaseOutputKey)
       val configFilesList = hbaseConfig.getStringList(configFilesKey)
       val configFiles = configFilesList.toArray(new Array[String](configFilesList.size()))
-      val layer = hbaseConfig.getString(layerKey)
-      val qualifier = hbaseConfig.getString(qualifierKey)
-      HBaseOutputConfig(configFiles, layer, qualifier)
+
+      HBaseOutputConfig(
+        configFiles,
+        hbaseConfig.getString(layerKey),
+        hbaseConfig.getString(qualifierKey)
+      )
     }
   }
 }
