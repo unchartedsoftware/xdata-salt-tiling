@@ -210,8 +210,11 @@ package object io extends Logging {
   RDD[(TC, Seq[Byte])] =
   serializeTiles(doubleTileToByteArrayDense)(tiles)
 
-  // Serialize a single tile's data - an alternate version that does the same thing in a tenth the time
-  // See unit test in PackageTest for confirmation
+  /**
+    * Serialize a single tile's data
+    *
+    * @return A function that can serialize double-valued tile data
+    */
   def doubleTileToByteArrayDense: SparseArray[Double] => Seq[Byte] = sparseData => {
     val data = sparseData.seq.toArray
     val byteBuffer = ByteBuffer.allocate(data.length * doubleBytes).order(ByteOrder.LITTLE_ENDIAN)
@@ -219,7 +222,11 @@ package object io extends Logging {
     byteBuffer.array().toSeq
   }
 
-  // Deserialize a bytesequence to a SparseArray of type Double
+  /**
+    * Deserialize a bytesequence to a SparseArray of type Double
+    *
+    * @return An double-valued array of data, as serialized from {@see #doubleTileToByteArrayDense}
+    */
   def byteArrayDenseToDoubleTile: Seq[Byte] => Array[Double] = byteSeq => {
     val byteBuffer = ByteBuffer.allocate(byteSeq.length).order(ByteOrder.LITTLE_ENDIAN)
     byteBuffer.put(ByteBuffer.wrap(byteSeq.toArray))

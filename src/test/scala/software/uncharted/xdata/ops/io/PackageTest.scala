@@ -258,7 +258,7 @@ class PackageTest extends SparkFunSpec with JsonDSL {
     }
   }
 
-  // Alternative reference version against which to test.
+  // Alternative reference version against which to test.  The current implementation should be faster.
   val canonicalDoubleTileToByteArrayDense: SparseArray[Double] => Seq[Byte] = sparseData => {
     for (bin <- sparseData.seq;  i <- 0 until doubleBytes) yield {
       val datum = java.lang.Double.doubleToLongBits(bin);

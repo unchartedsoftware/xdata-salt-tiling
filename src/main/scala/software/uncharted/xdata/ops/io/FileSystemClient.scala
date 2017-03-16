@@ -59,7 +59,10 @@ class FileSystemClient(baseFilePath: String, extension: Option[String]) extends 
     }
   }
 
-  val readFile: (String => Try[Array[Byte]]) = {
+  /**
+    * Provide a functio that can read in a single tile
+    */
+  val readRaw: (String => Try[Array[Byte]]) = {
     (fileLocation) =>
       val path = s"$baseFilePath/$fileLocation${extension.getOrElse(".bin")}"
       Try {
