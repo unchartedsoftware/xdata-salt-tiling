@@ -15,9 +15,10 @@ package software.uncharted.xdata.ops.io
 import java.io.{File, FileInputStream, FileOutputStream}
 
 import grizzled.slf4j.Logging
-import org.apache.commons.io.IOUtils
+import org.apache.commons.io.IOUtils.toByteArray
 
 import scala.util.Try
+// scalastyle:off
 
 /**
   * A i/o client for writing a single tile set directly to the local file system.
@@ -60,20 +61,19 @@ class FileSystemClient(baseFilePath: String, extension: Option[String]) extends 
   }
 
   /**
-    * Provide a functio that can read in a single tile
+    * Provide a function that can read in a single tile
     */
-  val readRaw: (String => Try[Array[Byte]]) = {
+  override val readRaw: (String => Try[Array[Byte]]) = {
     (fileLocation) =>
       val path = s"$baseFilePath/$fileLocation${extension.getOrElse(".bin")}"
       Try {
         val fileData = new File(path)
         val fis = new FileInputStream(fileData)
-        val data = IOUtils.toByteArray(fis)
+        val data = toByteArray(fis)
         fis.close()
         data
       }
   }
-
 
   /**
     * Perform any finishing actions that must be performed when writing a dataset.

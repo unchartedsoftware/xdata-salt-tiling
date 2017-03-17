@@ -68,6 +68,7 @@ package object io extends Logging {
     */
   def writeBytesToFile(baseFilePath: String, layerName: String)(fileName: String, bytes: Seq[Byte]): Unit = {
     new FileSystemClient(baseFilePath, None).writeRaw(layerName, fileName, bytes.toArray)
+
   }
 
   /**
@@ -223,7 +224,7 @@ package object io extends Logging {
   }
 
   /**
-    * Deserialize a bytesequence to a SparseArray of type Double
+    * Deserialize a bytesequence to a dense array of type Double
     *
     * @return An double-valued array of data, as serialized from {@see #doubleTileToByteArrayDense}
     */
