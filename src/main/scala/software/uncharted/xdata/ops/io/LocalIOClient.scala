@@ -13,13 +13,13 @@
 package software.uncharted.xdata.ops.io
 
 import org.apache.spark.rdd.RDD
+import scala.util.Try
 
 /**
-  * Generic I/O client that handles the general bookeeping associated with tile sets, reducing the work of writing an
+  * Generic I/O client that handles the general bookkeeping associated with tile sets, reducing the work of writing an
   * I/O client to the specific portions relevant to the specific format.
   *
-  * @tparam T The type of information passed from the prepare function, through the write function, to the finalize
-  *           function
+  * @tparam T The type of information passed from the prepare function, through the write function, to the finalize function
   */
 trait LocalIOClient[T] {
   /**
@@ -27,16 +27,17 @@ trait LocalIOClient[T] {
     *
     * @param indexFcn A function to translate from indices to differentiating i/o keys
     * @param dataSet  A set of data to write
-    * @tparam T The type of index used to differentiate betwee data
+    * @tparam T The type of index used to differentiate between data
     */
   def write[T](datasetName: String, dataSet: RDD[(T, Array[Byte])], indexFcn: (T) => String): Unit = {
     assert("local" == dataSet.context.master)
-
     val setInfo = prepare(datasetName)
+
     val localWriteRaw = writeRaw
     dataSet.foreach { case (key, data) =>
       localWriteRaw(setInfo, indexFcn(key), data)
     }
+
     finalize(setInfo)
   }
 
@@ -44,6 +45,7 @@ trait LocalIOClient[T] {
     * Prepare a dataset for writing
     *
     * @param datasetName The name of the dataset to write
+    * @return Type of information used in write and finalize function
     */
   def prepare(datasetName: String): T
 
@@ -51,6 +53,11 @@ trait LocalIOClient[T] {
     * Write out raw data
     */
   val writeRaw: (T, String, Array[Byte]) => Unit
+
+  /**
+    * Read raw data
+    */
+  val readRaw: String => Try[Array[Byte]]
 
   /**
     * Perform any finishing actions that must be performed when writing a dataset.
