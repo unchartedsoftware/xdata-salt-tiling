@@ -18,7 +18,6 @@ import grizzled.slf4j.Logging
 import org.apache.commons.io.IOUtils.toByteArray
 
 import scala.util.Try
-// scalastyle:off
 
 /**
   * A i/o client for writing a single tile set directly to the local file system.
@@ -42,7 +41,8 @@ class FileSystemClient(baseFilePath: String, extension: Option[String]) extends 
   override val writeRaw: (String, String, Array[Byte]) =>  Unit = {
     val localBaseFilePath = baseFilePath
     (datasetName, fileName, data) => {
-      val path = s"$localBaseFilePath/$datasetName/$fileName"
+      // sadly, scalastyle has problems with interpolated strings
+      val path = s"$localBaseFilePath/$datasetName/$fileName"  // scalastyle:ignore
       try {
         val file = new File(path)
         // Create directories as necessary
