@@ -88,39 +88,6 @@ class XYTopicsJobTest extends FunSpec {
           FileUtils.deleteDirectory(new File(testOutputDir))
         }
       }
-      it ("should test content and existence of tiles from source csv data", FileIOTest) {
-        try {
-          //expected level 2 coords in 7th column and expected bin coord for level 2 tiles in 8th column of csv data file
-          val path = classOf[XYTopicsJobTest].getResource("/XYTopicsJobTest/tiling-topic-file-io-detailed.conf").toURI.getPath
-          XYTopicsJob.execute(Array(path))
-
-          // validate created tiles
-          val files = JobTestUtils.collectFiles(testOutputDir, suffix)
-          val expected = Set(
-            (0, 0, 0), // l0
-            (1, 0, 0), (1, 1, 1), (1, 1, 0), (1, 0, 1), // l1
-            (2, 0, 0), (2, 3, 2), (2, 3, 1), (2, 0, 2)) // l2
-          assertResult((Set(), Set()))((expected diff files, files diff expected))
-
-          val binValues = JobTestUtils.getBinValues(testOutputDir, suffix).filter { input =>
-            input._1 match { //extract some level two coordinates and their bin values
-              case Tuple3(2,0,0) => true
-              case Tuple3(2,0,2) => true
-              case _ => false
-            }
-          }
-          val BinValCheck = List(
-            (Tuple3(2,0,0), parse("""[{"binIndex": 0, "topics": {"a": 4, "b": 2}}]""")),
-            (Tuple3(2,0,2), parse("""[{"binIndex": 0, "topics": {"a":6}}]"""))
-          )
-          val expectedBinVal = binValues match {
-              case BinValCheck => true
-              case _ =>  throw new Exception("did not pass bin values check")
-          }
-        } finally {
-          FileUtils.deleteDirectory(new File(testOutputDir))
-        }
-      }
       it ("should test content of tiles with bin dimensions greater than 1 by 1", FileIOTest) {
         try {
           //expected level 2 coords in 7th column and expected bin coord for level 2 tiles in 8th column of csv data file

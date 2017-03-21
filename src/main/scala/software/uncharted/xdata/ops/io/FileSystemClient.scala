@@ -12,12 +12,12 @@
   */
 package software.uncharted.xdata.ops.io
 
-import java.io.{BufferedOutputStream, FileOutputStream, File}
+import java.io.{File, FileInputStream, FileOutputStream}
 
 import grizzled.slf4j.Logging
-import org.apache.spark.rdd.RDD
+import org.apache.commons.io.IOUtils.toByteArray
 
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 /**
   * A i/o client for writing a single tile set directly to the local file system.
@@ -41,7 +41,8 @@ class FileSystemClient(baseFilePath: String, extension: Option[String]) extends 
   override val writeRaw: (String, String, Array[Byte]) =>  Unit = {
     val localBaseFilePath = baseFilePath
     (datasetName, fileName, data) => {
-      val path = s"$localBaseFilePath/$datasetName/$fileName"
+      // sadly, scalastyle has problems with interpolated strings
+      val path = s"$localBaseFilePath/$datasetName/$fileName"  // scalastyle:ignore
       try {
         val file = new File(path)
         // Create directories as necessary
@@ -57,6 +58,21 @@ class FileSystemClient(baseFilePath: String, extension: Option[String]) extends 
           new Exception(s"Failed to write file $path", e).printStackTrace()
       }
     }
+  }
+
+  /**
+    * Provide a function that can read in a single tile
+    */
+  override val readRaw: (String => Try[Array[Byte]]) = {
+    (fileLocation) =>
+      val path = s"$baseFilePath/$fileLocation${extension.getOrElse(".bin")}"
+      Try {
+        val fileData = new File(path)
+        val fis = new FileInputStream(fileData)
+        val data = toByteArray(fis)
+        fis.close()
+        data
+      }
   }
 
   /**

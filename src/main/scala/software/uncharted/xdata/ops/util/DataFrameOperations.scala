@@ -22,18 +22,6 @@ import scala.util.Try
 import scala.util.matching.Regex
 
 object DataFrameOperations {
-  /**
-    * Convert an RDD of objects that are products (e.g. case classes) into a dataframe
-    *
-    * @param sparkSession A spark session into which to set the dataframe
-    * @param input The input data
-    * @tparam T The type of input data
-    * @return A dataframe representing the same data
-    */
-  def toDataFrame[T <: Product : TypeTag](sparkSession: SparkSession)(input: RDD[T]): DataFrame = {
-    sparkSession.createDataFrame(input)
-  }
-
 
   /**
     * Convert an RDD of strings into a dataframe.
@@ -78,18 +66,6 @@ object DataFrameOperations {
     // and run against the partitions to avoid spark serialization errors.
     val rows = input.mapPartitions(p => parse(p))
     sparkSession.createDataFrame(rows, schema)
-  }
-
-  /**
-    * Join two data frames on the specified columns
-    * @param indexColumnA The join ID column of the first data frame
-    * @param indexColumnB The join ID column of the second data frame
-    * @param inputA The first data frame
-    * @param inputB The second data frame
-    * @return The joined data frames
-    */
-  def joinDataFrames (indexColumnA: String, indexColumnB: String)(inputA: DataFrame, inputB: DataFrame): DataFrame = {
-    inputA.join(inputB, inputA(indexColumnA) === inputB(indexColumnB))
   }
 
   // Creates a CSV parser from a settings map.  Attempts to conform to settings available in the
@@ -140,28 +116,4 @@ object DataFrameOperations {
       }
     ).getOrElse(None)
   }
-
-  /**
-    * Checks for keyword matches in a text field, and filters out rows without hits. The test
-    * is based on the following regex, assuming input keywords foo, bar:  (\bfoo\b|\bbar\b)
-    *
-    * @param terms Keywords to hit.
-    * @param stringCol Column containing text to match against.
-    * @param input DataFrame from previous stage
-    * @return Filtered DataFrame
-    */
-  def rowTermFilter(terms: Seq[String], stringCol: String, caseSensitive: Boolean = false)(input: DataFrame): DataFrame = {
-    val adjustedKeys = terms.map(keywords => s"\\b$keywords\\b")
-    val regexPattern = adjustedKeys.mkString(if (caseSensitive) "(" else "(?i)(", "|", ")").r
-    rowTermFilter(regexPattern, stringCol)(input)
-  }
-
-  def rowTermFilter(pattern: Regex, stringCol: String)(input: DataFrame): DataFrame = {
-    val broadcastPattern = input.sqlContext.sparkContext.broadcast(pattern)
-    val filterFunc = udf((keyword: String) => {
-      broadcastPattern.value.findFirstIn(keyword).isDefined
-    })
-    input.filter(filterFunc(new Column(stringCol)))
-  }
-
 }

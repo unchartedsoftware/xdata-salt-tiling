@@ -12,7 +12,7 @@
   */
 package software.uncharted.xdata.ops
 
-import java.io.{File, FileOutputStream}
+import java.io.{File, FileInputStream, FileOutputStream}
 import java.nio.{ByteBuffer, ByteOrder, DoubleBuffer}
 import java.util.zip.ZipOutputStream
 
@@ -20,6 +20,9 @@ import grizzled.slf4j.Logging
 import org.apache.spark.rdd.RDD
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.util.SparseArray
+import net.liftweb.json.parse
+import org.apache.commons.io.IOUtils
+
 
 package object io extends Logging {
 
@@ -32,7 +35,6 @@ package object io extends Logging {
   val binExtension = ".bin"
 
   implicit val formats = net.liftweb.json.DefaultFormats
-
 
   /**
     * Write binary array data to the file system.  Folder structure is
@@ -66,6 +68,7 @@ package object io extends Logging {
     */
   def writeBytesToFile(baseFilePath: String, layerName: String)(fileName: String, bytes: Seq[Byte]): Unit = {
     new FileSystemClient(baseFilePath, None).writeRaw(layerName, fileName, bytes.toArray)
+
   }
 
   /**
@@ -176,7 +179,7 @@ package object io extends Logging {
     input
   }
 
-  private[io] def mkRowId(prefix: String, separator: String, suffix: String)(level: Int, x: Int, y: Int): String = {
+  def mkRowId(prefix: String, separator: String, suffix: String)(level: Int, x: Int, y: Int): String = {
     val digits = math.log10(1 << level).floor.toInt + 1
     (prefix + "%02d" + separator + "%0" + digits + "d" + separator + "%0" + digits + "d" + suffix).format(level, x, y)
   }
@@ -208,13 +211,30 @@ package object io extends Logging {
   RDD[(TC, Seq[Byte])] =
     serializeTiles(doubleTileToByteArrayDense)(tiles)
 
-  // Serialize a single tile's data - an alternate version that does the same thing in a tenth the time
-  // See unit test in PackageTest for confirmation
-  val doubleTileToByteArrayDense: SparseArray[Double] => Seq[Byte] = sparseData => {
+  /**
+    * Serialize a single tile's data
+    *
+    * @return A function that can serialize double-valued tile data
+    */
+  def doubleTileToByteArrayDense: SparseArray[Double] => Seq[Byte] = sparseData => {
     val data = sparseData.seq.toArray
     val byteBuffer = ByteBuffer.allocate(data.length * doubleBytes).order(ByteOrder.LITTLE_ENDIAN)
     byteBuffer.asDoubleBuffer().put(DoubleBuffer.wrap(data))
     byteBuffer.array().toSeq
+  }
+
+  /**
+    * Deserialize a bytesequence to a dense array of type Double
+    *
+    * @return An double-valued array of data, as serialized from {@see #doubleTileToByteArrayDense}
+    */
+  def byteArrayDenseToDoubleTile: Seq[Byte] => Array[Double] = byteSeq => {
+    val byteBuffer = ByteBuffer.allocate(byteSeq.length).order(ByteOrder.LITTLE_ENDIAN)
+    byteBuffer.put(ByteBuffer.wrap(byteSeq.toArray))
+    byteBuffer.flip()
+    val resultantArray: Array[Double] = Array.fill(byteSeq.length / doubleBytes){0}
+    byteBuffer.asDoubleBuffer().get(resultantArray)
+    resultantArray
   }
 
   /**
@@ -244,6 +264,16 @@ package object io extends Logging {
   }
 
   /**
+    * Get a default tile deserialize function
+    *
+    * @return A function that can deserialize sequence of bytes that represents tile data that consists of scored words where the score is an integer.
+    */
+  def byteArrayToIntScoreList: Seq[Byte] => SparseArray[List[(String, Int)]] = byteSeq => {
+    val scoreList = parse(new String(byteSeq.toArray)).values.asInstanceOf[Map[String, Int]].toList
+    SparseArray(1, List[(String, Int)]())(0 -> scoreList)
+  }
+
+  /**
     * Serializes tile bins stored as a list of double-scored strings to tile index / byte sequence tuples.
     *
     * @param tiles The input tile set.
@@ -262,6 +292,16 @@ package object io extends Logging {
     sparseData(0).map { case (entry, score) => s""""$entry": $score""" }.mkString("{", ", ", "}").getBytes
 
   /**
+    * Get a default tile deserialize function to deserialize the output of serializeElementDoubleScore
+    *
+    * @return A function that can deserialize tile data that represents scored words where the score is a real number
+    */
+  def byteArrayToDoubleScoreList: Seq[Byte] => SparseArray[List[(String, Double)]] = byteSeq => {
+    val scoreList = parse(new String(byteSeq.toArray)).values.asInstanceOf[Map[String, Double]].toList
+    SparseArray(1, List[(String, Double)]())(0 -> scoreList)
+  }
+
+  /**
     * Serializes tile bins according to an arbitrarily specified serialization function
     *
     * @param serializationFcn The serialization function by which a single tile is serialized
@@ -278,4 +318,5 @@ package object io extends Logging {
         (tile.coords, serializationFcn(tile.bins))
       }
   }
+
 }

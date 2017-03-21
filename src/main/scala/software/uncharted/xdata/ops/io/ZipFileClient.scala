@@ -12,10 +12,10 @@
   */
 package software.uncharted.xdata.ops.io
 
-import java.io.{File, FileOutputStream}
-import java.util.zip.{ZipEntry, ZipOutputStream, ZipFile}
+import java.io.{File, FileInputStream, FileOutputStream}
+import java.util.zip.{ZipEntry, ZipInputStream, ZipOutputStream, ZipFile}
 
-import org.apache.spark.rdd.RDD
+import scala.util.Try
 
 /**
   * A i/o client for writing a single tile set to a zip archive.
@@ -42,6 +42,35 @@ class ZipFileClient(baseZipLocation: File) extends LocalIOClient[ZipOutputStream
     val entry = new ZipEntry(key)
     zipStream.putNextEntry(entry)
     zipStream.write(data)
+  }
+
+  /**
+    * Read a single tile
+    */
+  override val readRaw: (String) => Try[Array[Byte]] = {
+    (zipLocation) => {
+      Try {
+        val zipFile = new ZipFile(zipLocation)
+        val zipEntry = zipFile.entries().nextElement
+        val length = zipEntry.getSize
+        zipFile.close()
+
+        val byteArray = new Array[Byte](length.toInt)
+        val zis = new ZipInputStream(new FileInputStream(zipLocation))
+
+        zis.getNextEntry match {
+          case _: ZipEntry => {
+            zis.read(byteArray)
+            zis.closeEntry()
+            zis.close()
+          }
+          case _ => new Exception(s"Failed to read file")
+
+        }
+
+        byteArray
+      }
+    }
   }
 
   /**

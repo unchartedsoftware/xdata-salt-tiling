@@ -12,10 +12,10 @@
   */
 package software.uncharted.xdata.ops.salt
 
-import software.uncharted.xdata.ops.util.DataFrameOperations._
 import software.uncharted.xdata.ops.salt.BasicSaltOperations._
 import software.uncharted.xdata.spark.SparkFunSpec
-import software.uncharted.xdata.ops.{numeric => XDataNum}
+import software.uncharted.sparkpipe.ops.core.rdd
+import software.uncharted.sparkpipe.ops.core.dataframe
 
 
 
@@ -23,7 +23,7 @@ class BasicSaltOperationsTest extends SparkFunSpec {
   describe("BasicSaltOperations") {
     describe("#getBounds") {
       it("should return the proper bounds of a set of coordinates") {
-        val data = toDataFrame(sparkSession)(sc.parallelize(Seq(
+        val data = rdd.toDF(sparkSession)(sc.parallelize(Seq(
           Coordinates(0.0, 0.0, 0.0, 0.0),
           Coordinates(1.0, 4.0, 3.0, 5.0),
           Coordinates(2.0, 2.0, 1.0, 0.0),
@@ -38,7 +38,7 @@ class BasicSaltOperationsTest extends SparkFunSpec {
 
     describe("#cartesianTiling") {
       it("should properly tile without autobounds") {
-        val data = toDataFrame(sparkSession)(sc.parallelize(Seq(
+        val data = rdd.toDF(sparkSession)(sc.parallelize(Seq(
           Coordinates(0.0,-1.0, 0.0, 0.0),
           Coordinates(0.0, 0.0, -1.0, 0.0),
           Coordinates(0.0, 0.0, 0.0, 0.0),
@@ -49,13 +49,14 @@ class BasicSaltOperationsTest extends SparkFunSpec {
           Coordinates(0.0, 4.0, 0.0, 0.0),
           Coordinates(0.0, 0.0, 4.0, 0.0)
         )))
-        val tiles = cartesianTiling("x", "y", "count", Seq(0), Some((0.0, 0.0, 4.0, 4.0)), 4)(XDataNum.addConstantColumn("count", 1)(data)).collect
+        val tiles = cartesianTiling(
+          "x", "y", "count", Seq(0), Some((0.0, 0.0, 4.0, 4.0)), 4)(dataframe.addColumn("count", () => 1)(data)).collect
 
         assert(List(0.0, 1.0, 0.0, 0.0,  0.0, 0.0, 1.0, 0.0,  0.0, 0.0, 0.0, 1.0,  2.0, 0.0, 0.0, 0.0) === tiles(0).bins.seq.toList)
       }
 
       it("should properly tile with autobounds") {
-        val data = toDataFrame(sparkSession)(sc.parallelize(Seq(
+        val data = rdd.toDF(sparkSession)(sc.parallelize(Seq(
           Coordinates(0.0, 0.0, 0.0, 0.0),
           Coordinates(0.0, 0.5, 0.5, 0.0),
           Coordinates(0.0, 1.5, 3.5, 0.0),
@@ -63,7 +64,8 @@ class BasicSaltOperationsTest extends SparkFunSpec {
           Coordinates(0.0, 3.5, 1.5, 0.0),
           Coordinates(0.0, 4.0, 4.0, 0.0)
         )))
-        val tiles = cartesianTiling("x", "y", "count", Seq(0), None, 4)(XDataNum.addConstantColumn("count", 1)(data)).collect
+        val tiles = cartesianTiling(
+          "x", "y", "count", Seq(0), None, 4)(dataframe.addColumn("count", () => 1)(data)).collect
 
         assert(List(0.0, 1.0, 0.0, 1.0,  0.0, 0.0, 1.0, 0.0,  0.0, 0.0, 0.0, 1.0,  2.0, 0.0, 0.0, 0.0) === tiles(0).bins.seq.toList)
       }

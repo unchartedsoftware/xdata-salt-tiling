@@ -29,7 +29,6 @@ import net.liftweb.json.JsonAST.JValue
 import net.liftweb.json.{JsonDSL, parse}
 
 
-
 // scalastyle:off magic.number
 // scalastyle:off multiple.string.literals
 class PackageTest extends SparkFunSpec with JsonDSL {
@@ -93,8 +92,8 @@ class PackageTest extends SparkFunSpec with JsonDSL {
   }
 
   describe("#writeToS3") {
-    val testKey0 = s"$testLayer/2/2/2.bin"
-    val testKey1 = s"$testLayer/2/2/3.bin"
+    val testKey0 = s"$testLayer/02/2/2.bin"
+    val testKey1 = s"$testLayer/02/2/3.bin"
 
     it("should add tiles to the s3 bucket using key names based on TMS coords", S3Test) {
       val data = sc.parallelize(Seq(
@@ -151,8 +150,8 @@ class PackageTest extends SparkFunSpec with JsonDSL {
       config.set("hbase.client.keyvalue.maxsize", hBaseClientKeyValMaxSize)
       val connection = ConnectionFactory.createConnection(config)
       val admin = connection.getAdmin
-      assertResult(true)(connection.getTable(TableName.valueOf(testLayer)).exists(new Get (s"${testLayer}/02/2/2.bin".getBytes())))
-      assertResult(true)(connection.getTable(TableName.valueOf(testLayer)).exists(new Get (s"${testLayer}/02/2/3.bin".getBytes())))
+      assertResult(true)(connection.getTable(TableName.valueOf(testLayer)).exists(new Get ("02,2,2".getBytes())))
+      assertResult(true)(connection.getTable(TableName.valueOf(testLayer)).exists(new Get ("02,2,3".getBytes())))
       //disable and delete test table
       admin.disableTable(TableName.valueOf(testLayer))
       admin.deleteTable(TableName.valueOf(testLayer))
@@ -176,7 +175,7 @@ class PackageTest extends SparkFunSpec with JsonDSL {
       val connection = ConnectionFactory.createConnection(config)
       val admin = connection.getAdmin
 
-      assertResult(Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))(connection.getTable(TableName.valueOf(testLayer)).get(new Get(s"${testLayer}/02/2/2.bin".getBytes).addFamily(testCol.getBytes)).value().toSeq)
+      assertResult(Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))(connection.getTable(TableName.valueOf(testLayer)).get(new Get("02,2,2".getBytes).addFamily(testCol.getBytes)).value().toSeq)
 
       admin.disableTable(TableName.valueOf(testLayer))
       admin.deleteTable(TableName.valueOf(testLayer))
@@ -260,7 +259,7 @@ class PackageTest extends SparkFunSpec with JsonDSL {
     }
   }
 
-  // Alternative reference version against which to test.
+  // Alternative reference version against which to test.  The current implementation should be faster.
   val canonicalDoubleTileToByteArrayDense: SparseArray[Double] => Seq[Byte] = sparseData => {
     for (bin <- sparseData.seq;  i <- 0 until doubleBytes) yield {
       val datum = java.lang.Double.doubleToLongBits(bin);
@@ -275,6 +274,14 @@ class PackageTest extends SparkFunSpec with JsonDSL {
       val ba2 = doubleTileToByteArrayDense(data)
       assertResult(ba1.length)(ba2.length)
       for (i <- ba1.indices) assertResult(ba1(i))(ba2(i))
+    }
+    it("should test byteArrayDenseToDoubleTile functionality") {
+      val data = genHeatmapArray(1.0, 2.0, 3.0, 4.0)
+      val byteSequence = doubleTileToByteArrayDense(data)
+      val resultantArray = byteArrayDenseToDoubleTile(byteSequence)
+      val data2 = SparseArray(resultantArray.length, 0.0)(resultantArray.zipWithIndex.map(_.swap) :_*)
+      assertResult(data.length)(data2.length)
+      for (i <- data.indices) assertResult(data(i))(data2(i))
     }
   }
 
@@ -302,6 +309,35 @@ class PackageTest extends SparkFunSpec with JsonDSL {
       assertResult(result(1)._1)((4, 5, 6))
       val expected1: JValue =  parse("""[{"binIndex": 0, "topics": {"cc": 3, "dd": 4}}]""")
       assertResult(expected1)(getJSON(result, 1))
+    }
+
+    it("should test byteArrayToIntScore deserialization function") {
+      val arr0 = genTopicArray(List("aa" -> 1, "bb" -> 2))
+      val arr1 = genTopicArray(List("cc" -> 3, "dd" -> 4))
+
+      val series = sc.parallelize(
+        Seq(
+          new SeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (1, 2, 3), arr0, None),
+          new SeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (4, 5, 6), arr1, None)
+        ))
+
+      val expected = series.filter(t => t.bins.density() > 0)
+        .map { tile =>
+          (tile.coords, tile.bins)
+        }.collect()
+
+      val result = serializeElementScore(series).collect().map {tile =>
+        (tile._1, byteArrayToIntScoreList(tile._2))
+      }
+      assertResult(result(0)._1)(expected(0)._1)
+      val expected0 = Map("aa" -> 1, "bb" -> 2)
+      val result0 = result(0)._2(0).toMap
+      assertResult(expected0)(result0)
+
+      assertResult(result(1)._1)(expected(1)._1)
+      val expected1 = Map("cc" -> 3, "dd" -> 4)
+      val result1 = result(1)._2(0).toMap
+      assertResult(expected1)(result1)
     }
 
     it("Should leave the order of the list alone") {
@@ -353,6 +389,36 @@ class PackageTest extends SparkFunSpec with JsonDSL {
       assertResult(expected1)(getJSON(result, 1))
     }
 
+    it("should test byteArrayToDoubleScoreList deserialization function") {
+      val arr0 = genTopicArray(List("aa" -> 1.0, "bb" -> 2.0))
+      val arr1 = genTopicArray(List("cc" -> 3.0, "dd" -> 4.0))
+
+      val series = sc.parallelize(
+        Seq(
+          new SeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (1, 2, 3), arr0, None),
+          new SeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (4, 5, 6), arr1, None)
+        ))
+
+      val expected = series.filter(t => t.bins.density() > 0)
+        .map { tile =>
+          (tile.coords, tile.bins)
+        }.collect()
+
+      val result = serializeElementDoubleScore(series).collect().map { tile =>
+        (tile._1, byteArrayToDoubleScoreList(tile._2))
+      }
+
+      assertResult(result(0)._1)(expected(0)._1)
+      val expected0 = Map("aa" -> 1, "bb" -> 2)
+      val result0 = result(0)._2(0).toMap
+      assertResult(expected0)(result0)
+
+      assertResult(result(1)._1)(expected(1)._1)
+      val expected1 = Map("cc" -> 3, "dd" -> 4)
+      val result1 = result(1)._2(0).toMap
+      assertResult(expected1)(result1)
+    }
+
     it("Should leave the order of the list alone") {
       val list = SparseArray(4, List[(String, Double)](), 0.0f)(0 -> List(
         "rudabega" -> 1.0, "watermelon" -> -1.1, "canteloupe" -> 2.2, "honeydew" -> 3.3, "kholrabi" -> 0.4,
@@ -380,4 +446,5 @@ class PackageTest extends SparkFunSpec with JsonDSL {
       assertResult(0)(result.length)
     }
   }
+
 }

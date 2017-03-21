@@ -18,9 +18,9 @@ import org.apache.spark.sql.{DataFrame, Row}
 import software.uncharted.xdata.spark.SparkFunSpec
 import software.uncharted.xdata.ops.util.DataFrameOperations
 import software.uncharted.xdata.sparkpipe.config.LDAConfig
+import software.uncharted.sparkpipe.ops.core.rdd
 
 class LDAOperationTests extends SparkFunSpec {
-  import DataFrameOperations._
   val defaultDictionaryConfig = DictionaryConfigurationParser.parse(ConfigFactory.empty())
 
   describe("Word determination") {
@@ -50,7 +50,7 @@ class LDAOperationTests extends SparkFunSpec {
       val rddData = sc.parallelize(texts.zipWithIndex).map { case (text, index) =>
         new LDATestData(index, text)
       }
-      val data = toDataFrame(sparkSession)(rddData)
+      val data = rdd.toDF(sparkSession)(rddData)
       val rawResults = textLDA("index", "text", defaultDictionaryConfig, LDAConfig(4, 2, 4, None, None, "", "", ""))(data)
 
       // Make sure we get the right number of results
@@ -94,7 +94,7 @@ class LDAOperationTests extends SparkFunSpec {
           new LDATestData(index, text)
       }
 
-      val data = toDataFrame(sparkSession)(rddData)
+      val data = rdd.toDF(sparkSession)(rddData)
       val rawResults = textLDA("index", "text", defaultDictionaryConfig, LDAConfig(2, 20, 2, None, None, "", "", ""))(data)
 
 

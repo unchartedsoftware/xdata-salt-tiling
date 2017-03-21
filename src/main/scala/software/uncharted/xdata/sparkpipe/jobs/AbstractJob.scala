@@ -68,18 +68,6 @@ trait AbstractJob extends Logging {
     }.get
   }
 
-  protected def createProjection (config: ProjectionConfig, levels: Seq[Int]):
-  NumericProjection[(Double, Double), (Int, Int, Int), (Int, Int)] =
-  {
-    config match {
-      case p: MercatorProjectionConfig =>
-        new MercatorProjection(levels)
-      case p: CartesianProjectionConfig =>
-        val xyBounds = p.xyBounds.get
-        new CartesianProjection(levels, (xyBounds._1, xyBounds._2), (xyBounds._3, xyBounds._4))
-    }
-  }
-
   /**
     * This function actually executes the task the job describes
     *
