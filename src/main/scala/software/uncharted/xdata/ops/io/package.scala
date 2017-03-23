@@ -12,29 +12,30 @@
   */
 package software.uncharted.xdata.ops
 
-import java.io.{File, FileInputStream, FileOutputStream}
 import java.nio.{ByteBuffer, ByteOrder, DoubleBuffer}
-import java.util.zip.ZipOutputStream
 
 import grizzled.slf4j.Logging
+import net.liftweb.json.parse
 import org.apache.spark.rdd.RDD
+
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.util.SparseArray
-import net.liftweb.json.parse
-import org.apache.commons.io.IOUtils
-
 
 package object io extends Logging {
 
   val doubleBytes = 8
+  val binExtension = ".bin"
 
   //to remove scalastyle:string literal error
   val slash = "/"
   val comma = ","
 
-  val binExtension = ".bin"
-
   implicit val formats = net.liftweb.json.DefaultFormats
+
+  def mkRowId(prefix: String, separator: String, suffix: String)(level: Int, x: Int, y: Int): String = {
+    val digits = math.log10(1 << level).floor.toInt + 1
+    (prefix + "%02d" + separator + "%0" + digits + "d" + separator + "%0" + digits + "d" + suffix).format(level, x, y)
+  }
 
   /**
     * Write binary array data to the file system.  Folder structure is
@@ -69,44 +70,6 @@ package object io extends Logging {
   def writeBytesToFile(baseFilePath: String, layerName: String)(fileName: String, bytes: Seq[Byte]): Unit = {
     new FileSystemClient(baseFilePath, None).writeRaw(layerName, fileName, bytes.toArray)
 
-  }
-
-  /**
-    * Write binary array data to the zip file baseZipDirectory/layerName.zip.  Entries will be level/xIdx/yIdx.  Indexing
-    * is TMS style, with (0, 0) in the lower left, y increasing as it moves north.
-    *
-    * @param baseZipDirectory Baseline output directory - can store multiple layers
-    * @param layerName        Unique name for this layer.  Data will go into the layer file layerName.zip
-    * @param input            tile coordinate / byte array tuples of tile data
-    * @return input data unchanged.
-    */
-  def writeToZip(baseZipDirectory: String, layerName: String)(input: RDD[((Int, Int, Int), Seq[Byte])]): RDD[((Int, Int, Int), Seq[Byte])] = {
-    val zipDirectory = new File(baseZipDirectory)
-    zipDirectory.mkdirs()
-    val tileIndexTranslator = (index: (Int, Int, Int)) => {
-      mkRowId("", slash, binExtension)(index._1, index._2, index._3)
-    }
-    new ZipFileClient(zipDirectory).write(layerName + ".zip", input.map { case (index, data) => (index, data.toArray) }, tileIndexTranslator)
-    input
-  }
-
-  /**
-    * Write binary array data directly to a zip file.
-    *
-    * @param baseZipDirectory Baseline output directory - can store multiple layer zip files
-    * @param layerName        Unique name for the layer.  Associated zip file will be layerName.zip
-    * @param fileName         The key by which the data will be put into the zip file.
-    * @param bytes            byte array of data
-    */
-  def writeBytesToZip(baseZipDirectory: String, layerName: String)(fileName: String, bytes: Seq[Byte]): Unit = {
-    val zipDirectory = new File(baseZipDirectory)
-    zipDirectory.mkdirs()
-    val zipStream = new ZipOutputStream(new FileOutputStream(new File(zipDirectory, s"${layerName}.zip"), true))
-
-    new ZipFileClient(zipDirectory).writeRaw(zipStream, fileName, bytes.toArray)
-
-    zipStream.flush()
-    zipStream.close()
   }
 
   /**
@@ -177,11 +140,6 @@ package object io extends Logging {
     hBaseConnector.writeTileData(layerName, qualifierName)(results)
     hBaseConnector.close
     input
-  }
-
-  def mkRowId(prefix: String, separator: String, suffix: String)(level: Int, x: Int, y: Int): String = {
-    val digits = math.log10(1 << level).floor.toInt + 1
-    (prefix + "%02d" + separator + "%0" + digits + "d" + separator + "%0" + digits + "d" + suffix).format(level, x, y)
   }
 
   /**
