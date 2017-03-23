@@ -13,7 +13,6 @@
 package software.uncharted.xdata.sparkpipe.config
 
 import com.typesafe.config.Config
-import grizzled.slf4j.Logging
 
 import scala.util.Try
 
@@ -21,22 +20,23 @@ case class TileTopicConfig(xColumn: String,
                            yColumn: String,
                            textColumn: String,
                            projectionConfig: ProjectionConfig)
-object TileTopicConfig extends Logging {
-  val SECTION_KEY = "topics"
-  val X_COLUMN_KEY = "xColumn"
-  val Y_COLUMN_KEY = "yColumn"
-  val TEXT_COLUMN_KEY = "textColumn"
+object TileTopicConfig extends ConfigParser {
+  private val SECTION_KEY = "topics"
+  private val X_COLUMN_KEY = "xColumn"
+  private val Y_COLUMN_KEY = "yColumn"
+  private val TEXT_COLUMN_KEY = "textColumn"
 
-  def apply (config: Config): Try[TileTopicConfig] = {
+  def parse (config: Config): Try[TileTopicConfig] = {
     for (
       section <- Try(config.getConfig(SECTION_KEY));
-      projection <- ProjectionConfig(section)
+      projection <- ProjectionConfig.parse(section)
     ) yield {
-      val xColumn = section.getString(X_COLUMN_KEY)
-      val yColumn = section.getString(Y_COLUMN_KEY)
-      val textColumn = section.getString(TEXT_COLUMN_KEY)
-
-      TileTopicConfig(xColumn, yColumn, textColumn, projection)
+      TileTopicConfig(
+        section.getString(X_COLUMN_KEY),
+        section.getString(Y_COLUMN_KEY),
+        section.getString(TEXT_COLUMN_KEY),
+        projection
+      )
     }
   }
 }

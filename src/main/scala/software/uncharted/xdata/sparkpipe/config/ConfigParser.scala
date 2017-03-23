@@ -12,12 +12,8 @@
   */
 package software.uncharted.xdata.sparkpipe.config
 
-
-
 import scala.collection.JavaConverters._ // scalastyle:ignore
 import com.typesafe.config.Config
-
-
 
 /**
   * A mix-in trait to with some helper functions for parsing config files
@@ -37,7 +33,6 @@ trait ConfigParser {
   def getConfigOption (config: Config, possibleKeys: String*): Option[Config] = {
     getOption(config, possibleKeys:_*)((c, k) => c.getConfig(k))
   }
-
   /**
     * Get the string value of a configuration key, if it is present
     * @param config The root configuration to search
@@ -79,8 +74,6 @@ trait ConfigParser {
     getOption(config, possibleKeys:_*)((c, k) => c.getBoolean(k))
   }
 
-
-
   /**
     * Get the list of string values of a configuration key, if it is present
     * @param config The root configuration to search
@@ -114,8 +107,6 @@ trait ConfigParser {
     getOption(config, possibleKeys:_*)((c, k) => c.getDoubleList(k).asScala.toSeq.map(_.doubleValue()))
       .getOrElse(Seq[Double]())
   }
-
-
 
   private def getDefaulted[T] (config: Config, key: String, extractFrom: Config => T, defaultValue: T): T = {
     if (config.hasPath(key)) {

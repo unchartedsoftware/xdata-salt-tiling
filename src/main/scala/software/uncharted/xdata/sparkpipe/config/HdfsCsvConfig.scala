@@ -12,13 +12,8 @@
   */
 package software.uncharted.xdata.sparkpipe.config
 
-
-
-import scala.collection.JavaConverters._ // scalastyle:ignore
 import scala.util.Try
 import com.typesafe.config.Config
-
-
 
 /**
   * A configuration object describing a file of character-separated values in HDFS

@@ -12,8 +12,6 @@
   */
 package software.uncharted.xdata.sparkpipe.jobs
 
-
-
 import scala.util.{Failure, Success}
 import com.typesafe.config.Config
 import org.apache.spark.sql.SparkSession
@@ -23,12 +21,10 @@ import software.uncharted.xdata.ops.salt.text.{TFIDFConfigurationParser, TextOpe
 import software.uncharted.xdata.sparkpipe.config.TileTopicConfig
 import software.uncharted.xdata.sparkpipe.jobs.JobUtil.dataframeFromSparkCsv
 
-
-
 object XYTileTFIDFJob extends AbstractJob {
   // Parse tile topic parameters out of supplied config
   private def parseTileTopicConfig (config: Config) = {
-    TileTopicConfig(config) match {
+    TileTopicConfig.parse(config) match {
       case Success(c) => c
       case Failure(e) =>
         error("Error getting tile config", e)

@@ -1,15 +1,15 @@
 /**
- * Copyright (c) 2014-2015 Uncharted Software Inc. All rights reserved.
- *
- * Property of Uncharted(tm), formerly Oculus Info Inc.
- * http://uncharted.software/
- *
- * This software is the confidential and proprietary information of
- * Uncharted Software Inc. ("Confidential Information"). You shall not
- * disclose such Confidential Information and shall use it only in
- * accordance with the terms of the license agreement you entered into
- * with Uncharted Software Inc.
- */
+  * Copyright (c) 2014-2015 Uncharted Software Inc. All rights reserved.
+  *
+  * Property of Uncharted(tm), formerly Oculus Info Inc.
+  * http://uncharted.software/
+  *
+  * This software is the confidential and proprietary information of
+  * Uncharted Software Inc. ("Confidential Information"). You shall not
+  * disclose such Confidential Information and shall use it only in
+  * accordance with the terms of the license agreement you entered into
+  * with Uncharted Software Inc.
+  */
 package software.uncharted.xdata.sparkpipe.config
 
 import com.typesafe.config.Config
@@ -28,21 +28,21 @@ case class XYSegmentConfig(arcType: ArcTypes.Value,
                            tileSize: Int,
                            projectionConfig: ProjectionConfig)
 
-object XYSegmentConfig {
-  val xySegmentKey = "xySegment"
-  val arcTypeKey = "arcType"
-  val minSegLenKey = "minSegLen"
-  val maxSegLenKey = "maxSegLen"
-  val x1ColKey = "x1Column"
-  val y1ColKey = "y1Column"
-  val x2ColKey = "x2Column"
-  val y2ColKey = "y2Column"
-  val tileSizeKey = "tileSize"
+object XYSegmentConfig extends ConfigParser {
+  private val xySegmentKey = "xySegment"
+  private val arcTypeKey = "arcType"
+  private val minSegLenKey = "minSegLen"
+  private val maxSegLenKey = "maxSegLen"
+  private val x1ColKey = "x1Column"
+  private val y1ColKey = "y1Column"
+  private val x2ColKey = "x2Column"
+  private val y2ColKey = "y2Column"
+  private val tileSizeKey = "tileSize"
 
-  def apply(config: Config): Try[XYSegmentConfig] = {
+  def parse(config: Config): Try[XYSegmentConfig] = {
     for (
       segmentConfig <- Try(config.getConfig(xySegmentKey));
-      projection <- ProjectionConfig(segmentConfig)
+      projection <- ProjectionConfig.parse(segmentConfig)
     ) yield {
       val arcType: ArcTypes.Value = segmentConfig.getString(arcTypeKey).toLowerCase match {
         case "fullline" => ArcTypes.FullLine
