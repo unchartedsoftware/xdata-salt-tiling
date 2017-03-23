@@ -1,15 +1,15 @@
 /**
- * Copyright (c) 2014-2015 Uncharted Software Inc. All rights reserved.
- *
- * Property of Uncharted(tm), formerly Oculus Info Inc.
- * http://uncharted.software/
- *
- * This software is the confidential and proprietary information of
- * Uncharted Software Inc. ("Confidential Information"). You shall not
- * disclose such Confidential Information and shall use it only in
- * accordance with the terms of the license agreement you entered into
- * with Uncharted Software Inc.
- */
+  * Copyright (c) 2014-2015 Uncharted Software Inc. All rights reserved.
+  *
+  * Property of Uncharted(tm), formerly Oculus Info Inc.
+  * http://uncharted.software/
+  *
+  * This software is the confidential and proprietary information of
+  * Uncharted Software Inc. ("Confidential Information"). You shall not
+  * disclose such Confidential Information and shall use it only in
+  * accordance with the terms of the license agreement you entered into
+  * with Uncharted Software Inc.
+  */
 package software.uncharted.xdata.sparkpipe.config
 
 import com.typesafe.config.Config
@@ -29,19 +29,19 @@ case class XYSegmentConfig(arcType: ArcTypes.Value,
                            projectionConfig: ProjectionConfig)
 
 object XYSegmentConfig extends ConfigParser {
-  private val xySegment = "xySegment"
+  private val xySegmentKey = "xySegment"
   private val arcTypeKey = "arcType"
-  private val minSegLen = "minSegLen"
-  private val maxSegLen = "maxSegLen"
-  private val x1Col = "x1Column"
-  private val y1Col = "y1Column"
-  private val x2Col = "x2Column"
-  private val y2Col= "y2Column"
-  private val tileSize = "tileSize"
+  private val minSegLenKey = "minSegLen"
+  private val maxSegLenKey = "maxSegLen"
+  private val x1ColKey = "x1Column"
+  private val y1ColKey = "y1Column"
+  private val x2ColKey = "x2Column"
+  private val y2ColKey = "y2Column"
+  private val tileSizeKey = "tileSize"
 
   def parse(config: Config): Try[XYSegmentConfig] = {
     for (
-      segmentConfig <- Try(config.getConfig(xySegment));
+      segmentConfig <- Try(config.getConfig(xySegmentKey));
       projection <- ProjectionConfig.parse(segmentConfig)
     ) yield {
       val arcType: ArcTypes.Value = segmentConfig.getString(arcTypeKey).toLowerCase match {
@@ -52,13 +52,13 @@ object XYSegmentConfig extends ConfigParser {
       }
       XYSegmentConfig(
         arcType,
-        if (segmentConfig.hasPath(minSegLen)) Some(segmentConfig.getInt(minSegLen)) else None,
-        if (segmentConfig.hasPath(maxSegLen)) Some(segmentConfig.getInt(maxSegLen)) else None,
-        segmentConfig.getString(x1Col),
-        segmentConfig.getString(y1Col),
-        segmentConfig.getString(x2Col),
-        segmentConfig.getString(y2Col),
-        segmentConfig.getInt(tileSize),
+        if (segmentConfig.hasPath(minSegLenKey)) Some(segmentConfig.getInt(minSegLenKey)) else None,
+        if (segmentConfig.hasPath(maxSegLenKey)) Some(segmentConfig.getInt(maxSegLenKey)) else None,
+        segmentConfig.getString(x1ColKey),
+        segmentConfig.getString(y1ColKey),
+        segmentConfig.getString(x2ColKey),
+        segmentConfig.getString(y2ColKey),
+        segmentConfig.getInt(tileSizeKey),
         projection
       )
     }

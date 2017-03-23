@@ -22,21 +22,21 @@ case class XYHeatmapConfig(xCol: String,
                            projection: ProjectionConfig)
 
 // Parse config for geoheatmap sparkpipe op
-object XYHeatmapConfig extends ConfigParser {
-  private val xyHeatmap = "xyHeatmap"
-  private val xColumn = "xColumn"
-  private val yColumn = "yColumn"
-  private val valueColumn = "valueColumn"
+object XYHeatmapConfig extends ConfigParser{
+  private val xyHeatmapKey = "xyHeatmap"
+  private val xColumnKey = "xColumn"
+  private val yColumnKey = "yColumn"
+  private val valueColumnKey = "valueColumn"
 
   def parse(config: Config): Try[XYHeatmapConfig] = {
     for (
-      heatmapConfig <- Try(config.getConfig(xyHeatmap));
+      heatmapConfig <- Try(config.getConfig(xyHeatmapKey));
       projection <- ProjectionConfig.parse(heatmapConfig)
     ) yield {
       XYHeatmapConfig(
-        heatmapConfig.getString(xColumn),
-        heatmapConfig.getString(yColumn),
-        heatmapConfig.getString(valueColumn),
+        heatmapConfig.getString(xColumnKey),
+        heatmapConfig.getString(yColumnKey),
+        heatmapConfig.getString(valueColumnKey),
         projection
       )
     }

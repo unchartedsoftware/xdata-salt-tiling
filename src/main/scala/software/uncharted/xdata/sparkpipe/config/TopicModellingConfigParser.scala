@@ -16,6 +16,7 @@ import java.text.SimpleDateFormat
 
 import scala.util.Try
 import com.typesafe.config.Config
+import grizzled.slf4j.Logging
 import software.uncharted.xdata.ops.salt.RangeDescription
 import software.uncharted.xdata.ops.topics.twitter.util.WordDict
 
@@ -41,7 +42,7 @@ case class TopicModellingConfig (
   */
 // scalastyle:off method.length
 // scalastyle:off magic.number
-object TopicModellingConfigParser extends ConfigParser {
+object TopicModellingConfigParser extends ConfigParser with Logging{
 
   def parse(config: Config): Try[TopicModellingConfig] = {
     Try {
