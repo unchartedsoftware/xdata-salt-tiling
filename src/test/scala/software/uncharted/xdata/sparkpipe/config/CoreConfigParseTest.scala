@@ -56,7 +56,7 @@ class CoreConfigParseTest() extends FunSpec {
 
         val accessKey = sys.env("AWS_ACCESS_KEY")
         val secretKey = sys.env("AWS_SECRET_KEY")
-        assertResult(S3OutputConfig(accessKey, secretKey, "someBucket", "someLayer", "bin"))(S3OutputConfig(config).get)
+        assertResult(S3OutputConfig(accessKey, secretKey, "someBucket", "someLayer", "bin"))(S3OutputConfig.parse(config).get)
       }
 
       it("should create an S3 config object from an input config with legacy environment variable syntax", S3Test) {
@@ -69,7 +69,7 @@ class CoreConfigParseTest() extends FunSpec {
 
         val accessKey = sys.env("AWS_ACCESS_KEY")
         val secretKey = sys.env("AWS_SECRET_KEY")
-        assertResult(S3OutputConfig(accessKey, secretKey, "someBucket", "someLayer", "bin"))(S3OutputConfig(config).get)
+        assertResult(S3OutputConfig(accessKey, secretKey, "someBucket", "someLayer", "bin"))(S3OutputConfig.parse(config).get)
       }
 
       it("should use the default extension", S3Test) {

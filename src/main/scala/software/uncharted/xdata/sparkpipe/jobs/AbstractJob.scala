@@ -20,8 +20,6 @@ import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types.StructType
-import software.uncharted.salt.core.projection.numeric.{CartesianProjection, MercatorProjection, NumericProjection}
-import software.uncharted.xdata.sparkpipe.config.{ProjectionConfig, CartesianProjectionConfig, MercatorProjectionConfig}
 import software.uncharted.xdata.sparkpipe.config.{TilingConfig, Schema, SparkConfig}
 import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{OutputOperation, createTileOutputOperation}
 
@@ -50,7 +48,7 @@ trait AbstractJob extends Logging {
     * @return A fully determined set of tiling parameters
     */
   protected def parseTilingParameters (config: Config): TilingConfig = {
-    TilingConfig(config).recover { case err: Exception =>
+    TilingConfig.parse(config).recover { case err: Exception =>
       logger.error("Invalid tiling config", err)
       sys.exit(-1)
     }.get

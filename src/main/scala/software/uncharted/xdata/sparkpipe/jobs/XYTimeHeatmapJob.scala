@@ -31,7 +31,7 @@ object XYTimeHeatmapJob extends AbstractJob {
     val outputOperation = parseOutputOperation(config)
 
     // Parse geo heatmap parameters out of supplied config
-    val heatmapConfig = XYTimeHeatmapConfig(config).getOrElse {
+    val heatmapConfig = XYTimeHeatmapConfig.parse(config).getOrElse {
       logger.error("Invalid heatmap op config")
       sys.exit(-1)
     }

@@ -49,7 +49,7 @@ object LDAAugmentationJob extends AbstractJob {
   }
 
   private def readLDAConfig (config: Config): LDAConfig = {
-    LDAConfig(config) match {
+    LDAConfig.parse(config) match {
       case Success(c) => c
       case Failure(e) =>
         error("Error reading LDA configuration", e)

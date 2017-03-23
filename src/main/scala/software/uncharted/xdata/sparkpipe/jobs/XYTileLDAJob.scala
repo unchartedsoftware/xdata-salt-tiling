@@ -12,8 +12,6 @@
   */
 package software.uncharted.xdata.sparkpipe.jobs
 
-
-
 import scala.util.{Failure, Success}
 import com.typesafe.config.Config
 import org.apache.spark.sql.SparkSession
@@ -23,8 +21,6 @@ import software.uncharted.xdata.ops.salt.text.{DictionaryConfigurationParser, LD
 import software.uncharted.xdata.sparkpipe.config.{LDAConfig, TileTopicConfig}
 import software.uncharted.xdata.sparkpipe.jobs.JobUtil.dataframeFromSparkCsv
 
-
-
 /**
   * A job that takes tsv data, breaks out a document from each entry as a word bag, tiles the documents into
   * tile-based word bags, and runs Latent Dirichlet Allocation on those tile word bags
@@ -32,7 +28,7 @@ import software.uncharted.xdata.sparkpipe.jobs.JobUtil.dataframeFromSparkCsv
 object XYTileLDAJob extends AbstractJob {
   // Parse tile topic parameters out of supplied config
   private def parseTileTopicConfig (config: Config) = {
-    TileTopicConfig(config) match {
+    TileTopicConfig.parse(config) match {
       case Success(c) => c
       case Failure(e) =>
         logger.error("Error getting topic tiling configuration", e)
@@ -42,7 +38,7 @@ object XYTileLDAJob extends AbstractJob {
 
   // Get LDA-specific configuration
   private def parseLDAConfig (config: Config) = {
-    LDAConfig(config) match {
+    LDAConfig.parse(config) match {
       case Success(c) => c
       case Failure(e) =>
         logger.error("Error getting LDA configuration")

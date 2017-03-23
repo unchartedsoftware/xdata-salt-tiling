@@ -40,7 +40,7 @@ object XYSegmentJob extends AbstractJob {
     val outputOperation = parseOutputOperation(config)
 
     // Parse geo heatmap parameters out of supplied config
-    val segmentConfig = XYSegmentConfig(config).getOrElse {
+    val segmentConfig = XYSegmentConfig.parse(config).getOrElse {
       logger.error("Invalid heatmap op config")
       sys.exit(-1)
     }

@@ -12,7 +12,6 @@
  */
 package software.uncharted.xdata.sparkpipe.jobs
 
-
 import com.typesafe.config.Config
 
 import org.apache.spark.sql.SparkSession
@@ -31,7 +30,7 @@ object XYTimeTopicsJob extends AbstractJob {
     val outputOperation = parseOutputOperation(config)
 
     // Parse geo heatmap parameters out of supplied config
-    val topicsConfig = XYTimeTopicsConfig(config).getOrElse {
+    val topicsConfig = XYTimeTopicsConfig.parse(config).getOrElse {
       logger.error("Invalid heatmap op config")
       sys.exit(-1)
     }

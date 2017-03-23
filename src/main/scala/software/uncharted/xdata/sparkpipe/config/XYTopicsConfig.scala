@@ -28,20 +28,19 @@ case class XYTopicsConfig(xCol: String,
                           termList: Map[String, String],
                           projection: ProjectionConfig)
 
-object XYTopicsConfig {
+object XYTopicsConfig extends ConfigParser {
+  private val xyTopicsKey = "xyTopics"
+  private val xColumnKey = "xColumn"
+  private val yColumnKey = "yColumn"
+  private val valueColumnKey = "valueColumn"
+  private val textColumnKey = "textColumn"
+  private val topicLimitKey = "topicLimit"
+  private val termPathKey = "terms"
 
-  val xyTopicsKey = "xyTopics"
-  val xColumnKey = "xColumn"
-  val yColumnKey = "yColumn"
-  val valueColumnKey = "valueColumn"
-  val textColumnKey = "textColumn"
-  val topicLimitKey = "topicLimit"
-  val termPathKey = "terms"
-
-  def apply(config: Config): Try[XYTopicsConfig] = {
+  def parse(config: Config): Try[XYTopicsConfig] = {
     for (
       topicConfig <- Try(config.getConfig(xyTopicsKey));
-      projection <- ProjectionConfig(topicConfig)
+      projection <- ProjectionConfig.parse(topicConfig)
     ) yield {
       XYTopicsConfig(
         topicConfig.getString(xColumnKey),
