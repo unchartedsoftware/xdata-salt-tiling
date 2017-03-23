@@ -39,7 +39,7 @@ case class CartesianProjectionConfig (bounds: Option[(Double, Double, Double, Do
 }
 
 object ProjectionConfig extends ConfigParser {
-  private val projectionKey = "projection"
+  private val projection = "projection"
   private val xyBoundsKey = "xyBounds"
 
   def parse(config: Config): Try[ProjectionConfig] = {
@@ -51,8 +51,8 @@ object ProjectionConfig extends ConfigParser {
         xyBounds = Some(xyBoundsArray(0), xyBoundsArray(1), xyBoundsArray(2), xyBoundsArray(3))
       }
 
-      if (config.hasPath(projectionKey)) {
-        config.getString(projectionKey).toLowerCase.trim match {
+      if (config.hasPath(projection)) {
+        config.getString(projection).toLowerCase.trim match {
           case "mercator" =>
             MercatorProjectionConfig(xyBounds)
           case "cartesian" =>

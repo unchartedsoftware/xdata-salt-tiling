@@ -13,7 +13,6 @@
 package software.uncharted.xdata.sparkpipe.config
 
 import com.typesafe.config.Config
-
 import scala.util.Try
 
 case class TileTopicConfig(xColumn: String,
@@ -21,20 +20,20 @@ case class TileTopicConfig(xColumn: String,
                            textColumn: String,
                            projectionConfig: ProjectionConfig)
 object TileTopicConfig extends ConfigParser {
-  private val SECTION_KEY = "topics"
-  private val X_COLUMN_KEY = "xColumn"
-  private val Y_COLUMN_KEY = "yColumn"
-  private val TEXT_COLUMN_KEY = "textColumn"
+  private val topics = "topics"
+  private val xColumn = "xColumn"
+  private val yColumn = "yColumn"
+  private val textColumn = "textColumn"
 
   def parse (config: Config): Try[TileTopicConfig] = {
     for (
-      section <- Try(config.getConfig(SECTION_KEY));
-      projection <- ProjectionConfig.parse(section)
+      tileTopicsConfig <- Try(config.getConfig(topics));
+      projection <- ProjectionConfig.parse(tileTopicsConfig)
     ) yield {
       TileTopicConfig(
-        section.getString(X_COLUMN_KEY),
-        section.getString(Y_COLUMN_KEY),
-        section.getString(TEXT_COLUMN_KEY),
+        tileTopicsConfig.getString(xColumn),
+        tileTopicsConfig.getString(yColumn),
+        tileTopicsConfig.getString(textColumn),
         projection
       )
     }

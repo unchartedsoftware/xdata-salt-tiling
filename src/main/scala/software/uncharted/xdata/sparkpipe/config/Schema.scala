@@ -79,5 +79,4 @@ object Schema {
     structFields
   }
   // scalastyle:on cyclomatic.complexity
-
 }

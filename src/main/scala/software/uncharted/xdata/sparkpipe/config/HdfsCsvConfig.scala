@@ -27,22 +27,23 @@ import com.typesafe.config.Config
 case class HdfsCsvConfig (location: String, partitions: Option[Int], separator: String, neededColumns: Seq[Int])
 
 object HdfsCsvConfigParser extends ConfigParser {
-  private val LOCATION_KEY = "location"
-  private val PARTITIONS_KEY = "partitions"
-  private val SEPARATOR_KEY = "separator"
-  private val DEFAULT_SEPARATOR = ","
-  private val RELEVANT_COLUMNS_KEY = "columns"
+  private val location = "location"
+  private val partitions = "partitions"
+  private val separator = "separator"
+  private val defaultSeparator = ","
+  private val relevantColumns = "columns"
   /**
     * Read the config for a particular character-separated values file for input or output
     */
-  def parse(key: String, defaultSeparator: String = DEFAULT_SEPARATOR)(config: Config): Try[HdfsCsvConfig] = {
+  def parse(key: String, defaultSeparator: String = defaultSeparator)(config: Config): Try[HdfsCsvConfig] = {
     Try {
       val fileConfig = config.getConfig(key)
+
       HdfsCsvConfig(
-        fileConfig.getString(LOCATION_KEY),
-        getIntOption(fileConfig, PARTITIONS_KEY),
-        getString(fileConfig, SEPARATOR_KEY, defaultSeparator),
-        getIntList(fileConfig, RELEVANT_COLUMNS_KEY)
+        fileConfig.getString(location),
+        getIntOption(fileConfig, partitions),
+        getString(fileConfig, separator, defaultSeparator),
+        getIntList(fileConfig, relevantColumns)
       )
     }
   }

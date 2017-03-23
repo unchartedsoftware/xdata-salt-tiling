@@ -37,40 +37,40 @@ case class LDAConfig (numTopics: Int,
                       wordSeparator: String,
                       scoreSeparator: String)
 object LDAConfig extends ConfigParser {
-  private val LDA_ROOT_KEY = "lda"
-  private val NUM_TOPICS_KEY = "topics"
-  private val WORDS_PER_TOPIC_KEY = "words-per-topic"
-  private val TOPICS_PER_DOC_KEY = "topics-per-document"
-  private val CHECKPOINT_INTERVAL_KEY = "checkpoint-interval"
-  private val MAX_ITERATIONS_KEY = "maximum-iterations"
-  private val SEPARATOR_TOPIC_KEY = "output-separators"
-  private val TOPIC_SEPARATOR_KEY = "topic"
-  private val WORD_SEPARATOR_KEY = "word"
-  private val SCORE_SEPARATOR_KEY = "score"
+  private val ldaRoot = "lda"
+  private val numTopics = "topics"
+  private val wordsPerTopic = "words-per-topic"
+  private val topicsPerDoc = "topics-per-document"
+  private val checkpointInterval = "checkpoint-interval"
+  private val maxIterations = "maximum-iterations"
+  private val separatorTopic = "output-separators"
+  private val topicSeparatorKey = "topic"
+  private val wordSeparatorKey = "word"
+  private val scoreSeparatorKey = "score"
 
-  val DEFAULT_TOPIC_SEPARATOR = "\t"
-  val DEFAULT_WORD_SEPARATOR = "|"
-  val DEFAULT_SCORE_SEPARATOR = "="
+  val defaultTopicSeparator = "\t"
+  val defaultWordSeparator = "|"
+  val defaultScoreSeparator = "="
 
   def parse (config: Config): Try[LDAConfig] = {
     Try {
-      val topicsNode = config.getConfig(LDA_ROOT_KEY)
-      val separatorsNode = getConfigOption(topicsNode, SEPARATOR_TOPIC_KEY)
+      val topicsNode = config.getConfig(ldaRoot)
+      val separatorsNode = getConfigOption(topicsNode, separatorTopic)
       val (topicSeparator, wordSeparator, scoreSeparator) =
         separatorsNode.map(node => (
-          getString(node, TOPIC_SEPARATOR_KEY, DEFAULT_TOPIC_SEPARATOR),
-          getString(node, WORD_SEPARATOR_KEY, DEFAULT_WORD_SEPARATOR),
-          getString(node, SCORE_SEPARATOR_KEY, DEFAULT_SCORE_SEPARATOR)
+          getString(node, topicSeparatorKey, defaultTopicSeparator),
+          getString(node, wordSeparatorKey, defaultWordSeparator),
+          getString(node, scoreSeparatorKey, defaultScoreSeparator)
           )).getOrElse(
-          (DEFAULT_TOPIC_SEPARATOR, DEFAULT_WORD_SEPARATOR, DEFAULT_SCORE_SEPARATOR)
+          (defaultTopicSeparator, defaultWordSeparator, defaultScoreSeparator)
         )
 
       LDAConfig(
-        topicsNode.getInt(NUM_TOPICS_KEY),
-        topicsNode.getInt(WORDS_PER_TOPIC_KEY),
-        topicsNode.getInt(TOPICS_PER_DOC_KEY),
-        getIntOption(topicsNode, CHECKPOINT_INTERVAL_KEY),
-        getIntOption(topicsNode, MAX_ITERATIONS_KEY),
+        topicsNode.getInt(numTopics),
+        topicsNode.getInt(wordsPerTopic),
+        topicsNode.getInt(topicsPerDoc),
+        getIntOption(topicsNode, checkpointInterval),
+        getIntOption(topicsNode, maxIterations),
         topicSeparator, wordSeparator, scoreSeparator
       )
     }

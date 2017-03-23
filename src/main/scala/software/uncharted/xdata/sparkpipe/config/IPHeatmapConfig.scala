@@ -13,7 +13,6 @@
 package software.uncharted.xdata.sparkpipe.config
 
 import com.typesafe.config.Config
-
 import scala.util.Try
 
 /**
@@ -22,18 +21,18 @@ import scala.util.Try
   * @param valueCol The column in which the value to be used is found
   */
 case class IPHeatmapConfig (ipCol: String, valueCol: String)
-object IPHeatmapConfig extends ConfigParser {//extends Logging {
-  private val CATEGORY_KEY = "ip-tiling"
-  private val IP_COLUMN_KEY = "ipColumn"
-  private val VALUE_COLUMN_KEY = "valueColumn"
+object IPHeatmapConfig extends ConfigParser {
+  private val ipTiling = "ip-tiling"
+  private val ipColumn = "ipColumn"
+  private val valueColumn = "valueColumn"
 
   def parse (config: Config): Try[IPHeatmapConfig] = {
     Try{
-      val ipConfig = config.getConfig(CATEGORY_KEY)
+      val ipConfig = config.getConfig(ipTiling)
 
       IPHeatmapConfig(
-        ipConfig.getString(IP_COLUMN_KEY),
-        ipConfig.getString(VALUE_COLUMN_KEY)
+        ipConfig.getString(ipColumn),
+        ipConfig.getString(valueColumn)
       )
     }
   }

@@ -25,24 +25,24 @@ case class XYTimeHeatmapConfig(xCol: String,
                                projection: ProjectionConfig)
 object XYTimeHeatmapConfig extends ConfigParser {
 
-  private val xyTimeHeatmapKey = "xyTimeHeatmap"
-  private val xColumnKey = "xColumn"
-  private val yColumnKey = "yColumn"
-  private val timeColumnKey = "timeColumn"
-  private val timeMinKey = "min"
-  private val timeStepKey = "step"
-  private val timeCountKey =  "count"
+  private val xyTimeHeatmap = "xyTimeHeatmap"
+  private val xColumn = "xColumn"
+  private val yColumn = "yColumn"
+  private val timeColumn = "timeColumn"
+  private val timeMin = "min"
+  private val timeStep = "step"
+  private val timeCount =  "count"
 
   def parse(config: Config): Try[XYTimeHeatmapConfig] = {
     for (
-      heatmapConfig <- Try(config.getConfig(xyTimeHeatmapKey));
+      heatmapConfig <- Try(config.getConfig(xyTimeHeatmap));
       projection <- ProjectionConfig.parse(heatmapConfig)
     ) yield {
       XYTimeHeatmapConfig(
-        heatmapConfig.getString(xColumnKey),
-        heatmapConfig.getString(yColumnKey),
-        heatmapConfig.getString(timeColumnKey),
-        RangeDescription.fromMin(heatmapConfig.getLong(timeMinKey), heatmapConfig.getLong(timeStepKey), heatmapConfig.getInt(timeCountKey)),
+        heatmapConfig.getString(xColumn),
+        heatmapConfig.getString(yColumn),
+        heatmapConfig.getString(timeColumn),
+        RangeDescription.fromMin(heatmapConfig.getLong(timeMin), heatmapConfig.getLong(timeStep), heatmapConfig.getInt(timeCount)),
         projection
       )
     }
