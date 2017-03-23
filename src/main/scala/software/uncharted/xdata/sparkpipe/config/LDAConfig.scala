@@ -40,7 +40,7 @@ object LDAConfig extends ConfigParser {
   private val LDA_ROOT_KEY = "lda"
   private val NUM_TOPICS_KEY = "topics"
   private val WORDS_PER_TOPIC_KEY = "wordsPerTopic"
-  private val TOPICS_PER_DOC_KEY = "topicsperDocument"
+  private val TOPICS_PER_DOC_KEY = "topicsPerDocument"
   private val CHECKPOINT_INTERVAL_KEY = "checkpointInterval"
   private val MAX_ITERATIONS_KEY = "maximumIterations"
   private val SEPARATOR_TOPIC_KEY = "outputSeparators"

@@ -23,7 +23,7 @@ class LDAAugmentationJobTest extends FunSpec {
   describe("LDA Augmentation job") {
     describe("#execute") {
       val inputData = getClass.getResource("LDAAugmentationTest.data").toURI.getPath
-      val outputData = getEmptyTempFile("lda-augentation", ".data")
+      val outputData = getEmptyTempFile("lda-augmentation", ".data")
       val configFile = modifyConfig(
         "LDAAugmentationTest.conf",
         ("INPUT", inputData),
