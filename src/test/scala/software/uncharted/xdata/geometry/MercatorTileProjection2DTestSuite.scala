@@ -14,7 +14,6 @@ package software.uncharted.xdata.geometry
 
 import org.scalatest.FunSuite
 
-
 class MercatorTileProjection2DTestSuite extends FunSuite {
   test("tile/bin to universal coordinates, y not flipped") {
     val t = new TestableMercatorSegmentProjection(false)
@@ -107,7 +106,7 @@ class MercatorTileProjection2DTestSuite extends FunSuite {
 }
 
 // Just a test object to expose the protected functions in our base projection class
-class TestableMercatorSegmentProjection (tms: Boolean) extends MercatorTileProjection2D [Any, Any]((0.0, 0.0), (16.0, 16.0), tms) {
+class TestableMercatorSegmentProjection (tms: Boolean) extends MercatorTileProjection2D[Any, Any]((0.0, 0.0), (16.0, 16.0), tms) {
   def tb2ub(tile: (Int, Int, Int),
             bin: (Int, Int),
             maxBin: (Int, Int)): (Int, Int) =

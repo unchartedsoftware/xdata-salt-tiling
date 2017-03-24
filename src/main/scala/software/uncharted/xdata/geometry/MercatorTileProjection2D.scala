@@ -80,10 +80,29 @@ trait MercatorBinning {
 
     ((z, tileX, tileY), (binX, binY))
   }
+
+  /**
+    * Get the universal bin bounds of a given tile
+    *
+    * @param tile   The desired tile
+    * @param maxBin the maximum bin index within each tile
+    * @return The minimum x and y universal bin coordinates within the tile, and the maximum.
+    */
+  protected def universalBinTileBounds(tile: (Int, Int, Int), maxBin: (Int, Int)): ((Int, Int), (Int, Int)) = {
+    if (tms) {
+      val ul = tileBinIndexToUniversalBinIndex(tile, (0, 0), maxBin)
+      val lr = tileBinIndexToUniversalBinIndex(tile, maxBin, maxBin)
+      (ul, lr)
+    } else {
+      val ul = tileBinIndexToUniversalBinIndex(tile, (0, 0), maxBin)
+      val lr = tileBinIndexToUniversalBinIndex(tile, maxBin, maxBin)
+      (ul, lr)
+    }
+  }
 }
 
 abstract class MercatorTileProjection2D[DC, BC](min: (Double, Double), max: (Double, Double), _tms: Boolean)
-  extends Projection[DC, (Int, Int, Int), BC] with CartesianBinning {
+  extends Projection[DC, (Int, Int, Int), BC] with MercatorBinning {
   assert(max._1 > min._1)
   assert(max._2 > min._2)
 
