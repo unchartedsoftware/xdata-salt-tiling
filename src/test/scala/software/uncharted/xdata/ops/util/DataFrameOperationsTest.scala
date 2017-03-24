@@ -70,5 +70,28 @@ class DataFrameOperationsTest extends SparkFunSpec {
       assertResult(List(1.0, 2.0, 3.0, 4.0))(converted.select("b").rdd.map(_(0).asInstanceOf[Double]).collect.toList)
       assertResult(List("one*two", "  two  ", "three", "four"))(converted.select("c").rdd.map(_(0).asInstanceOf[String]).collect.toList)
     }
+
+    it ("should correctly castFromSchema") {
+      val data = sc.parallelize(Seq("1,true,123,1.0,104,1970-01-18 00:59:38,1970-01-18",
+                                    "2,false,321,2.0,111,2017-03-24 15:15:38,2017-03-24"))
+      val schema = StructType(Seq(StructField("longColumn", LongType),
+                                  StructField("boolColumn", BooleanType),
+                                  StructField("shortColumn", ShortType),
+                                  StructField("floatColumn", FloatType),
+                                  StructField("byteColumn", ByteType),
+                                  StructField("timeColumn", TimestampType),
+                                  StructField("dateColumn", DateType)))
+      val converted = toDataFrame(sparkSession, Map[String, String](), schema)(data)
+      val types = converted.dtypes
+      assertResult(2)(converted.count())
+
+      assertResult(("longColumn", "LongType"))(types(0))
+      assertResult(("boolColumn", "BooleanType"))(types(1))
+      assertResult(("shortColumn", "ShortType"))(types(2))
+      assertResult(("floatColumn", "FloatType"))(types(3))
+      assertResult(("byteColumn", "ByteType"))(types(4))
+      assertResult(("timeColumn", "TimestampType"))(types(5))
+      assertResult(("dateColumn", "DateType"))(types(6))
+    }
   }
 }

@@ -13,13 +13,13 @@
 package software.uncharted.xdata.ops.util
 
 import com.univocity.parsers.csv.{CsvFormat, CsvParser, CsvParserSettings}
+
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.functions.udf
 import org.apache.spark.sql.types.{StructField, StructType}
-import org.apache.spark.sql.{DataFrame, Row, Column, SparkSession}
-import scala.reflect.runtime.universe.TypeTag
+import org.apache.spark.sql.{DataFrame, Row, SparkSession}
+
+import java.sql.{Timestamp,Date}
 import scala.util.Try
-import scala.util.matching.Regex
 
 object DataFrameOperations {
 
@@ -58,6 +58,7 @@ object DataFrameOperations {
           }
         }
       // drop any casts that failed and create a sequence of rows from them
+      // drops the entire row when it contains a failed cast
       typedLines.filter(typedLine => typedLine.forall(element => !element.isEmpty))
         .map(t => Row.fromSeq(t.flatten.toSeq))
     }
@@ -110,8 +111,8 @@ object DataFrameOperations {
         case "float" => Some(value.toFloat)
         case "double" => Some(value.toDouble)
         case "string" => Some(value)
-        case "timestamp" => Some(value.toLong)
-        case "date" => Some(value.toInt)
+        case "timestamp" => Some(Timestamp.valueOf(value))
+        case "date" => Some(Date.valueOf(value))
         case _ => None
       }
     ).getOrElse(None)
