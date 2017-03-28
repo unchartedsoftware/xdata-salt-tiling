@@ -16,8 +16,6 @@ import java.text.SimpleDateFormat
 import java.util.{Date}
 import grizzled.slf4j.Logging
 import org.joda.time.{DateTime, Period}
-import org.apache.spark.sql.{DataFrame, Row, SQLContext}
-import org.apache.spark.sql.types.{StructType, IntegerType, StructField, BooleanType, StringType, LongType, ArrayType, DoubleType}
 
 // scalastyle:off public.methods.have.type parameter.number
 /**
@@ -30,7 +28,7 @@ object TopicModellingUtil extends Logging {
     *
     * @param from The date to start the range from
     * @param to The date to end the range on
-    * @return A seqence of dates (of the format yyyy-MM-dd) between the given endpoints with one day intervals
+    * @return A sequence of dates (of the format yyyy-MM-dd) between the given endpoints with one day intervals
     */
   // scalastyle:off magic.number
  def dateRange(from: Date, to: Date): Array[String] = {
@@ -43,7 +41,7 @@ object TopicModellingUtil extends Logging {
   *
   * @param from The date to start the range from (yyyy-MM-dd)
   * @param to The date to end the range on (yyyy-MM-dd)
-  * @return A seqence of dates (of the format yyyy-MM-dd) between the given endpoints with one day intervals
+  * @return A sequence of dates (of the format yyyy-MM-dd) between the given endpoints with one day intervals
   */
   // scalastyle:off
  def dateRange(from: String, to: String): Array[String] = {
@@ -56,7 +54,13 @@ object TopicModellingUtil extends Logging {
     *
     * @param parts An array of results, one for each partition/date the operation was run on
     */
-  def castResults(parts: Array[Array[Any]]) : Array[(String, Array[(Double, Seq[String])], Array[Double], Array[Double], Map[Int,Int], Int, Double)] = {
+  def castResults(parts: Array[Array[Any]]) : Array[(String,
+                                                    Array[(Double, Seq[String])],
+                                                    Array[Double],
+                                                    Array[Double],
+                                                    Map[Int, Int],
+                                                    Int,
+                                                    Double)] = {
     parts.map { p =>
       val date = p(0).toString
       val topic_dist = p(1).asInstanceOf[Array[(Double, Seq[String])]]

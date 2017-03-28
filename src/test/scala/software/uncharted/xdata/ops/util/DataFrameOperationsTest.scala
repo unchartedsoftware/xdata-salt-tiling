@@ -92,6 +92,13 @@ class DataFrameOperationsTest extends SparkFunSpec {
       assertResult(("byteColumn", "ByteType"))(types(4))
       assertResult(("timeColumn", "TimestampType"))(types(5))
       assertResult(("dateColumn", "DateType"))(types(6))
+
+      //testing wildcard case in match statement
+      val data2 = sc.parallelize(Seq("2,true"))
+      val schema2 = StructType(Seq(StructField("intCol", IntegerType),StructField("nullCol", NullType)))
+      val converted2 = toDataFrame(sparkSession, Map[String, String](), schema2)(data2)
+      assertResult(List())(converted2.select("intCol").rdd.map(_(0).asInstanceOf[String]).collect.toList)
+
     }
   }
 }
