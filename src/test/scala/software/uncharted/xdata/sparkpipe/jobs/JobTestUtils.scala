@@ -21,6 +21,9 @@ import scala.collection.JavaConversions._ // scalastyle:ignore
 
 object FileIOTest extends Tag("fileio.test")
 
+/**
+  * Set of utility functions for testing jobs
+  */
 object JobTestUtils {
   def collectFiles(rootDir: String, suffix: String) : Set[(Int, Int, Int)] = {
     // convert produced filenames into indices

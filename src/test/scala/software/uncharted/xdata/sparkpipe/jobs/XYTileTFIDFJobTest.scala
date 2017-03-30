@@ -17,11 +17,11 @@ import java.io.File
 import org.apache.commons.io.FileUtils
 import org.scalatest.FunSpec
 
-class XYTileLDAJobTest extends FunSpec {
+class XYTileTFIDFJobTest extends FunSpec {
   private val testOutputDir: String = "build/tmp/test_file_output/tile_topics"
   private val suffix: String = "bin"
 
-  describe("XYTileLDAJob test") {
+  describe("XYTileTFIDFJobTest test") {
     describe("#execute") {
       it("should create tiles from source csv data", FileIOTest) {
         // When test are run from another project that includes this project, the current working directory is set such
@@ -30,16 +30,16 @@ class XYTileLDAJobTest extends FunSpec {
         val oldDir = System.getProperty("user.dir")
         try {
           // run the job
-          val config = classOf[XYTileLDAJobTest].getResource("/tile-topic-test.conf").toURI.getPath
+          val config = classOf[XYTileTFIDFJobTest].getResource("/tile-topic-test.conf").toURI.getPath
           // Make sure to run the test from the correct directory
           val project = "xdata-pipeline-ops"
           val newDir = config.substring(0, config.indexOf(project) + project.length)
           System.setProperty("user.dir", newDir)
-          XYTileLDAJob.execute(Array(config))
+          XYTileTFIDFJob.execute(Array(config))
 
           val files = JobTestUtils.collectFiles(testOutputDir, suffix)
           // All tiles expected to have something
-          val expected = (0 to 4).flatMap { level =>
+          val expected = (0 to 4).flatMap{level =>
             val size = 1 << level
             for (x <- 0 until size; y <- 0 until size) yield (level, x, y)
           }.toSet

@@ -22,28 +22,30 @@ import scala.io.Source
 class LDAAugmentationJobTest extends FunSpec {
   describe("LDA Augmentation job") {
     describe("#execute") {
-      val inputData = getClass.getResource("LDAAugmentationTest.data").toURI.getPath
-      val outputData = getEmptyTempFile("lda-augmentation", ".data")
-      val configFile = modifyConfig(
-        "LDAAugmentationTest.conf",
-        ("INPUT", inputData),
-        ("OUTPUT", outputData)
-      )
-      new File(configFile).deleteOnExit()
-      LDAAugmentationJob.execute(Array(configFile))
+      it("should validate a LDA Augmentation job") {
+        val inputData = getClass.getResource("LDAAugmentationTest.data").toURI.getPath
+        val outputData = getEmptyTempFile("lda-augmentation", ".data")
+        val configFile = modifyConfig(
+          "LDAAugmentationTest.conf",
+          ("INPUT", inputData),
+          ("OUTPUT", outputData)
+        )
+        new File(configFile).deleteOnExit()
+        LDAAugmentationJob.execute(Array(configFile))
 
-      val outputFile = new File(outputData)
-      outputFile.deleteOnExit()
-      assert(outputFile.exists())
-      assert(outputFile.isDirectory)
-      val children = outputFile.listFiles()
-      assert(4 === children.size)
-      assert(children.map(_.getName).toSet.contains("_SUCCESS"))
-      assert(children.map(_.getName).toSet.contains("._SUCCESS.crc"))
-      assert(children.map(_.getName).toSet.contains("part-00000"))
-      assert(children.map(_.getName).toSet.contains(".part-00000.crc"))
-      val output = Source.fromFile(new File(outputFile, "part-00000")).getLines().toArray
-      assert(20 === output.length)
+        val outputFile = new File(outputData)
+        outputFile.deleteOnExit()
+        assert(outputFile.exists())
+        assert(outputFile.isDirectory)
+        val children = outputFile.listFiles()
+        assert(4 === children.size)
+        assert(children.map(_.getName).toSet.contains("_SUCCESS"))
+        assert(children.map(_.getName).toSet.contains("._SUCCESS.crc"))
+        assert(children.map(_.getName).toSet.contains("part-00000"))
+        assert(children.map(_.getName).toSet.contains(".part-00000.crc"))
+        val output = Source.fromFile(new File(outputFile, "part-00000")).getLines().toArray
+        assert(20 === output.length)
+      }
     }
   }
 
