@@ -12,11 +12,7 @@
   */
 package software.uncharted.xdata.geometry
 
-
-
 import scala.language.implicitConversions
-
-
 
 object ArcBinner {
   private val clockwiseQuarterTurn = DoubleRotation(0, 1, -1, 0)
@@ -140,12 +136,22 @@ object ArcBinner {
     math.atan2(point.y, point.x)
 
   /**
-    * Find the solution to x = value % modulus that is closest to base
+    * Essentially number mod modulus, but with the ability to specify the
+    * output range
+    *
+    * Find the solution to x = number % modulus that is closest to base
+    *
+    * @param base The center of the desired output range
+    * @param number The number in question
+    * @param modulus The modulus - i.e., the width of the range
+    * @return the equivalent of number, mod modulus, centered on the parameter base
+    *         (i.e., in the range [base-modulus/2,
+    *         base+modulus/2))
     */
-  def toClosestModulus (base: Double, value:Double, modulus: Double): Double = {
-    val diff = value - base
+  def toClosestModulus (base: Double, number: Double, modulus: Double): Double = {
+    val diff = number - base
     val moduli = (diff / modulus).round
-    value - moduli * modulus
+    number - moduli * modulus
   }
 }
 

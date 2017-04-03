@@ -12,15 +12,12 @@
   */
 package software.uncharted.xdata.geometry
 
-
-
 import org.scalatest.FunSuite
 import org.scalatest.Matchers._
 import org.scalatest.matchers.{BeMatcher, MatchResult}
 
+import scala.math.{toRadians, sqrt}
 import scala.language.implicitConversions
-
-
 
 class ArcBinnerTestSuite extends FunSuite {
   private val  clockwise = true
@@ -38,7 +35,7 @@ class ArcBinnerTestSuite extends FunSuite {
     getArcCenter((1.0, 5.0), (6.0, 0.0), math.Pi / 2, clockwise) shouldBe ((1.0, 0.0) +- epsilon)
   }
 
-  test("Arc radiius") {
+  test("Arc radius") {
     getArcRadius((10.0, 0.0), (5.0, 5.0), math.Pi / 2) should be(5.0 +- epsilon)
     getArcRadius((-2.0, 7.0), (3.0, 2.0), math.Pi / 2) should be(5.0 +- epsilon)
   }
@@ -137,6 +134,54 @@ class ArcBinnerTestSuite extends FunSuite {
     while (binner.hasNext) {
       distance(center, binner.next) should be (radius +- (math.sqrt(2)/2.0 + epsilon))
     }
+  }
+
+  test("find the angle of a a given point on a circle around the origin") {
+    val deg90 = DoubleTuple(0,1)
+    val resultDeg90 = getCircleAngle(deg90)
+
+    val deg45 = DoubleTuple(1, 1)
+    val resultDeg45 = getCircleAngle(deg45)
+
+    assertResult(toRadians(90))(resultDeg90)
+    assertResult(toRadians(45))(resultDeg45)
+  }
+
+  test("DoubleTuple methods") {
+    val doubleTuple1 = DoubleTuple(2.2, 3.7)
+    val doubleTuple2 = DoubleTuple(4.1, 7.1)
+    val doubleTuple3 = DoubleTuple(5.0, 1.5)
+    val doubleTuple4 = DoubleTuple(2.5, 0.5)
+
+    val additionResult = doubleTuple1 + doubleTuple2
+    val subtractionResult = doubleTuple1 - doubleTuple2
+    val multiplicationResult = doubleTuple1 * doubleTuple2
+    val divisionResultDoubleTuple = doubleTuple3 / doubleTuple4
+    val divsionResultDouble = doubleTuple3 / 0.5
+    val length = doubleTuple1.length
+    val floor = doubleTuple1.floor
+    val ceil = doubleTuple1.ceil
+
+    assertResult(DoubleTuple(6.3, 10.8))(additionResult)
+    assertResult(DoubleTuple(2.2-4.1, 3.7-7.1))(subtractionResult)
+    assertResult(DoubleTuple(9.02, 26.27))(multiplicationResult)
+    assertResult(DoubleTuple(2.0, 3.0))(divisionResultDoubleTuple)
+    assertResult(DoubleTuple(10.0, 3.0))(divsionResultDouble)
+    assertResult(sqrt(18.53))(length)
+    assertResult(DoubleTuple(2, 3))(floor)
+    assertResult(DoubleTuple(3, 4))(ceil)
+
+  }
+
+  test("toClosestModulus") {
+    assertResult(10)(toClosestModulus(10, 2, 4))
+    assertResult(10)(toClosestModulus(10, -2, 4))
+    assertResult(8)(toClosestModulus(10, 12, 4))
+    assertResult(8)(toClosestModulus(10, 8, 4))
+    assertResult(9)(toClosestModulus(10, 9, 4))
+    assertResult(9)(toClosestModulus(10, 17, 4))
+    assertResult(11)(toClosestModulus(10, 15, 4))
+    assertResult(9)(toClosestModulus(10, 12, 3))
   }
 }
 
