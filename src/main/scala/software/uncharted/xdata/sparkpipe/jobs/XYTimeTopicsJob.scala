@@ -12,7 +12,6 @@
  */
 package software.uncharted.xdata.sparkpipe.jobs
 
-
 import com.typesafe.config.Config
 
 import org.apache.spark.sql.SparkSession

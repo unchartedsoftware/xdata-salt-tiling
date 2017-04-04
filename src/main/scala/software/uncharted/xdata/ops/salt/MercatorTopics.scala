@@ -27,7 +27,7 @@ object MercatorTopics extends MercatorOp {
             latLonBounds: Option[(Double, Double, Double, Double)],
             topicLimit: Int,
             zoomLevels: Seq[Int],
-            tileSize: Int,
+            tileSize: Int = 1,
             tms: Boolean = true)
             (input: DataFrame):
   RDD[SeriesData[(Int, Int, Int), (Int, Int), List[(String, Int)], Nothing]] = {

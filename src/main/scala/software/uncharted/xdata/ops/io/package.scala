@@ -12,7 +12,7 @@
   */
 package software.uncharted.xdata.ops
 
-import java.io.{File, FileInputStream, FileOutputStream}
+import java.io.{File, FileOutputStream}
 import java.nio.{ByteBuffer, ByteOrder, DoubleBuffer}
 import java.util.zip.ZipOutputStream
 
@@ -20,9 +20,7 @@ import grizzled.slf4j.Logging
 import org.apache.spark.rdd.RDD
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.util.SparseArray
-import net.liftweb.json.parse
-import org.apache.commons.io.IOUtils
-
+import net.liftweb.json.{parse, JArray}
 
 package object io extends Logging {
 
@@ -268,9 +266,9 @@ package object io extends Logging {
     *
     * @return A function that can deserialize sequence of bytes that represents tile data that consists of scored words where the score is an integer.
     */
-  def byteArrayToIntScoreList: Seq[Byte] => SparseArray[List[(String, Int)]] = byteSeq => {
-    val scoreList = parse(new String(byteSeq.toArray)).values.asInstanceOf[Map[String, Int]].toList
-    SparseArray(1, List[(String, Int)]())(0 -> scoreList)
+  def byteArrayToIntScoreList: Seq[Byte] => SparseArray[List[Map[String, Any]]] = byteSeq => {
+    val scoreList = parse(new String(byteSeq.toArray)).asInstanceOf[JArray].values.asInstanceOf[List[Map[String, Any]]]
+    SparseArray(1, List[Map[String, Any]]())(0 -> scoreList)
   }
 
   /**

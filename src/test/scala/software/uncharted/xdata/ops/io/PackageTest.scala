@@ -330,19 +330,19 @@ class PackageTest extends SparkFunSpec with JsonDSL {
         (tile._1, byteArrayToIntScoreList(tile._2))
       }
       assertResult(result(0)._1)(expected(0)._1)
-      val expected0 = Map("aa" -> 1, "bb" -> 2)
-      val result0 = result(0)._2(0).toMap
+      val expected0 = Map("binIndex" -> 0, "topics" -> Map("aa" -> 1, "bb" -> 2))
+      val result0 = result(0)._2(0).head
       assertResult(expected0)(result0)
 
       assertResult(result(1)._1)(expected(1)._1)
-      val expected1 = Map("cc" -> 3, "dd" -> 4)
-      val result1 = result(1)._2(0).toMap
+      val expected1 =  Map("binIndex" -> 0, "topics" -> Map("cc" -> 3, "dd" -> 4))
+      val result1 = result(1)._2(0).head
       assertResult(expected1)(result1)
     }
 
     it("Should leave the order of the list alone") {
       val list = SparseArray(4, List[(String, Int)](), 0.0f)(0 -> List(
-        "rudabega" -> 1, "watermelon" -> -1, "canteloupe" -> 2, "honeydew" -> 3, "kholrabi" -> 0,
+        "rudabega" -> 1, "watermelon" -> -1, "cantaloupe" -> 2, "honeydew" -> 3, "kholrabi" -> 0,
         "broccoli" -> 12, "mustard~greens" -> 8, "rappini" -> 4, "okra" -> -23, "gai~lan" -> 15))
       val projection: Projection[_, (Int, Int, Int), (Int, Int)] = new MercatorProjection(Seq(0))
       val data = new SeriesData[(Int, Int, Int), (Int, Int), List[(String, Int)], Nothing](projection, (1, 1), (0, 0, 0), list, None)
@@ -353,7 +353,7 @@ class PackageTest extends SparkFunSpec with JsonDSL {
       val result = new String(tile(0)._2.toArray).split("[{} :0-9,\"-]+").slice(3, 13)
       assertResult(10)(result.length)
       assertResult(List(
-        "rudabega", "watermelon", "canteloupe", "honeydew", "kholrabi",
+        "rudabega", "watermelon", "cantaloupe", "honeydew", "kholrabi",
         "broccoli", "mustard~greens", "rappini", "okra", "gai~lan"))(result.toList)
     }
 

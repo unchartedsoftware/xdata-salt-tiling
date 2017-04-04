@@ -82,7 +82,7 @@ class XYTimeTopicsJobTest extends FunSpec {
         }
       }
 
-      it("should using the xyBounds specified in configuration file", FileIOTest) {
+      it("should use xyBounds specified in configuration file", FileIOTest) {
         try {
           val path = classOf[XYTimeTopicsJobTest].getResource("/XYTimeTopicsJobTest/tiling-time-topic-file-io-xyBoundsSpec.conf").toURI.getPath
           XYTimeTopicsJob.execute(Array(path))
@@ -101,7 +101,7 @@ class XYTimeTopicsJobTest extends FunSpec {
         }
       }
 
-      it("should default to Cartesian since no projection is specified", FileIOTest) {
+      it("should default to Cartesian since no projection is specified and use tilesize equal to 1 since bins parameter is not specified", FileIOTest) {
         try {
           val path = classOf[XYTimeTopicsJobTest].getResource("/XYTimeTopicsJobTest/tiling-time-topic-file-io-defaultProjection.conf").toURI.getPath
           XYTimeTopicsJob.execute(Array(path))
@@ -119,33 +119,30 @@ class XYTimeTopicsJobTest extends FunSpec {
           FileUtils.deleteDirectory(new File(testOutputDir))
         }
       }
-      it ("should test content of tiles with bin dimensions greater than 1 by 1", FileIOTest) {
+
+      it("should extract the tile size parameter", FileIOTest) {
         try {
-          //expected level 2 coords in 7th column and expected bin coord for level 2 tiles in 8th column of csv data file
-          val path = classOf[XYTimeTopicsJobTest].getResource("/XYTimeTopicsJobTest/tiling-time-topic-file-io-multiBin.conf").toURI.getPath
+          val path = classOf[XYTimeTopicsJobTest].getResource("/XYTimeTopicsJobTest/tiling-time-topic-file-io-tileSize.conf").toURI.getPath
           XYTimeTopicsJob.execute(Array(path))
 
-          // validate created tiles
           val files = JobTestUtils.collectFiles(testOutputDir, suffix)
           val expected = Set(
             (0, 0, 0), // l0
-            (1, 1, 0), (1, 0, 1), // l1
-            (2, 3, 0), (2, 0, 2)) // l2
+            (1, 0, 0), (1, 1, 1), // l1
+            (2, 0, 0), (2, 3, 3)) // l2
+
           assertResult((Set(), Set()))((expected diff files, files diff expected))
 
-          val binValues = JobTestUtils.getBinValues(testOutputDir, suffix).filter { input =>
-            input._1 match { //extract some level two coordinates and their bin values
-              case Tuple3(2,0,2) => true
-              case _ => false
-            }
-          }
-          val BinValCheck = List(
-            (Tuple3(2,0,2), parse("""[{"binIndex": 11, "topics": {"a": 6}}, {"binIndex": 15, "topics": {"b": 4, "a": 1}}]"""))
-          )
-          val expectedBinVal = binValues match {
-            case BinValCheck => true
-            case _ =>  throw new Exception("did not pass bin values check")
-          }
+          // check metadata
+          val fileStr = FileUtils.readFileToString(new File(s"$testOutputDir/metadata.json"))
+          val jsonObject = parse(fileStr)
+          val expectedJson =
+            ("bins" -> 4) ~
+              ("range" ->
+                (("start" -> 1357016400000L) ~
+                  ("step" -> 86400000) ~
+                  ("count" -> 8)))
+          assertResult(expectedJson)(jsonObject)
         } finally {
           FileUtils.deleteDirectory(new File(testOutputDir))
         }

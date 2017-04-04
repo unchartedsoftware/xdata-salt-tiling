@@ -29,7 +29,7 @@ object CartesianTimeTopics extends CartesianTimeOp {
             timeRange: RangeDescription[Long],
             topicLimit: Int,
             zoomLevels: Seq[Int],
-            tileSize: Int)
+            tileSize: Int = 1)
            (input: DataFrame):
   RDD[SeriesData[(Int, Int, Int), (Int, Int, Int), List[(String, Int)], Nothing]] = {
 

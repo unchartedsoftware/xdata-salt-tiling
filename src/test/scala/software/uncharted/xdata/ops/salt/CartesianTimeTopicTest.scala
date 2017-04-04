@@ -14,9 +14,9 @@ package software.uncharted.xdata.ops.salt
 
 import org.apache.spark.sql.DataFrame
 import software.uncharted.xdata.spark.SparkFunSpec
+import software.uncharted.xdata.ops.io.intScoreListToByteArray
 
-
-case class CartesianTopicTestData(x: Double, y: Double, time: Long, text: List[String])
+case class CartesianTimeTopicTestData(x: Double, y: Double, time: Long, text: List[String])
 
 class CartesianTimeTopicTest extends SparkFunSpec {
   private val xCol = "x"
@@ -31,26 +31,26 @@ class CartesianTimeTopicTest extends SparkFunSpec {
     val testData =
     // 1st time bucket
     List(
-        CartesianTopicTestData(0.24, 0.24, 101L, createTestString(1, 11)),
-        CartesianTopicTestData(0.6, 0.24, 101L, createTestString(2, 22)),
-        CartesianTopicTestData(0.26, 0.26, 101L, createTestString(3, 33)),
-        CartesianTopicTestData(0.76, 0.26, 101L, createTestString(4, 44)),
-        CartesianTopicTestData(0.24, 0.6, 101L, createTestString(5, 55)),
-        CartesianTopicTestData(0.6, 0.6, 101L, createTestString(6, 66)),
-        CartesianTopicTestData(0.26, 0.76, 101L, createTestString(7, 77)),
-        CartesianTopicTestData(0.76, 0.76, 101L, createTestString(8, 88)),
-        // 2nd time bucket
-        CartesianTopicTestData(0.24, 0.24, 201L, createTestString(9, 9)),
-        CartesianTopicTestData(0.6, 0.24, 201L, createTestString(10, 1010)),
-        CartesianTopicTestData(0.26, 0.26, 201L, createTestString(11, 1111)),
-        CartesianTopicTestData(0.76, 0.26, 201L, createTestString(12, 1212)),
-        CartesianTopicTestData(0.24, 0.6, 201L, createTestString(13, 1313)),
-        CartesianTopicTestData(0.6, 0.6, 201L, createTestString(14, 1414)),
-        CartesianTopicTestData(0.26, 0.76, 201L, createTestString(15, 1515)),
-        CartesianTopicTestData(0.76, 0.76, 201L, createTestString(16, 1616)),
-        // 3rd time bucket
-        CartesianTopicTestData(0.01, 0.99, 301L, createTestString(17, 1717)),
-        CartesianTopicTestData(0.01, 0.99, 301L, createTestString(18, 1818)))
+      CartesianTimeTopicTestData(0.24, 0.24, 101L, createTestString(1, 11)),
+      CartesianTimeTopicTestData(0.6, 0.24, 101L, createTestString(2, 22)),
+      CartesianTimeTopicTestData(0.26, 0.26, 101L, createTestString(3, 33)),
+      CartesianTimeTopicTestData(0.76, 0.26, 101L, createTestString(4, 44)),
+      CartesianTimeTopicTestData(0.24, 0.6, 101L, createTestString(5, 55)),
+      CartesianTimeTopicTestData(0.6, 0.6, 101L, createTestString(6, 66)),
+      CartesianTimeTopicTestData(0.26, 0.76, 101L, createTestString(7, 77)),
+      CartesianTimeTopicTestData(0.76, 0.76, 101L, createTestString(8, 88)),
+      // 2nd time bucket
+      CartesianTimeTopicTestData(0.24, 0.24, 201L, createTestString(9, 9)),
+      CartesianTimeTopicTestData(0.6, 0.24, 201L, createTestString(10, 1010)),
+      CartesianTimeTopicTestData(0.26, 0.26, 201L, createTestString(11, 1111)),
+      CartesianTimeTopicTestData(0.76, 0.26, 201L, createTestString(12, 1212)),
+      CartesianTimeTopicTestData(0.24, 0.6, 201L, createTestString(13, 1313)),
+      CartesianTimeTopicTestData(0.6, 0.6, 201L, createTestString(14, 1414)),
+      CartesianTimeTopicTestData(0.26, 0.76, 201L, createTestString(15, 1515)),
+      CartesianTimeTopicTestData(0.76, 0.76, 201L, createTestString(16, 1616)),
+      // 3rd time bucket
+      CartesianTimeTopicTestData(0.01, 0.99, 301L, createTestString(17, 1717)),
+      CartesianTimeTopicTestData(0.01, 0.99, 301L, createTestString(18, 1818)))
 
     val tsqlc = sparkSession
     import tsqlc.implicits._ // scalastyle:ignore
@@ -59,7 +59,7 @@ class CartesianTimeTopicTest extends SparkFunSpec {
   }
 
   describe("CartesianTimeTopics") {
-    it("\"should create a quadtree of tiles where empty tiles are skipped") {
+    it("should create a quadtree of tiles where empty tiles are skipped") {
       val result = CartesianTimeTopics(xCol, yCol, timeCol, textCol, Some((0.0, 0.0, 1.0, 1.0)), RangeDescription.fromCount(0, 800, 10), 3, 0 until 3, 1)(genData)
         .collect()
         .map(_.coords)
@@ -91,6 +91,56 @@ class CartesianTimeTopicTest extends SparkFunSpec {
       assertResult(List("b" -> 3535, "a" -> 35))(tile((0, 0, 0)).getOrElse(fail()).bins(proj.binTo1D((0, 0, 3), (0, 0, 9))))
       assertResult(List("b" -> 3535, "a" -> 35))(tile((1, 0, 1)).getOrElse(fail()).bins(proj.binTo1D((0, 0, 3), (0, 0, 9))))
       assertResult(List("b" -> 3535, "a" -> 35))(tile((2, 0, 3)).getOrElse(fail()).bins(proj.binTo1D((0, 0, 3), (0, 0, 9))))
+    }
+
+    it ("should verify contents of tiles") {
+      val session = sparkSession
+      import session.implicits._ // scalastyle:ignore
+
+      val testData =
+        List(CartesianTimeTopicTestData(-99.0, 15.0, 101L, List("c", "c", "d", "d", "c", "c")),
+          CartesianTimeTopicTestData(-99.0, 40.0, 101L, List("a", "a", "a", "a", "a", "a")),
+          CartesianTimeTopicTestData(-99.0, 10, 101L, List("b", "b", "b", "b", "c", "a")),
+          CartesianTimeTopicTestData(95.0, -70.0, 101L, List("a", "a", "a", "a", "a", "a")))
+
+      val generatedData = sc.parallelize(testData).toDF()
+
+      val topicsOp = CartesianTimeTopics(
+        xCol,
+        yCol,
+        timeCol,
+        textCol,
+        Some(-100, -80, 100, 80),
+        RangeDescription.fromCount(0, 800, 10),
+        10,
+        0 until 3,
+        4
+      )(_)
+
+      val opsResult = topicsOp(generatedData)
+
+      val coordsResult = opsResult.map(_.coords).collect().toSet
+      val expectedCoords = Set(
+        (0, 0, 0), // l0
+        (1, 1, 0), (1, 0, 1), // l1
+        (2, 3, 0), (2, 0, 2), (2, 0, 3)) // l2
+      assertResult((Set(), Set()))((expectedCoords diff coordsResult, coordsResult diff expectedCoords))
+
+      val binValues = opsResult.map(elem => (elem.coords, elem.bins)).collect()
+      val binCoords = binValues.map {
+        elem => (elem._1, new String(intScoreListToByteArray(elem._2).toArray))
+      }
+      val selectedBinValue = binCoords.filter { input =>
+        input._1 match {
+          case Tuple3(2,0,2) => true
+          case _ => false
+        }
+      }
+
+      val binValCheck = Array(
+        (Tuple3(2,0,2), """[{"binIndex": 24, "topics": {"c": 5, "b": 4, "d": 2, "a": 1}}]""")
+      )
+      assertResult(binValCheck)(selectedBinValue)
     }
   }
 }
