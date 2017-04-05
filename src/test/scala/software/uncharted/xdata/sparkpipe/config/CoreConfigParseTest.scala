@@ -42,6 +42,25 @@ class CoreConfigParseTest() extends FunSpec {
         assert("test application" === conf.get("spark.app.name"))
         assert(900 === conf.getInt("spark.network.timeout", -1))
       }
+      it("should sets the checkpoint directory") {
+        val config = ConfigFactory.parseString(
+          """
+            |spark {
+            |    app.name = "test application"
+            |    executor {
+            |        instances = 8
+            |        cores = 4
+            |	       memory = 10g
+            |    }
+            |    network.timeout = 900
+            |    checkpoint-directory = "build/tmp"
+            |}
+            |
+          """.stripMargin
+        )
+        val conf = SparkConfig.applySparkConfigEntries(config)(new SparkConf())
+        assert("build/tmp" === conf.get("spark.checkpoint-directory"))
+      }
     }
   }
 
@@ -94,8 +113,8 @@ class CoreConfigParseTest() extends FunSpec {
 
         val config = ConfigFactory.parseString(
           s"""hbaseOutput.configFiles = ["$configFile"]
-            |hbaseOutput.layer = test_layer
-            |hbaseOutput.qualifier = ""
+             |hbaseOutput.layer = test_layer
+             |hbaseOutput.qualifier = ""
           """.stripMargin).resolve()
 
         val result = HBaseOutputConfig.parse(config).get

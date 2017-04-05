@@ -16,11 +16,11 @@ import scala.util.Failure
 import com.typesafe.config.ConfigFactory
 import org.apache.hadoop.hbase.client.{ConnectionFactory, Get}
 import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
-
+import org.scalatest.BeforeAndAfterAll
 import software.uncharted.xdata.ops.io.S3Client
 import software.uncharted.xdata.spark.SparkFunSpec
 
-class JobUtilTest extends SparkFunSpec {
+class JobUtilTest extends SparkFunSpec with BeforeAndAfterAll{
   import software.uncharted.xdata.sparkpipe.jobs.JobUtil._
 
   private val awsAccessKey = sys.env("AWS_ACCESS_KEY")
@@ -58,6 +58,16 @@ class JobUtilTest extends SparkFunSpec {
   private val testFile = "metadata.json"
   private val jsonBytes = Seq[Byte](0, 1, 2, 3, 4, 5)
 
+  private val s3c = new S3Client(awsAccessKey, awsSecretKey)
+
+  protected override def beforeAll() = {
+    s3c.createBucket(testBucket)
+  }
+
+  protected override def afterAll() = {
+    s3c.deleteBucket(testBucket)
+  }
+
   describe("#test utility functions for running jobs") {
 
     it("should throw an exception when config is invalid") {
@@ -81,7 +91,6 @@ class JobUtilTest extends SparkFunSpec {
 
         outputOp(data)
 
-        val s3c = new S3Client(awsAccessKey, awsSecretKey)
         val testKey0 = s"$s3Layer/02/2/2.bin"
         val testKey1 = s"$s3Layer/02/2/3.bin"
 
@@ -121,7 +130,6 @@ class JobUtilTest extends SparkFunSpec {
       it("should write metadata to s3") {
         val outputOp = createMetadataOutputOperation(s3config).get
         outputOp(testFile, jsonBytes)
-        val s3c = new S3Client(awsAccessKey, awsSecretKey)
 
         try {
           assertResult(Seq[Byte](0, 1, 2, 3, 4, 5))(s3c.download(testBucket, s"$s3Layer/$testFile").getOrElse(fail()))
