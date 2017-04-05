@@ -12,7 +12,7 @@
   */
 package software.uncharted.xdata.ops
 
-import java.io.{File, FileInputStream, FileOutputStream}
+import java.io.{File, FileOutputStream}
 import java.nio.{ByteBuffer, ByteOrder, DoubleBuffer}
 import java.util.zip.ZipOutputStream
 
@@ -20,9 +20,7 @@ import grizzled.slf4j.Logging
 import org.apache.spark.rdd.RDD
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.util.SparseArray
-import net.liftweb.json.parse
-import org.apache.commons.io.IOUtils
-
+import net.liftweb.json.{parse, JArray}
 
 package object io extends Logging {
 
@@ -209,7 +207,7 @@ package object io extends Logging {
     */
   def serializeBinArray[TC, BC, X](tiles: RDD[SeriesData[TC, BC, Double, X]]):
   RDD[(TC, Seq[Byte])] =
-  serializeTiles(doubleTileToByteArrayDense)(tiles)
+    serializeTiles(doubleTileToByteArrayDense)(tiles)
 
   /**
     * Serialize a single tile's data
@@ -248,21 +246,29 @@ package object io extends Logging {
     serializeTiles(intScoreListToByteArray)(tiles)
 
   /**
-    * Get a default tile serialization function for use by serializeElementScore
+    * Get a default tile serialization function for use by serializeElementScore. In the output format, the binIndex is
+    * the 1D version.
     *
     * @return A function that can serialize tile data that consists of scored words where the score is an integer.
     */
-  def intScoreListToByteArray: SparseArray[List[(String, Int)]] => Seq[Byte] = sparseData =>
-    sparseData(0).map { case (entry, score) => s""""$entry": $score""" }.mkString("{", ", ", "}").getBytes
+  def intScoreListToByteArray: SparseArray[List[(String, Int)]] => Seq[Byte] = sparseData => {
+    val filteredData = sparseData.seq.zipWithIndex.filter(_._1.nonEmpty)
+    val stringSeq = filteredData.map {// scalastyle:off
+      case (elem, binIndex) =>
+        var result = elem.map {case (entry, score) => s""""$entry": $score"""}.mkString("{", ", ", "}")
+        s"""{"binIndex": $binIndex, "topics": """ + result + "}"
+    }
+    stringSeq.mkString("[", ",", "]").getBytes
+  }
 
   /**
     * Get a default tile deserialize function
     *
     * @return A function that can deserialize sequence of bytes that represents tile data that consists of scored words where the score is an integer.
     */
-  def byteArrayToIntScoreList: Seq[Byte] => SparseArray[List[(String, Int)]] = byteSeq => {
-    val scoreList = parse(new String(byteSeq.toArray)).values.asInstanceOf[Map[String, Int]].toList
-    SparseArray(1, List[(String, Int)]())(0 -> scoreList)
+  def byteArrayToIntScoreList: Seq[Byte] => SparseArray[List[Map[String, Any]]] = byteSeq => {
+    val scoreList = parse(new String(byteSeq.toArray)).asInstanceOf[JArray].values.asInstanceOf[List[Map[String, Any]]]
+    SparseArray(1, List[Map[String, Any]]())(0 -> scoreList)
   }
 
   /**
@@ -291,7 +297,6 @@ package object io extends Logging {
   def byteArrayToDoubleScoreList: Seq[Byte] => SparseArray[List[(String, Double)]] = byteSeq => {
     val scoreList = parse(new String(byteSeq.toArray)).values.asInstanceOf[Map[String, Double]].toList
     SparseArray(1, List[(String, Double)]())(0 -> scoreList)
-
   }
 
   /**
