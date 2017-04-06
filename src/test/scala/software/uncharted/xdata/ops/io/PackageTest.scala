@@ -16,18 +16,18 @@ import java.io.File
 import java.nio.file.{Files, Paths}
 
 import org.apache.commons.io.FileUtils
-import software.uncharted.salt.core.generation.output.SeriesData
-import software.uncharted.salt.core.projection.Projection
-import software.uncharted.salt.core.projection.numeric.MercatorProjection
-import software.uncharted.salt.core.util.SparseArray
-import software.uncharted.xdata.ops.salt.MercatorTimeProjection
-import software.uncharted.xdata.spark.SparkFunSpec
 import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.HBaseConfiguration
 import org.apache.hadoop.hbase.TableName
 import net.liftweb.json.JsonAST.JValue
 import net.liftweb.json.{JsonDSL, parse}
 
+import software.uncharted.xdata.spark.SparkFunSpec
+import software.uncharted.salt.core.util.SparseArray
+import software.uncharted.salt.core.projection.Projection
+import software.uncharted.xdata.ops.salt.MercatorTimeProjection
+import software.uncharted.salt.core.projection.numeric.MercatorProjection
+import software.uncharted.salt.core.generation.output.SeriesData
 
 // scalastyle:off magic.number
 // scalastyle:off multiple.string.literals
@@ -43,7 +43,7 @@ class PackageTest extends SparkFunSpec with JsonDSL {
 
   lazy val zookeeperQuorum = sys.env.getOrElse("HBASE_ZOOKEEPER_QUORUM", throw new Exception("hbase.zookeeper.quorum is unset"))
   lazy val zookeeperPort = sys.env.getOrElse("HBASE_ZOOKEEPER_CLIENTPORT", "2181")
-  lazy val hBaseMaster = sys.env("HBASE_MASTER")
+  lazy val hBaseMaster = sys.env.getOrElse("HBASE_MASTER", throw new Exception("hbase.master is unset"))
   lazy val hBaseClientKeyValMaxSize = sys.env.getOrElse("HBASE_CLIENT_KEYVALUE_MAXSIZE", "0")
 
   private val configFile = Seq(classOf[PackageTest].getResource("/hbase-site.xml").toURI.getPath)
@@ -188,7 +188,7 @@ class PackageTest extends SparkFunSpec with JsonDSL {
     val testQualifier = "tileQualifier"
     it("should write the byte data to the HBaseTable without changing it", HBaseTest) {
       writeBytesToHBase(configFile, testLayer, testQualifier)(testFile, Seq(0, 1, 2, 3, 4, 5))
-      val hbc = HBaseConnector(configFile)
+
       //disable and delete table
       val config = HBaseConfiguration.create()
       config.set("hbase.zookeeper.quorum", zookeeperQuorum)
