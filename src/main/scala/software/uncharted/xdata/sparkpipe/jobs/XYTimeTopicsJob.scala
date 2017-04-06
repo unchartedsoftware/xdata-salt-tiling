@@ -18,7 +18,7 @@ import org.apache.spark.sql.SparkSession
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.text.{includeTermFilter, split}
 import software.uncharted.xdata.ops.io.serializeElementScore
-import software.uncharted.xdata.ops.salt.{CartesianTimeTopics, MercatorTimeHeatmap, MercatorTimeTopics}
+import software.uncharted.xdata.ops.salt.{CartesianTimeTopics, MercatorTimeTopics}
 import software.uncharted.xdata.sparkpipe.config.{CartesianProjectionConfig, MercatorProjectionConfig, TilingConfig, XYTimeTopicsConfig}
 import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOperation, dataframeFromSparkCsv}
 
@@ -51,7 +51,8 @@ object XYTimeTopicsJob extends AbstractJob {
         if (exists_xyBounds) topicsConfig.projection.xyBounds else None,
         topicsConfig.timeRange,
         topicsConfig.topicLimit,
-        tilingConfig.levels)(_)
+        tilingConfig.levels,
+        tilingConfig.bins.getOrElse(1))(_)
       case _: CartesianProjectionConfig => CartesianTimeTopics(
         topicsConfig.xCol,
         topicsConfig.yCol,
@@ -60,7 +61,8 @@ object XYTimeTopicsJob extends AbstractJob {
         if (exists_xyBounds) topicsConfig.projection.xyBounds else None,
         topicsConfig.timeRange,
         topicsConfig.topicLimit,
-        tilingConfig.levels)(_)
+        tilingConfig.levels,
+        tilingConfig.bins.getOrElse(1))(_)
 
       case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
     }
@@ -89,7 +91,7 @@ object XYTimeTopicsJob extends AbstractJob {
 
     val outputOp = createMetadataOutputOperation(baseConfig)
 
-    val binCount = tilingConfig.bins.getOrElse(MercatorTimeHeatmap.defaultTileSize)
+    val binCount = tilingConfig.bins.getOrElse(1)
     val levelMetadata =
       ("bins" -> binCount) ~
         ("range" ->

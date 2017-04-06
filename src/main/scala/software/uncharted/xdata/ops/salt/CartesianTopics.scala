@@ -26,7 +26,8 @@ object CartesianTopics extends CartesianOp {
               textCol: String,
               latLonBounds: Option[(Double, Double, Double, Double)],
               topicLimit: Int,
-              zoomLevels: Seq[Int])
+              zoomLevels: Seq[Int],
+              tileSize: Int)
              (input: DataFrame):
     RDD[SeriesData[(Int, Int, Int), (Int, Int), List[(String, Int)], Nothing]] = {
 
@@ -34,7 +35,7 @@ object CartesianTopics extends CartesianOp {
 
     val request = new TileLevelRequest(zoomLevels, (tc: (Int, Int, Int)) => tc._1)
     super.apply(
-    1,
+    tileSize,
     xCol,
     yCol,
     textCol,
