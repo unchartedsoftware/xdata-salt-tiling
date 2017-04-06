@@ -34,9 +34,9 @@ class ConfigParserTest extends FunSpec with ConfigParser {
            |testConfig.keyTwo = 23
            |testConfig.keyThree = 1.7
            |testConfig.keyFour = true
-           |testConfig.keyFive = [$sentence]
+           |testConfig.keyFive = [$sentence, "bonjour"]
            |testConfig.keySix = [25]
-           |testConfig.keySeven = [1.9]
+           |testConfig.keySeven = [1.9, 2.0]
            |testConfig.keyEight = $sentence
            |testConfig.keyNine = 20
            |testConfig.keyTen = 1.8
@@ -63,9 +63,9 @@ class ConfigParserTest extends FunSpec with ConfigParser {
       assertResult(Some(23))(intOpt)
       assertResult(Some(1.7))(doubleOpt)
       assertResult(Some(true))(boolOpt)
-      assertResult(Seq(sentence))(strList)
+      assertResult(Seq(sentence, "bonjour"))(strList)
       assertResult(Seq(25))(intList)
-      assertResult(Seq(1.9))(doubleList)
+      assertResult(Seq(1.9, 2.0))(doubleList)
       assertResult("hello there")(strValue)
       assertResult(20)(intValue)
       assertResult(1.8)(doubleVal)
@@ -73,7 +73,7 @@ class ConfigParserTest extends FunSpec with ConfigParser {
 
     }
 
-    it ("should test default values") {
+    it ("should return default values") {
       val sampleConfig = ConfigFactory.empty()
       val strDefault = getString(sampleConfig, "stringKey", "defaultString")
       val intDefault = getInt(sampleConfig, "integerKey", 10)
@@ -84,6 +84,18 @@ class ConfigParserTest extends FunSpec with ConfigParser {
       assertResult(10)(intDefault)
       assertResult(15.0)(doubleDefault)
       assertResult(false)(boolDefault)
+    }
+
+    it ("should return empty sequences since the keys do not exist") {
+      val sampleConfig = ConfigFactory.empty()
+      val emptyStrList = getStringList(sampleConfig, "stringListKey")
+      val emptyIntList = getIntList(sampleConfig, "intListKey")
+      val emptyDoubleList = getDoubleList(sampleConfig, "doubleListKey")
+
+      assertResult(Seq[Double]())(emptyStrList)
+      assertResult(Seq[Int]())(emptyIntList)
+      assertResult(Seq[Double]())(emptyDoubleList)
+
     }
 
   }
