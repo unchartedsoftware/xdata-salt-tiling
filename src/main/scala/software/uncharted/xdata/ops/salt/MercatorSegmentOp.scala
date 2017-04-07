@@ -12,8 +12,6 @@
   */
 package software.uncharted.xdata.ops.salt
 
-import java.io.{File, FileOutputStream, PrintWriter}
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row}
 import software.uncharted.salt.core.analytic.numeric.{MinMaxAggregator, SumAggregator}

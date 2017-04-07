@@ -25,6 +25,7 @@ case class XYSegmentConfig(arcType: ArcTypes.Value,
                            y1Col: String,
                            x2Col: String,
                            y2Col: String,
+                           valueCol: Option[String],
                            tileSize: Int,
                            projectionConfig: ProjectionConfig)
 
@@ -38,6 +39,7 @@ object XYSegmentConfig extends ConfigParser {
   private val x2ColKey = "x2Column"
   private val y2ColKey = "y2Column"
   private val tileSizeKey = "tileSize"
+  private val valueColumnKey = "valueColumn"
 
   def parse(config: Config): Try[XYSegmentConfig] = {
     for (
@@ -58,6 +60,7 @@ object XYSegmentConfig extends ConfigParser {
         segmentConfig.getString(y1ColKey),
         segmentConfig.getString(x2ColKey),
         segmentConfig.getString(y2ColKey),
+        getStringOption(segmentConfig, valueColumnKey),
         segmentConfig.getInt(tileSizeKey),
         projection
       )

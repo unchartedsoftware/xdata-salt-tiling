@@ -14,7 +14,7 @@ package software.uncharted.xdata.sparkpipe.jobs
 
 import com.typesafe.config.Config
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{Column, SparkSession}
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.xdata.ops.salt.{CartesianSegmentOp, MercatorSegmentOp}
@@ -33,7 +33,7 @@ import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOper
   */
 // scalastyle:off method.length
 object XYSegmentJob extends AbstractJob {
-
+  // scalastyle:off cyclomatic.complexity
   def execute(sparkSession: SparkSession, config: Config): Unit = {
     val schema = parseSchema(config)
     val tilingConfig = parseTilingParameters(config)
@@ -60,7 +60,7 @@ object XYSegmentJob extends AbstractJob {
         segmentConfig.y1Col,
         segmentConfig.x2Col,
         segmentConfig.y2Col,
-        None,
+        segmentConfig.valueCol,
         if (exists_xyBounds) segmentConfig.projectionConfig.xyBounds else None,
         tilingConfig.levels,
         segmentConfig.tileSize,
@@ -73,7 +73,7 @@ object XYSegmentJob extends AbstractJob {
         segmentConfig.y1Col,
         segmentConfig.x2Col,
         segmentConfig.y2Col,
-        None,
+        segmentConfig.valueCol,
         if (exists_xyBounds) segmentConfig.projectionConfig.xyBounds else None,
         tilingConfig.levels,
         segmentConfig.tileSize,
@@ -81,9 +81,15 @@ object XYSegmentJob extends AbstractJob {
       case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
     }
 
+    val seqCols = segmentConfig.valueCol match {
+      case None => Seq(segmentConfig.x1Col, segmentConfig.y1Col, segmentConfig.x2Col, segmentConfig.y2Col)
+      case _ => Seq(segmentConfig.x1Col, segmentConfig.y1Col, segmentConfig.x2Col, segmentConfig.y2Col,segmentConfig.valueCol.getOrElse(throw new Exception("Value column is not set")))
+    }
+    val selectCols = seqCols.map(new Column(_))
+
     // Pipe the dataframe
     Pipe(dataframeFromSparkCsv(config, tilingConfig.source, schema, sparkSession))
-      .to(_.select(segmentConfig.x1Col, segmentConfig.y1Col, segmentConfig.x2Col, segmentConfig.y2Col))
+      .to(_.select(selectCols: _*))
       .to(_.cache())
       .to(segmentOperation)
       .to(writeMetadata(config))

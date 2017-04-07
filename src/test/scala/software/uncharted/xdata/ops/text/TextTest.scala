@@ -14,7 +14,6 @@
 package software.uncharted.xdata.ops.text
 
 import software.uncharted.xdata.spark.SparkFunSpec
-import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.mllib.feature.{HashingTF => TestTF}
 import org.apache.spark.ml.linalg.{SparseVector}
 
