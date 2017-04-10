@@ -45,7 +45,7 @@ object XYSegmentJob extends AbstractJob {
       sys.exit(-1)
     }
 
-    val exists_xyBounds  = segmentConfig.projectionConfig.xyBounds match {
+    val xyBoundsFound  = segmentConfig.projectionConfig.xyBounds match {
       case ara : Some[(Double, Double, Double, Double)] => true
       case None => false
       case _ => logger.error("Invalid XYbounds"); sys.exit(-1)
@@ -61,7 +61,7 @@ object XYSegmentJob extends AbstractJob {
         segmentConfig.x2Col,
         segmentConfig.y2Col,
         segmentConfig.valueCol,
-        if (exists_xyBounds) segmentConfig.projectionConfig.xyBounds else None,
+        if (xyBoundsFound) segmentConfig.projectionConfig.xyBounds else None,
         tilingConfig.levels,
         segmentConfig.tileSize,
         tms = tilingConfig.tms)(_)
@@ -74,7 +74,7 @@ object XYSegmentJob extends AbstractJob {
         segmentConfig.x2Col,
         segmentConfig.y2Col,
         segmentConfig.valueCol,
-        if (exists_xyBounds) segmentConfig.projectionConfig.xyBounds else None,
+        if (xyBoundsFound) segmentConfig.projectionConfig.xyBounds else None,
         tilingConfig.levels,
         segmentConfig.tileSize,
         tms = tilingConfig.tms)(_)
@@ -117,5 +117,5 @@ object XYSegmentJob extends AbstractJob {
     createMetadataOutputOperation(baseConfig).foreach(_("metadata.json", jsonBytes))
 
     tiles
-  }
+  }  // scalastyle:on cyclomatic.complexity
 }

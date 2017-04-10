@@ -17,7 +17,7 @@ import java.util.zip.{GZIPOutputStream, GZIPInputStream}
 
 import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.services.s3.AmazonS3Client
-import com.amazonaws.services.s3.model.{PutObjectRequest, CannedAccessControlList, ObjectMetadata, Permission, AccessControlList, GroupGrantee}
+import com.amazonaws.services.s3.model.{PutObjectRequest, CannedAccessControlList, ObjectMetadata}
 import grizzled.slf4j.Logging
 
 object S3Client {

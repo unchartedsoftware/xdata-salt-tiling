@@ -17,8 +17,6 @@ import software.uncharted.xdata.sparkpipe.config.ConfigParser
 
 import scala.util.Try
 
-
-
 /*
  * Possible Additions
  *   vocabulary: Array[String]   use only words in this to compute TF/IDF

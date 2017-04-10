@@ -26,8 +26,6 @@ import software.uncharted.xdata.ops.salt.ZXYOp
 
 import scala.reflect.ClassTag
 
-
-
 /**
   * Various generic text operations, not specific to a single textual analytic
   */

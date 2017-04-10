@@ -43,7 +43,7 @@ object XYHeatmapJob extends AbstractJob {
       sys.exit(-1)
     }
 
-    val exists_xyBounds = heatmapConfig.projection.xyBounds match {
+    val xyBoundsFound = heatmapConfig.projection.xyBounds match {
       case ara: Some[(Double, Double, Double, Double)] => true
       case None => false
       case _ => logger.error("Invalid XYbounds"); sys.exit(-1)
@@ -58,7 +58,7 @@ object XYHeatmapJob extends AbstractJob {
         heatmapConfig.yCol,
         heatmapConfig.valueCol,
         tilingConfig.levels,
-        if (exists_xyBounds) heatmapConfig.projection.xyBounds else None,
+        if (xyBoundsFound) heatmapConfig.projection.xyBounds else None,
         tileSize
       )(_)
       case _: CartesianProjectionConfig  => CartesianHeatmapOp(
@@ -66,7 +66,7 @@ object XYHeatmapJob extends AbstractJob {
         heatmapConfig.yCol,
         heatmapConfig.valueCol,
         tilingConfig.levels,
-        if (exists_xyBounds) heatmapConfig.projection.xyBounds else None,
+        if (xyBoundsFound) heatmapConfig.projection.xyBounds else None,
         tileSize
       )(_)
       case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)

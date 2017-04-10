@@ -23,8 +23,6 @@ import software.uncharted.sparkpipe.ops.core.dataframe.temporal.dateFilter
 import software.uncharted.xdata.ops.salt.RangeDescription
 import software.uncharted.xdata.ops.topics.twitter.util.{BDPParallel, BTMUtil, TFIDF, TopicModellingUtil, TwitterTokenizer}
 
-import scala.tools.nsc.util.ShowPickled
-
 /**
   * This package contains the operation (doTopicModelling) to compute the topics of a given corpus.
   * This operation can optionally perform tfidf processing. To do this, pass the operation a tuple

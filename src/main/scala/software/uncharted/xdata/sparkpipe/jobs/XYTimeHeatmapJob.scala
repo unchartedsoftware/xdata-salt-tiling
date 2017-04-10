@@ -13,7 +13,7 @@
 package software.uncharted.xdata.sparkpipe.jobs
 
 import com.typesafe.config.Config
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{Column, SparkSession}
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.xdata.ops.io.serializeBinArray
 import software.uncharted.xdata.ops.salt.{CartesianTimeHeatmap, MercatorTimeHeatmap}
@@ -22,8 +22,7 @@ import software.uncharted.xdata.sparkpipe.jobs.JobUtil.{createMetadataOutputOper
 
 // scalastyle:off method.length
 object XYTimeHeatmapJob extends AbstractJob {
-
-  private val convertedTime: String = "convertedTime"
+  // scalastyle:off cyclomatic.complexity
 
   def execute(sparkSession: SparkSession, config: Config): Unit = {
     val schema = parseSchema(config)
@@ -36,20 +35,20 @@ object XYTimeHeatmapJob extends AbstractJob {
       sys.exit(-1)
     }
 
-    val exists_xyBounds = heatmapConfig.projection.xyBounds match {
-      case ara : Some[(Double, Double, Double, Double)] => true
+    val xyBoundsFound = heatmapConfig.projection.xyBounds match {
+      case ara: Some[(Double, Double, Double, Double)] => true
       case None => false
       case _ => logger.error("Invalid XYbounds"); sys.exit(-1)
     }
 
     // create the heatmap operation based on the projection
     val heatmapOperation = heatmapConfig.projection match {
-      case _: MercatorProjectionConfig=> MercatorTimeHeatmap(
+      case _: MercatorProjectionConfig => MercatorTimeHeatmap(
         heatmapConfig.yCol,
         heatmapConfig.xCol,
         heatmapConfig.timeCol,
-        None,
-        if (exists_xyBounds) heatmapConfig.projection.xyBounds else None,
+        heatmapConfig.valueCol,
+        if (xyBoundsFound) heatmapConfig.projection.xyBounds else None,
         heatmapConfig.timeRange,
         tilingConfig.levels,
         tilingConfig.bins.getOrElse(MercatorTimeHeatmap.defaultTileSize))(_)
@@ -57,17 +56,23 @@ object XYTimeHeatmapJob extends AbstractJob {
         heatmapConfig.xCol,
         heatmapConfig.yCol,
         heatmapConfig.timeCol,
-        None,
-        if (exists_xyBounds) heatmapConfig.projection.xyBounds else None,
+        heatmapConfig.valueCol,
+        if (xyBoundsFound) heatmapConfig.projection.xyBounds else None,
         heatmapConfig.timeRange,
         tilingConfig.levels,
         tilingConfig.bins.getOrElse(CartesianTimeHeatmap.defaultTileSize))(_)
       case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
     }
 
+    val seqCols = heatmapConfig.valueCol match {
+      case None => Seq(heatmapConfig.xCol, heatmapConfig.yCol, heatmapConfig.timeCol)
+      case _ => Seq(heatmapConfig.xCol, heatmapConfig.yCol, heatmapConfig.timeCol, heatmapConfig.valueCol.getOrElse(throw new Exception("Value column is not set")))
+    }
+    val selectCols = seqCols.map(new Column(_))
+
     // Pipe the dataframe
     Pipe(dataframeFromSparkCsv(config, tilingConfig.source, schema, sparkSession))
-      .to(_.select(heatmapConfig.xCol, heatmapConfig.yCol, heatmapConfig.timeCol))
+      .to(_.select(selectCols: _*))
       .to(_.cache())
       .to(heatmapOperation)
       .to(serializeBinArray)
@@ -92,4 +97,4 @@ object XYTimeHeatmapJob extends AbstractJob {
     val jsonBytes = compactRender(levelMetadata).getBytes.toSeq
     createMetadataOutputOperation(baseConfig).foreach(_("metadata.json", jsonBytes))
   }
-}
+} // scalastyle:on cyclomatic.complexity

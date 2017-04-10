@@ -34,7 +34,7 @@ object XYTopicsJob extends AbstractJob {
       sys.exit(-1)
     }
 
-    val exists_xyBounds  = topicsConfig.projection.xyBounds match {
+    val xyBoundsFound  = topicsConfig.projection.xyBounds match {
       case ara : Some[(Double, Double, Double, Double)] => true
       case None => false
       case _ => logger.error("Invalid XYbounds"); sys.exit(-1)
@@ -45,7 +45,7 @@ object XYTopicsJob extends AbstractJob {
         topicsConfig.yCol,
         topicsConfig.xCol,
         topicsConfig.textCol,
-        if (exists_xyBounds) topicsConfig.projection.xyBounds else None,
+        if (xyBoundsFound) topicsConfig.projection.xyBounds else None,
         topicsConfig.topicLimit,
         tilingConfig.levels,
         tilingConfig.bins.getOrElse(1))(_)
@@ -53,7 +53,7 @@ object XYTopicsJob extends AbstractJob {
         topicsConfig.xCol,
         topicsConfig.yCol,
         topicsConfig.textCol,
-        if (exists_xyBounds) topicsConfig.projection.xyBounds else None,
+        if (xyBoundsFound) topicsConfig.projection.xyBounds else None,
         topicsConfig.topicLimit,
         tilingConfig.levels,
         tilingConfig.bins.getOrElse(1))(_)

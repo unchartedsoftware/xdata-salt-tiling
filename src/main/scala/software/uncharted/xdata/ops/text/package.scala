@@ -13,7 +13,6 @@
 
 package software.uncharted.xdata.ops.text
 
-import org.apache.spark.sql.types.{StructField, StructType, ArrayType, StringType, DoubleType}
 import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.ml.feature.{HashingTF, IDF}
 

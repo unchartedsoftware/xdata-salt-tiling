@@ -70,7 +70,7 @@ class GaussianBlurSpreadingFunctionTestSuite extends FunSuite {
     assert(expected.toSet === actual.toSet)
   }
 
-  test ("test GaussianBlurSpreadingFunction3D") {
+  test("Test GaussianBlurSpreadingFunction3D") {
     val radius = 1
     val sigma = 3
 
@@ -90,7 +90,7 @@ class GaussianBlurSpreadingFunctionTestSuite extends FunSuite {
     val result = spreader.spread(coordsTraversable, value)
 
     //bin values is initial value multiplied by corresponding kernel value
-   val expected = Traversable(
+    val expected = Traversable(
       ((3, 1, 1), (0, 0, 1), Some(kernel(0)(0))),
       ((3, 1, 1), (0, 1, 1), Some(kernel(1)(0))),
       ((3, 1, 1), (1, 1, 1), Some(kernel(1)(1))),
@@ -100,6 +100,41 @@ class GaussianBlurSpreadingFunctionTestSuite extends FunSuite {
       ((3, 1, 0), (0, 0, 1), Some(kernel(2)(0))),
       ((3, 1, 0), (1, 0, 1), Some(kernel(2)(1))),
       ((3, 2, 0), (0, 0, 1), Some(kernel(2)(2)))
+    )
+
+    assert(expected.toSet === result.toSet)
+  }
+
+  test("Getting coordinates correctly when tms is false") {
+    val radius = 1
+    val sigma = 3
+
+    //Gaussian function that makes blurring mask
+    val kernel = GaussianBlurSpreadingFunction.makeGaussianKernel(radius, sigma)
+
+    //input is a single pixel and its initial tile/bin coordinates
+    val tileCoords = (3, 1, 1)
+    val binCoords = (1, 1, 1)
+    val coordsTraversable = Traversable((tileCoords, binCoords))
+
+    //original value of single pixel
+    val value = Some(1.0)
+
+    val maxBinDimensions = (1, 1)
+    val spreader = new GaussianBlurSpreadingFunction3D(radius, sigma, maxBinDimensions, tms = false)
+    val result = spreader.spread(coordsTraversable, value)
+
+    //bin values is initial value multiplied by corresponding kernel value
+    val expected = Traversable(
+      ((3, 1, 1), (0, 0, 1), Some(kernel(0)(0))),
+      ((3, 1, 1), (0, 1, 1), Some(kernel(1)(0))),
+      ((3, 1, 1), (1, 1, 1), Some(kernel(1)(1))),
+      ((3, 1, 1), (1, 0, 1), Some(kernel(0)(1))),
+      ((3, 2, 1), (0, 0, 1), Some(kernel(0)(2))),
+      ((3, 2, 1), (0, 1, 1), Some(kernel(1)(2))),
+      ((3, 1, 2), (0, 0, 1), Some(kernel(2)(0))),
+      ((3, 1, 2), (1, 0, 1), Some(kernel(2)(1))),
+      ((3, 2, 2), (0, 0, 1), Some(kernel(2)(2)))
     )
 
     assert(expected.toSet === result.toSet)

@@ -31,8 +31,6 @@ class CartesianTimeHeatmapTest extends SparkFunSpec {
     val testData =
       // 1st time bucket
 
-      //createTestString(1, 11)
-
       List(
         CartesianTestData(0.24, 0.24, 1.0, 101L),
         CartesianTestData(0.6, 0.24, 2.0, 101L),

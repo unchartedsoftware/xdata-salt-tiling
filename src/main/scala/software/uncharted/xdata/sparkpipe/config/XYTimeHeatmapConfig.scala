@@ -21,6 +21,7 @@ import scala.util.Try
 case class XYTimeHeatmapConfig(xCol: String,
                                yCol: String,
                                timeCol: String,
+                               valueCol: Option[String],
                                timeRange: RangeDescription[Long],
                                projection: ProjectionConfig)
 object XYTimeHeatmapConfig extends ConfigParser {
@@ -32,6 +33,7 @@ object XYTimeHeatmapConfig extends ConfigParser {
   private val timeMinKey = "min"
   private val timeStepKey = "step"
   private val timeCountKey =  "count"
+  private val valueColumnKey = "valueColumn"
 
   def parse(config: Config): Try[XYTimeHeatmapConfig] = {
     for (
@@ -42,6 +44,7 @@ object XYTimeHeatmapConfig extends ConfigParser {
         heatmapConfig.getString(xColumnKey),
         heatmapConfig.getString(yColumnKey),
         heatmapConfig.getString(timeColumnKey),
+        getStringOption(heatmapConfig, valueColumnKey),
         RangeDescription.fromMin(heatmapConfig.getLong(timeMinKey), heatmapConfig.getLong(timeStepKey), heatmapConfig.getInt(timeCountKey)),
         projection
       )
