@@ -4,6 +4,7 @@ import java.io.File
 
 import org.apache.commons.io.FileUtils
 import org.scalatest.FunSpec
+import software.uncharted.xdata.tiling.jobs.IPHeatmapJob
 
 /**
   * Created by nkronenfeld on 25/10/16.

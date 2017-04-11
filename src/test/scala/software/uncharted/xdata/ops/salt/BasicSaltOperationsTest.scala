@@ -13,12 +13,11 @@
 package software.uncharted.xdata.ops.salt
 
 import org.apache.spark.sql.types._
-
 import software.uncharted.xdata.spark.SparkFunSpec
 import software.uncharted.sparkpipe.ops.core.rdd
 import software.uncharted.sparkpipe.ops.core.dataframe
-import software.uncharted.xdata.ops.salt.BasicSaltOperations._
-import software.uncharted.xdata.ops.util.DataFrameOperations.toDataFrame
+import software.uncharted.sparkpipe.ops.xdata.util.DataFrameOperations.toDataFrame
+import software.uncharted.sparkpipe.ops.xdata.salt.BasicSaltOperations.{getBounds, cartesianTiling}
 
 class BasicSaltOperationsTest extends SparkFunSpec {
   describe("BasicSaltOperations") {

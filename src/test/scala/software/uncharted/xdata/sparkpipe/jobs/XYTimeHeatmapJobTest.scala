@@ -17,6 +17,7 @@ import java.io.File
 import net.liftweb.json._
 import org.apache.commons.io.FileUtils
 import org.scalatest.FunSpec
+import software.uncharted.xdata.tiling.jobs.XYTimeHeatmapJob
 
 class XYTimeHeatmapJobTest extends FunSpec {
 

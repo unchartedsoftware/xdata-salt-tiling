@@ -14,7 +14,9 @@ package software.uncharted.xdata.ops.salt
 
 import org.scalatest.FunSuite
 import org.scalatest.Matchers._
-import software.uncharted.xdata.geometry.Line
+import software.uncharted.salt.xdata.projection.{SimpleLeaderArcProjection, SimpleLeaderLineProjection, SimpleLineProjection}
+import software.uncharted.salt.xdata.projection.geometry.Line
+import software.uncharted.salt.xdata.spreading.FadingSpreadingFunction
 
 
 class OneStageLineProjectionTestSuite extends FunSuite {

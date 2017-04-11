@@ -15,6 +15,8 @@ package software.uncharted.xdata.ops.io
 import org.scalatest.{BeforeAndAfterAll, FunSpec, Tag}
 import java.io.ByteArrayInputStream
 
+import software.uncharted.sparkpipe.ops.xdata.io.S3Client
+
 object S3Test extends Tag("s3.test")
 
 class S3ClientTest extends FunSpec with BeforeAndAfterAll {

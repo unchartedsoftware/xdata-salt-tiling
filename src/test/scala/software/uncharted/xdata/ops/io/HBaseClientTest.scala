@@ -13,13 +13,13 @@
 package software.uncharted.xdata.ops.io
 
 import org.scalatest.{BeforeAndAfterAll, Tag}
-
-import org.apache.hadoop.hbase.client._ //scalastyle:ignore
+import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.HBaseConfiguration
 import org.apache.hadoop.hbase.HColumnDescriptor
 import org.apache.hadoop.hbase.HTableDescriptor
 import org.apache.hadoop.hbase.TableName
 import org.apache.spark.rdd.RDD
+import software.uncharted.sparkpipe.ops.xdata.io.HBaseConnector
 import software.uncharted.xdata.spark.SparkFunSpec
 
 object HBaseTest extends Tag("hbc.test")

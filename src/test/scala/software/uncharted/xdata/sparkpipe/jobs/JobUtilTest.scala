@@ -12,14 +12,15 @@
   */
 package software.uncharted.xdata.sparkpipe.jobs
 
-import scala.util.Failure
 import com.typesafe.config.ConfigFactory
 import org.apache.hadoop.hbase.client.{ConnectionFactory, Get}
 import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
 import org.scalatest.{BeforeAndAfterAll, Tag}
-import software.uncharted.xdata.ops.io.S3Client
+import software.uncharted.sparkpipe.ops.xdata.io.S3Client
 import software.uncharted.xdata.spark.SparkFunSpec
-import software.uncharted.xdata.sparkpipe.jobs.JobUtil._
+import software.uncharted.xdata.tiling.jobs.JobUtil.{createMetadataOutputOperation, createTileOutputOperation}
+
+import scala.util.Failure
 
 object S3Test extends Tag("s3.test")
 object HBaseTest extends Tag("hbc.test")

@@ -13,6 +13,7 @@
 package software.uncharted.xdata.ops.salt
 
 import org.scalatest.FunSuite
+import software.uncharted.salt.xdata.projection.LeaderLineProjectionStageOne
 
 
 class TwoStageLineProjectionTestSuite extends FunSuite {

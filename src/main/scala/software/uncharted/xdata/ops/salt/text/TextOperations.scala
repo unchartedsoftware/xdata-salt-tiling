@@ -22,7 +22,7 @@ import org.apache.spark.sql.DataFrame
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.generation.request.TileLevelRequest
 import software.uncharted.salt.core.projection.numeric.NumericProjection
-import software.uncharted.xdata.ops.salt.ZXYOp
+import software.uncharted.sparkpipe.ops.xdata.salt.ZXYOp
 
 import scala.reflect.ClassTag
 

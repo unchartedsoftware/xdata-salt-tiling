@@ -15,8 +15,8 @@ package software.uncharted.xdata.ops.topics.twitter
 
 import java.text.SimpleDateFormat
 
+import software.uncharted.salt.xdata.util.RangeDescription
 import software.uncharted.sparkpipe.Pipe
-import software.uncharted.xdata.ops.salt.RangeDescription
 import software.uncharted.xdata.ops.topics.twitter.util._
 import software.uncharted.xdata.spark.SparkFunSpec
 
@@ -175,7 +175,7 @@ class TwitterTest extends SparkFunSpec {
   }
 
   describe("#test extraction of tokens") {
-    import TwitterTokenizer._
+    import software.uncharted.xdata.ops.topics.twitter.util.TwitterTokenizer._
     it("should test normalizeEmoji") {
       val textEmoji = "Today is a sunny day ☺" // scalastyle:ignore
       val repeatEmoji = "Today is a sunny day ☺☺"

@@ -13,8 +13,11 @@
 package software.uncharted.xdata.ops.salt
 
 import org.apache.spark.sql.DataFrame
+import software.uncharted.salt.xdata.projection.CartesianTimeProjection
+import software.uncharted.salt.xdata.util.RangeDescription
+import software.uncharted.sparkpipe.ops.xdata.salt.CartesianTimeTopics
 import software.uncharted.xdata.spark.SparkFunSpec
-import software.uncharted.xdata.ops.io.intScoreListToByteArray
+import software.uncharted.sparkpipe.ops.xdata.io.intScoreListToByteArray
 
 case class CartesianTimeTopicTestData(x: Double, y: Double, time: Long, text: List[String])
 

@@ -17,7 +17,8 @@ import java.io.File
 import net.liftweb.json._
 import org.apache.commons.io.FileUtils
 import org.scalatest.FunSpec
-import software.uncharted.xdata.ops.salt.SimpleLineProjection
+import software.uncharted.salt.xdata.projection.SimpleLineProjection
+import software.uncharted.xdata.tiling.jobs.XYSegmentJob
 
 class XYSegmentJobTest extends FunSpec {
 

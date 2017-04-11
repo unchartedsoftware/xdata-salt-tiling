@@ -12,7 +12,8 @@
   */
 package software.uncharted.xdata.ops.salt
 
-import software.uncharted.xdata.ops.io.intScoreListToByteArray
+import software.uncharted.sparkpipe.ops.xdata.salt.MercatorTopics
+import software.uncharted.sparkpipe.ops.xdata.io.intScoreListToByteArray
 import software.uncharted.xdata.spark.SparkFunSpec
 
 case class MercatorTopicsTestData(lon: Double, lat: Double, text: List[String])

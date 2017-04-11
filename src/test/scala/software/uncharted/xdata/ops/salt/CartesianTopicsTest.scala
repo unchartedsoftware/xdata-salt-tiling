@@ -12,8 +12,9 @@
   */
 package software.uncharted.xdata.ops.salt
 
+import software.uncharted.sparkpipe.ops.xdata.salt.CartesianTopics
 import software.uncharted.xdata.spark.SparkFunSpec
-import software.uncharted.xdata.ops.io.intScoreListToByteArray
+import software.uncharted.sparkpipe.ops.xdata.io.intScoreListToByteArray
 
 case class CartesianTopicTestData(x: Double, y: Double, text: List[String])
 

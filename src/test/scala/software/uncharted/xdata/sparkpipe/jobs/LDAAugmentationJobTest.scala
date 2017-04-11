@@ -16,6 +16,7 @@ import java.io.{BufferedWriter, File, FileOutputStream, OutputStreamWriter}
 import com.typesafe.config.Config
 import org.apache.spark.sql.SQLContext
 import org.scalatest.FunSpec
+import software.uncharted.xdata.tiling.jobs.LDAAugmentationJob
 
 import scala.io.Source
 

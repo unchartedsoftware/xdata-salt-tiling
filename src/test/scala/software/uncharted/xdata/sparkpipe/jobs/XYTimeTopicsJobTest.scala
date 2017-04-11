@@ -16,6 +16,7 @@ import java.io.File
 
 import org.apache.commons.io.FileUtils
 import org.scalatest.FunSpec
+import software.uncharted.xdata.tiling.jobs.XYTimeTopicsJob
 // scalastyle:ignore
 
 class XYTimeTopicsJobTest extends FunSpec {

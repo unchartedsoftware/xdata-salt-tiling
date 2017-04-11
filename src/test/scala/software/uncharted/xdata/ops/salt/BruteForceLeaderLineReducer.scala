@@ -12,7 +12,8 @@
   */
 package software.uncharted.xdata.ops.salt
 
-import software.uncharted.xdata.geometry.{CartesianTileProjection2D, Line, LineToPoints}
+import software.uncharted.salt.xdata.projection.CartesianTileProjection2D
+import software.uncharted.salt.xdata.projection.geometry.{Line, LineToPoints}
 
 
 /*

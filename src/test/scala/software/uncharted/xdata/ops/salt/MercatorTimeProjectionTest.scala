@@ -13,6 +13,8 @@
 package software.uncharted.xdata.ops.salt
 
 import org.scalatest.FunSpec
+import software.uncharted.salt.xdata.projection.MercatorTimeProjection
+import software.uncharted.salt.xdata.util.RangeDescription
 
 // scalastyle:off magic.number
 class MercatorTimeProjectionTest extends FunSpec {

@@ -13,8 +13,11 @@
 package software.uncharted.xdata.ops.salt
 
 import org.apache.spark.sql.DataFrame
+import software.uncharted.salt.xdata.projection.MercatorTimeProjection
+import software.uncharted.salt.xdata.util.RangeDescription
+import software.uncharted.sparkpipe.ops.xdata.salt.MercatorTimeTopics
 import software.uncharted.xdata.spark.SparkFunSpec
-import software.uncharted.xdata.ops.io.intScoreListToByteArray
+import software.uncharted.sparkpipe.ops.xdata.io.intScoreListToByteArray
 
 case class MercatorTimeTopicTestData(lon: Double, lat: Double, time: Long, text: List[String])
 

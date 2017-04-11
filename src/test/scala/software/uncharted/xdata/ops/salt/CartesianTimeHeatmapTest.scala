@@ -13,6 +13,9 @@
 package software.uncharted.xdata.ops.salt
 
 import org.apache.spark.sql.DataFrame
+import software.uncharted.salt.xdata.projection.CartesianTimeProjection
+import software.uncharted.salt.xdata.util.RangeDescription
+import software.uncharted.sparkpipe.ops.xdata.salt.CartesianTimeHeatmap
 import software.uncharted.xdata.spark.SparkFunSpec
 
 // scalastyle:off magic.number

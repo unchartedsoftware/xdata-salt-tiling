@@ -13,6 +13,7 @@
 package software.uncharted.xdata.ops.salt
 
 import org.scalatest.FunSuite
+import software.uncharted.salt.xdata.spreading.{GaussianBlurSpreadingFunction, GaussianBlurSpreadingFunction2D, GaussianBlurSpreadingFunction3D}
 
 class GaussianBlurSpreadingFunctionTestSuite extends FunSuite {
 

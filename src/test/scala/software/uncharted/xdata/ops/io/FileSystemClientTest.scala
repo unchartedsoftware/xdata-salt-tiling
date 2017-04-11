@@ -13,7 +13,9 @@
 package software.uncharted.xdata.ops.io
 
 import java.io.File
+
 import org.apache.commons.io.FileUtils
+import software.uncharted.sparkpipe.ops.xdata.io.{FileSystemClient, mkRowId}
 import software.uncharted.xdata.spark.SparkFunSpec
 
 class FileSystemClientTest extends SparkFunSpec {

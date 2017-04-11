@@ -14,6 +14,7 @@ package software.uncharted.xdata.spark.mllib
 
 import org.apache.spark.mllib.linalg.{DenseMatrix, DenseVector, SparseMatrix, Vector}
 import org.scalatest.FunSpec
+import software.uncharted.sparkpipe.ops.xdata.util.MatrixUtilities
 
 class MatrixUtilityTests extends FunSpec {
   private def vector (entries: Double*): Vector = new DenseVector(entries.toArray)
