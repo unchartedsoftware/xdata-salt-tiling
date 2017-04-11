@@ -12,10 +12,4 @@
   */
 package software.uncharted.xdata.ops.util
 
-import org.apache.spark.sql.types._
-import software.uncharted.xdata.spark.SparkFunSpec
-
-
-
-
 case class TestRow(a: Int, b: Double, c: String)

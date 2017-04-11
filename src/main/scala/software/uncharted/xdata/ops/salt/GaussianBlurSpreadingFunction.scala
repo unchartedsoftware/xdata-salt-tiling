@@ -155,6 +155,7 @@ class GaussianBlurSpreadingFunction3D(radius: Int, sigma: Double, maxBins: Bin2D
     var kernelBinCoordX = binCoord._1 + kernelIndex._1 - Math.floor(kernelDimension / 2).toInt
     var kernelBinCoordY = binCoord._2 + kernelIndex._2 - Math.floor(kernelDimension / 2).toInt
     var kernelBinCoord = (kernelBinCoordX, kernelBinCoordY, binCoord._3)
+
     var kernelTileCoord = tileCoord
 
     // If kernel bin coordinate lies outside of the tile, calculate new coordinates for tile and bin

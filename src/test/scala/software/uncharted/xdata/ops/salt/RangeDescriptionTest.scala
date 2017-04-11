@@ -18,20 +18,32 @@ import org.scalatest.FunSpec
 class RangeDescriptionTest extends FunSpec {
   describe("RangeDescriptionTest") {
     describe("#constructor") {
-      it("should throw an IllegalArgumentException if count isn't positive") {
-        intercept[IllegalArgumentException] {
-          RangeDescription(0d, 1d, 0, .1d)
-        }
-      }
-      it("should throw an IllegalArgumentException if step isn't positive") {
-        intercept[IllegalArgumentException] {
-          RangeDescription(0d, 1d, 0, -0.1d)
-        }
-      }
       it("should throw an IllegalArgumentException if min isn't less than max") {
-        intercept[IllegalArgumentException] {
-          RangeDescription(1d, 2d, 0, .1d)
+        val min = 2d
+        val max = 1d
+        val caughtMsg = intercept[IllegalArgumentException] {
+          RangeDescription(min, max, 0, .1d)
         }
+
+        assert(caughtMsg.getMessage() == s"requirement failed: min ($min) must be less than max ($max)")
+      }
+
+      it("should throw an IllegalArgumentException if count isn't greater than 1") {
+        val count = -1
+        val caughtMsg =  intercept[IllegalArgumentException] {
+          RangeDescription(0d, 1d, count, .1d)
+        }
+
+        assert(caughtMsg.getMessage() == s"requirement failed: count ($count) must be greater than 1")
+      }
+
+      it("should throw an IllegalArgumentException if step isn't positive") {
+        val step = -0.1d
+        val caughtMsg = intercept[IllegalArgumentException] {
+          RangeDescription(0d, 1d, 1, step)
+        }
+
+        assert(caughtMsg.getMessage() == s"requirement failed: step ($step) must be greater than 0")
       }
     }
 

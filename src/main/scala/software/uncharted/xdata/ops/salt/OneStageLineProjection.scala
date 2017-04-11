@@ -12,8 +12,7 @@
   */
 package software.uncharted.xdata.ops.salt
 
-
-import scala.collection.mutable.{ArrayBuffer, Buffer => MutableBuffer}
+import scala.collection.mutable.{Buffer => MutableBuffer}
 import software.uncharted.salt.core.spreading.SpreadingFunction
 import software.uncharted.salt.core.projection.numeric.MercatorProjection
 import software.uncharted.xdata.geometry.{CartesianTileProjection2D, LineToPoints, Line, CartesianBinning, ArcBinner, MercatorTileProjection2D}

@@ -15,13 +15,10 @@ package software.uncharted.xdata.ops.topics.twitter
 
 import java.text.SimpleDateFormat
 
-import org.apache.spark.sql.Row
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.xdata.ops.salt.RangeDescription
-import software.uncharted.xdata.ops.topics.twitter.util.WordDict
+import software.uncharted.xdata.ops.topics.twitter.util._
 import software.uncharted.xdata.spark.SparkFunSpec
-
-import scala.collection.mutable
 
 class TwitterTest extends SparkFunSpec {
   val path = classOf[TwitterTest].getResource("/topic-modelling/topic-modelling.conf").toURI.getPath
@@ -145,6 +142,133 @@ class TwitterTest extends SparkFunSpec {
 
       val unique = removeReTweets("text")(dfData)
       assert(unique.count() === 2)
+    }
+  }
+
+  describe("#test keyvalueRDD functionality") {
+    it("should split RDD of string array of size 3") {
+      val data1 = Array("great", "jazz", "music")
+      val data2 = Array("that cat", "was", "cool")
+      val rddData = sc.parallelize(Seq(data1, data2))
+
+      val result = BDPParallel.keyvalueRDD(rddData).collect()
+      val expected = Array(("great",("jazz","music")), ("that cat",("was","cool")))
+
+      assertResult(expected)(result)
+    }
+  }
+
+  describe("test BDP") {
+    it ("should initialize a BDP instance's tfidf dictionary/map with the input map.") {
+      val bdp = new BDP(3)
+
+      val sampleTFIDF = Array(("2017-0101", "festival", 2.0), ("2017-0105", "music", 3.7), ("2017-0101", "programming", 5.0))
+      val tfidf_bcst = sc.broadcast(sampleTFIDF)
+      val word_dict = Map("programming"->1)
+      bdp.initTfidf(tfidf_bcst, "2017-0101", word_dict)
+
+      val result = bdp.tfidf_dict
+      val expected = Map(1->5.0)
+      assertResult(expected)(result)
+
+    }
+  }
+
+  describe("#test extraction of tokens") {
+    import TwitterTokenizer._
+    it("should test normalizeEmoji") {
+      val textEmoji = "Today is a sunny day ☺" // scalastyle:ignore
+      val repeatEmoji = "Today is a sunny day ☺☺"
+      val textSpace = "      hello there   "
+      val resultEmoji = normalizeEmoji(textEmoji)
+      val resultRepeat = normalizeEmoji(repeatEmoji)
+      val resultSpace = normalizeEmoji(textSpace)
+      val expected = "Today is a sunny day  <HAPPY_FACE>"
+
+      assertResult(expected)(resultEmoji)
+      assertResult(expected)(resultRepeat)
+      assertResult("hello there")(resultSpace)
+    }
+
+    it("should test replaceEmoji") {
+      val textEmoji = "Today is a sunny day ☺"
+      val repeatEmoji = "Today is a sunny day ☺☺"
+      val textEmoji2 = "Today is a sunny☺ day"
+      val resultEmoji = replaceEmoji(textEmoji)
+      val resultRepeat = replaceEmoji(repeatEmoji)
+      val resultEmoji2 = replaceEmoji(textEmoji2)
+      val expected = "Today is a sunny day"
+
+      assertResult(expected)(resultEmoji)
+      assertResult(expected)(resultRepeat)
+      assertResult("Today is a sunny  day")(resultEmoji2)
+
+    }
+
+    it("should test normalizeEmoticons") {
+      val textEmoji = "Today is a sunny day ☺"
+      val textSpace = "      hello there   "
+      val textEmoticon = "hello there:P"
+      val resultEmoji = normalizeEmoticons(textEmoji)
+      val resultSpace = normalizeEmoticons(textSpace)
+      val resultEmoticon = normalizeEmoticons(textEmoticon)
+      val expected = "hello there"
+
+      assertResult("Today is a sunny day ☺")(resultEmoji)
+      assertResult(s"$expected")(resultSpace)
+      assertResult(s"$expected <LOL>")(resultEmoticon)
+    }
+
+    it("tokenizeCleanText") {
+      val text = "everyday is  awesome    "
+      val result = tokenizeCleanText(text)
+      val expected = Array("everyday", "is", "awesome")
+      assertResult(expected)(result)
+    }
+
+    it("should tokenize a sample text") {
+      val text = "hello:)there world☺today is a, sunny day"
+      val result = tokenize(text)
+      val expected = Array("hello", "there", "world", "today", "is", "a", "sunny", "day")
+      assertResult(expected)(result)
+    }
+
+    it ("should normalize sample texts") {
+      //return empty string since text contains lang listed in notNeededLangs
+      val text = "this word means sunrise: 日出"
+      val result = normalize(text)
+      val expected = ""
+      assertResult(expected)(result)
+
+      //normalize emoticons and emojis instead of replacing them
+      val text2 = "The weather this weekend is good ☺ I think I will go biking:P"
+      val result2 = normalize(text2, false)
+      val expected2 = "The weather this weekend is good  <HAPPY_FACE>  I think I will go biking <LOL>"
+      assertResult(expected2)(result2)
+    }
+  }
+
+  describe("#test TextUtil functions") {
+    it("should test cleanStopwords ") {
+      val result = TextUtil.cleanStopwords("Sometimes I believe in as many as six impossible things before breakfast. That is an excellent practice.",stopWords)
+      val expected = "impossible breakfast excellent practice"
+      assertResult(expected)(result)
+    }
+  }
+
+  describe("#test SampleRecorder") {
+    it ("should set a TFIDF dictionary and get the weight of its words") {
+      val words = Array("engineering", "science", "art")
+      val m = words.length
+      val k = 3
+      val weighted = true
+      val SR = new SampleRecorder(m, k, weighted)
+      val sample_tfidf = Map(1->2.0, 3->1.0)
+      SR.setTfidf(sample_tfidf)
+
+      assertResult(sample_tfidf)(SR.tfidf_dict)
+      assertResult(2.0)(SR.getWeight(1, 0.1))
+      assertResult(1.0)(SR.getWeight(3, 0.1))
     }
   }
 }

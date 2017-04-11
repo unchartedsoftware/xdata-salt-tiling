@@ -23,7 +23,6 @@ import software.uncharted.xdata.ops.salt.IPHeatmapOp
 import software.uncharted.xdata.sparkpipe.config.IPHeatmapConfig
 import software.uncharted.xdata.sparkpipe.jobs.JobUtil.dataframeFromSparkCsv
 
-
 /**
   * A basic job to do standard IP tiling
   */
@@ -31,7 +30,7 @@ object IPHeatmapJob extends AbstractJob {
   /**
     * This function actually executes the task the job describes
     *
-    * @param sparkSession   Apache Spark session to access input data
+    * @param sparkSession   A SparkSession from which to extract input data as a DataFrame
     * @param config The job configuration
     */
   override def execute(sparkSession: SparkSession, config: Config): Unit = {

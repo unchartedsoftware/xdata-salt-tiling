@@ -26,7 +26,7 @@ object TextUtil extends Serializable {
   private val unicodeOutliers = "([^\\u0000-\\uFFEF]|[❤])".r  // unicode characters outside of the normal character bounds
   private val unicode_space = ("[\\u0020\\u00A0\\u1680\\u180E\\u2000\\u2001\\u2002\\u2003\\u2004\\u2005\\u2006" +
       "\\u2007\\u2008\\u2009\\u200A\\u200B\\u202F\\u205F\\u3000\\uFEFF]+").r   // white space
-  private val dots = "[\\u00B7\\u2024\\u2219\\u25D8\\u25E6\\u30FB\\uFF65]".r  // elipsis
+  private val dots = "[\\u00B7\\u2024\\u2219\\u25D8\\u25E6\\u30FB\\uFF65]".r  // ellipsis
 
 
   def cleanStopwords(text: String, stopwords: Set[String]) : String = {

@@ -12,12 +12,8 @@
   */
 package software.uncharted.xdata.geometry
 
-import org.scalatest.FunSuite
-
-import scala.collection.mutable.{Buffer => MutableBuffer}
 import scala.util.Try
-
-
+import org.scalatest.FunSuite
 
 class LineToPointsTestSuite extends FunSuite {
   test("get all points") {
@@ -197,5 +193,23 @@ class LineToPointsTestSuite extends FunSuite {
     }
   }
 
+  test("NoIntersectionException constructor") {
+    val noArgResult = new NoIntersectionException()
+
+    assert(noArgResult.getMessage == null)
+    assert(noArgResult.getCause == null)
+
+    val msg = "this is a message"
+    val messageResult = new NoIntersectionException(msg)
+
+    assert(messageResult.getMessage == msg)
+    assert(messageResult.getCause == null)
+
+    val cause = new Throwable("this is the cause of the exception")
+    val throwableResult = new NoIntersectionException(cause)
+
+    assert(throwableResult.getMessage == null)
+    assert(throwableResult.getCause == cause)
+  }
 
 }

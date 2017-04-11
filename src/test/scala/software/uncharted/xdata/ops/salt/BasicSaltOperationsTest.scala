@@ -12,12 +12,13 @@
   */
 package software.uncharted.xdata.ops.salt
 
-import software.uncharted.xdata.ops.salt.BasicSaltOperations._
+import org.apache.spark.sql.types._
+
 import software.uncharted.xdata.spark.SparkFunSpec
 import software.uncharted.sparkpipe.ops.core.rdd
 import software.uncharted.sparkpipe.ops.core.dataframe
-
-
+import software.uncharted.xdata.ops.salt.BasicSaltOperations._
+import software.uncharted.xdata.ops.util.DataFrameOperations.toDataFrame
 
 class BasicSaltOperationsTest extends SparkFunSpec {
   describe("BasicSaltOperations") {
@@ -34,6 +35,50 @@ class BasicSaltOperationsTest extends SparkFunSpec {
         assert(List((-3.0, 3.0), (-4.0, 5.0)) === getBounds("y", "z")(data).toList)
         assert(List((-2.0, 4.0), (-3.0, 3.0)) === getBounds("x", "y")(data).toList)
       }
+
+      it("should convert float values to double") {
+        val rdd = sc.parallelize(Seq(
+          "1.0f, 4.0f, 3.0f, 5.0f",
+          "2f, 2f, 1f, 0f",
+          "-1f, -2f, -3f, -4f"))
+
+        val schema = StructType(Seq(StructField("w", FloatType), StructField("x", FloatType), StructField("y", FloatType), StructField("z", FloatType)))
+        val converted = toDataFrame(sparkSession, Map[String, String](), schema)(rdd)
+
+        val result =  getBounds("w", "x")(converted).toList
+        val expected = List((-1.0, 2.0), (-2.0, 4.0))
+
+        assertResult(expected)(result)
+      }
+
+      it("should convert long values to double") {
+        val rdd = sc.parallelize(Seq(
+          "1, 4, 3, 5",
+          "2, 2, 1, 0",
+          "-1, -2, -3, -4"))
+
+        val schema = StructType(Seq(StructField("w", LongType), StructField("x", LongType), StructField("y", LongType), StructField("z", LongType)))
+        val converted = toDataFrame(sparkSession, Map[String, String](), schema)(rdd)
+
+        val result =  getBounds("y", "z")(converted).toList
+        val expected = List((-3.0, 3.0), (-4.0, 5.0))
+        assertResult(expected)(result)
+      }
+
+      it("should convert int values to double") {
+        val rdd = sc.parallelize(Seq(
+          "1, 4, 3, 5",
+          "2, 2, 1, 0",
+          "-1, -2, -3, -4"))
+
+        val schema = StructType(Seq(StructField("w", IntegerType), StructField("x", IntegerType), StructField("y", IntegerType), StructField("z", IntegerType)))
+        val converted = toDataFrame(sparkSession, Map[String, String](), schema)(rdd)
+
+        val result =  getBounds("x", "y")(converted).toList
+        val expected = List((-2.0, 4.0), (-3.0, 3.0))
+        assertResult(expected)(result)
+      }
+
     }
 
     describe("#cartesianTiling") {
@@ -72,4 +117,5 @@ class BasicSaltOperationsTest extends SparkFunSpec {
     }
   }
 }
+
 case class Coordinates (w: Double, x: Double, y: Double, z: Double)

@@ -13,10 +13,6 @@
 
 package software.uncharted.xdata.ops.topics.twitter.util
 
-import java.sql.Date
-
-import scala.io.Source
-import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.sql.DataFrame
 
 /**

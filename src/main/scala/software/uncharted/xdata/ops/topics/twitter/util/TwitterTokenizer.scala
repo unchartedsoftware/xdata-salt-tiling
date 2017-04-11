@@ -87,7 +87,6 @@ object TwitterTokenizer extends Serializable {
   // HTML_CHAR_CODES     = "\\b&?(quot|amp|lt|gt|nbsp|iexcl|cent|pound|curren|brvbar|sect|uml|copy|ordf|laquo|not|shy|reg|macr|deg|plusmn|sup2|sup3|acute|para|middot|cedil|sup1|ordm|raquo|frac14|frac12|frac34|iquest|eth|eth|aelig|aelig|oelig|oelig|aring|oslash|ccedil|ccedil|szlig|ntilde|ntilde);?\\b"
   val htmlCharCodes     = "\\b&?(quot|amp|lt|gt|nbsp|iexcl|cent|pound|curren|brvbar|sect|uml|copy|ordf|laquo|not|shy|reg|macr|deg|plusmn|sup2|sup3|acute|para|middot|cedil|sup1|ordm|raquo|frac14|frac12|frac34|iquest|eth|eth|aelig|aelig|oelig|oelig|aring|oslash|ccedil|ccedil|szlig|ntilde|ntilde);?\\b"
 
-
   // ---------------------------------------------------------------------------------------------------
   val retweetPat       = "\\b(rt)|(RT)|(retweeted)\\b"
   val urlRegex1         = "https?:\\/\\/\\S+\\b|www\\.(\\w+\\.)+\\S*"
@@ -101,7 +100,7 @@ object TwitterTokenizer extends Serializable {
   val unicodeSpaces    = "[\\u0009-\\u000d|\\u0020|\\u0085|\\u00a0|\\u1680|\\u180E|\\u2000-\\u200a|\\u2028|\\u2029|\\u202F|\\u205F|\\u3000]+"
 
   // ---------------------------------------------------------------------------------------------------
-  val elipsis = "[\\u2026]"
+  val ellipsis = "[\\u2026]"
   val loneDashPat = "\\s?\\-\\s|\\s\\-\\s?"
   val punctPat =  "[\\p{P}&&[^#-]]"
   val symbolPat = "[\\p{S}--[<>]]"
@@ -129,18 +128,17 @@ object TwitterTokenizer extends Serializable {
   val repeatedPunctRegex = "([!?.])+"
   val elongatedFinalRegex= "\\b(\\S*?)(.)\\2+\\b"
 
-
   // ---------------------------------------------------------------------------------------------------
   // remove lone dash
   val loneHyphen = "\\s?\\-\\s|\\s\\-\\s?"
   // remove punctuation & symbols except for hypens, hashes and <TAG> brackets
   //  val punct       = "[\\p{P}&&[^<>#-]]"
   // remove lone digits
-  val loneDigits = "(^|\\s)\\p{Digit}+($|\\s)"
+  val loneDigits  = "(^|\\s)\\p{Digit}+($|\\s)"
   // remove single characters
-  val singleChar = "\\b\\p{L}\\b"
+  val singleChar  = "\\b\\p{L}\\b"
   // remove control characters
-  val controlChar= "\\p{C}"
+  val controlChar = "\\p{C}"
   // remove extra spaces, control characters
   val spaces      = "[\\p{Z}\\s]+"
 
@@ -149,9 +147,6 @@ object TwitterTokenizer extends Serializable {
   val acronymPattern = "(?<=\\s|^)((?:[a-zA-Z]\\.){2,})(?=[[:punct:]]?(?:\\s|$))".r
   val sentenceFinalPeriod = "\\.([A-z]{2})".r   // for use in detecting non-acronym sentences that end.And the next begins without a space
   val acronymPeriod =  "((?<=[A-z])\\.)+".r
-
-
-
 
   // ==============================================================================================================
   /**
@@ -177,9 +172,6 @@ object TwitterTokenizer extends Serializable {
     txt.trim
   }
 
-
-
-
   /**
     *  Convert emoticons <TAGS>.
     */
@@ -189,7 +181,6 @@ object TwitterTokenizer extends Serializable {
     txt.trim
   }
 
-
   /**
     *  Remove emoticons.
     */
@@ -198,7 +189,6 @@ object TwitterTokenizer extends Serializable {
     emoticons.foreach(em => txt = em._1.r.replaceAllIn(txt, " "))
     txt.trim
   }
-
 
   /**
     *  Convert emoticons, emoji and patterns to <TAGS>
@@ -232,15 +222,12 @@ object TwitterTokenizer extends Serializable {
       txt = quoteRegex.r.replaceAllIn(txt, "")
       txt = bracketRegex.r.replaceAllIn(txt, "$1")
       txt = retweetPat.r.replaceAllIn(txt, " ")
-      txt = elipsis.r.replaceAllIn(txt, " ")
+      txt = ellipsis.r.replaceAllIn(txt, " ")
       txt = hyphenRegex.r.replaceAllIn(txt, "-")
       return txt.trim
     }
   }
   // scalastyle:on return
-
-
-
 
   /**
     *  Remove symbols and punctuation from a string of text

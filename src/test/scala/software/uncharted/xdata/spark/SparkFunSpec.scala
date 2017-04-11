@@ -12,9 +12,7 @@
  */
 package software.uncharted.xdata.spark
 
-import java.util.concurrent.Semaphore
-
-import org.apache.spark.sql.{SQLContext, SparkSession}
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.{SparkConf, SparkContext}
 import org.scalatest.{FunSpec, Outcome}
 
@@ -47,11 +45,13 @@ abstract class SparkFunSpec extends FunSpec {
   // Use an override here instead of BeforeAndAfter trait to allow for lock release
   // on exceptions.
   override protected def withFixture(test: NoArgTest): Outcome = {
-    // make sure spark lock is alway released after test is run
+    // make sure spark lock is always released after test is run
     // Force Spark test cases to be run single threaded.
     before()
     val res = super.withFixture(test)
     after()
     res
   }
+
+
 }
