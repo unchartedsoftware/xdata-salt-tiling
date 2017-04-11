@@ -15,7 +15,7 @@ package software.uncharted.xdata.tiling.config
 import org.scalatest.FunSpec
 import org.apache.spark.SparkConf
 import com.typesafe.config.ConfigFactory
-import software.uncharted.xdata.ops.io.S3Test
+import software.uncharted.sparkpipe.ops.xdata.io.S3Test
 
 class CoreConfigParseTest() extends FunSpec {
   describe("SparkConfig") {
