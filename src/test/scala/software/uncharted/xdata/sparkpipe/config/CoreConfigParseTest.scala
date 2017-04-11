@@ -42,7 +42,7 @@ class CoreConfigParseTest() extends FunSpec {
         assert("test application" === conf.get("spark.app.name"))
         assert(900 === conf.getInt("spark.network.timeout", -1))
       }
-      it("should sets the checkpoint directory") {
+      it("should set the checkpoint directory since the config key is set") {
         val config = ConfigFactory.parseString(
           """
             |spark {

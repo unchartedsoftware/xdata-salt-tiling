@@ -60,10 +60,11 @@ trait ZXYOp {
       .to(_.select(selectCols: _*))
       .run()
 
-    // x and y will always be columns 0 and 1 respectively
     val cExtractor = (r: Row) => {
-      if (!r.isNullAt(0) && !r.isNullAt(1)) {
-        Some((r.getDouble(0), r.getDouble(1)))
+      val xIndex = r.schema.fieldIndex(xCol)
+      val yIndex = r.schema.fieldIndex(yCol)
+      if (!r.isNullAt(xIndex) && !r.isNullAt(yIndex)) {
+        Some((r.getDouble(xIndex), r.getDouble(yIndex)))
       } else {
         None
       }

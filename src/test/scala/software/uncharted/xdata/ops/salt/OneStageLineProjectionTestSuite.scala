@@ -39,6 +39,73 @@ class OneStageLineProjectionTestSuite extends FunSuite {
     }
   }
 
+  test("Test giving empty coords to project method of SimpleLeaderLineProjection") {
+    val maxBin = (3, 3)
+    val bounds = ((-16.0, -16.0), (16.0, 16.0))
+    val leaderLength = 5
+    val tms = false
+
+    val projection = new SimpleLeaderLineProjection(Seq(4), bounds._1, bounds._2, leaderLength, tms = tms)
+    val result = projection.project(None, maxBin)
+
+    assertResult(None)(result)
+  }
+  test("Test when line2point is greater than minLengthOpt") {
+    val maxBin = (3, 3)
+    val bounds = ((-16.0, -16.0), (16.0, 16.0))
+    val leaderLength = 5
+    val tms = false
+
+    val projection = new SimpleLeaderLineProjection(Seq(4), bounds._1, bounds._2, leaderLength, Some(2), tms = tms)
+    val bruteForce = new BruteForceLeaderLineReducer(maxBin, bounds, 4, leaderLength, tms = tms)
+
+    for (x0 <- -10 to 10; y0 <- -10 to 10; x1 <- -10 to 10; y1 <- -10 to 10) {
+      if (x0 != x1 || y0 != y1) {
+        try {
+          val usingProjection = projection.project(Some((x0.toDouble, y0.toDouble, x1.toDouble, y1.toDouble)), maxBin).get.sorted.toList
+          val usingBruteForce = bruteForce.getBins(x0, y0, x1, y1).sorted.toList
+          assert(usingBruteForce === usingProjection, "Points [%d, %d x %d, %d]".format(x0, y0, x1, y1))
+        } catch {
+          case e: Exception => throw new Exception("Error processing point [%d, %d x %d, %d".format(x0, y0, x1, y1), e)
+        }
+      }
+    }
+  }
+  test("Test when line2point is not greater than minLengthOpt") {
+    val maxBin = (3, 3)
+    val bounds = ((-16.0, -16.0), (16.0, 16.0))
+    val leaderLength = 5
+    val tms = false
+    val minLength = 1000
+
+    val projection = new SimpleLeaderLineProjection(Seq(4), bounds._1, bounds._2, leaderLength, Some(minLength), tms = tms)
+
+    for (x0 <- -10 to 10; y0 <- -10 to 10; x1 <- -10 to 10; y1 <- -10 to 10) {
+      if (x0 != x1 || y0 != y1) {
+        try {
+          val usingProjection = projection.project(Some((x0.toDouble, y0.toDouble, x1.toDouble, y1.toDouble)), maxBin)
+          assert(usingProjection == None)
+        } catch {
+          case e: Exception => throw new Exception(s"Error thrown: $e")
+        }
+      }
+    }
+  }
+
+  test("Test binTo1D and binFrom1D functions in SimpleLeaderLineProjection") {
+    val maxBin = (3, 3)
+    val bounds = ((-16.0, -16.0), (16.0, 16.0))
+    val leaderLength = 5
+    val tms = false
+    val projection = new SimpleLeaderLineProjection(Seq(4), bounds._1, bounds._2, leaderLength, tms = tms)
+
+    val coord1D = projection.binTo1D((2, 2), (3, 3))
+    assertResult(10)(coord1D)
+
+    val binCoord = projection.binFrom1D(9, (3, 3))
+    assertResult((1, 2))(binCoord)
+  }
+
   // This test is here to activate in case anything fails in the previous test, so as to make debugging it simpler.
   ignore("Test a single case that failed in the exhaustive leader line test") {
     val (x0, y0, x1, y1) = (-10, -5, -9, -10)

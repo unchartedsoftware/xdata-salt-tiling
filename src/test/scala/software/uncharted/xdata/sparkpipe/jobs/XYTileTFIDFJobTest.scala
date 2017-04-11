@@ -21,7 +21,7 @@ class XYTileTFIDFJobTest extends FunSpec {
   private val testOutputDir: String = "build/tmp/test_file_output/tile_topics"
   private val suffix: String = "bin"
 
-  describe("XYTileTFIDFJobTest test") {
+  describe("XYTileTFIDFJobTest") {
     describe("#execute") {
       it("should create tiles from source csv data", FileIOTest) {
         // When test are run from another project that includes this project, the current working directory is set such

@@ -73,10 +73,8 @@ class HBaseConnectorTest extends SparkFunSpec with BeforeAndAfterAll {
     hbc.close
   }
 
-
   private val configFile = Seq(classOf[HBaseConnectorTest].getResource("/hbase-site.xml").toURI.getPath)
   private lazy val hbc = HBaseConnector(configFile)
-
 
   private val testColFamilyName = "tileData"
   private val testColMetaDataName = "tileMetaData"
@@ -91,10 +89,12 @@ class HBaseConnectorTest extends SparkFunSpec with BeforeAndAfterAll {
   private val qualifier2 = "anotherLayer"
 
   private val data = Seq[Byte](0, 1, 2, 3, 4, 5)
+
   //remove toSeq and run again
   private val data2 = Array(("3,4,5", data), ("4,4,5", data))
   private val data3 = Array(("5,4,5", data), ("6,4,5", data))
   private val data4 = Array(("7,4,5", data), ("8,4,5", data))
+
   describe("HBaseConnectorTest") {
 
     describe("getConnection") {
@@ -201,7 +201,7 @@ class HBaseConnectorTest extends SparkFunSpec with BeforeAndAfterAll {
           connection.close()
         }
 
-        it("return true when non-existent table is given", HBaseTest) {
+        it("should return true when non-existent table is given", HBaseTest) {
           assertResult(true)(hbc.writeMetaData(tableName = nonExistentTable3, rowID = "anotherTestRowID", data = data))
         }
 

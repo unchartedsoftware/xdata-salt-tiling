@@ -190,7 +190,7 @@ class SimpleLeaderLineProjection(zoomLevels: Seq[Int],
     }
   }
 
-  // scalastyle:ofn method.length
+  // scalastyle:on method.length
 
   /**
     * Project a bin index BC into 1 dimension for easy storage of bin values in an array

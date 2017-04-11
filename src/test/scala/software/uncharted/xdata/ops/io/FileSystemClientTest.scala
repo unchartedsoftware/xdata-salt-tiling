@@ -21,7 +21,7 @@ class FileSystemClientTest extends SparkFunSpec {
   private val testLayer = "test_layer"
   private val extension = ".tst"
 
-  describe("read and write tests") {
+  describe("#FileSystemClientTest") {
     it ("should write and read the same data") {
       try {
         val fsc = new FileSystemClient(testDir, Some(extension))

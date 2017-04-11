@@ -22,8 +22,6 @@ import software.uncharted.salt.core.projection.Projection
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.castColumns
 
-
-
 // scalastyle:off parameter.number
 
 /**
@@ -48,19 +46,19 @@ object IPHeatmapOp {
       .to(_.select(selectCols: _*))
       .run()
 
-    // ip address will always be column 0
     val cExtractor = (r: Row) => {
-      if (!r.isNullAt(0)) {
-        Some(r.getString(0))
+      val ipIndex = r.schema.fieldIndex(ipCol)
+      if (!r.isNullAt(ipIndex)) {
+        Some(r.getString(ipIndex))
       } else {
         None
       }
     }
 
-    // value will always be column 1
     val vExtractor = (r: Row) => {
-      if (!r.isNullAt(1)) {
-        Some(r.getAs[T](1))
+      val rowIndex = r.schema.fieldIndex(vCol)
+      if (!r.isNullAt(rowIndex)) {
+        Some(r.getAs[T](rowIndex))
       } else {
         None
       }
@@ -107,19 +105,21 @@ object IPSegmentOp {
       .to(_.select(selectCols: _*))
       .run()
 
-    // ip addresses will always be columns 0 and 1
     val cExtractor = (r: Row) => {
-      if (!r.isNullAt(0) && !r.isNullAt(1)) {
-        Some((r.getString(0), r.getString(1)))
+      val fromIPIndex = r.schema.fieldIndex(ipFromCol)
+      val toIPIndex = r.schema.fieldIndex(ipToCol)
+
+      if (!r.isNullAt(fromIPIndex) && !r.isNullAt(toIPIndex)) {
+        Some((r.getString(fromIPIndex), r.getString(toIPIndex)))
       } else {
         None
       }
     }
 
-    // value will always be column 2
     val vExtractor = (r: Row) => {
-      if (!r.isNullAt(2)) {
-        Some(r.getAs[T](2))
+      val rowIndex = r.schema.fieldIndex(vCol)
+      if (!r.isNullAt(rowIndex)) {
+        Some(r.getAs[T](rowIndex))
       } else {
         None
       }
