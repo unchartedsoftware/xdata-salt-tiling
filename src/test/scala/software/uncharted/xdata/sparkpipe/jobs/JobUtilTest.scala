@@ -26,15 +26,16 @@ object HBaseTest extends Tag("hbc.test")
 
 class JobUtilTest extends SparkFunSpec with BeforeAndAfterAll {
 
-  private val awsAccessKey = sys.env("AWS_ACCESS_KEY")
-  private val awsSecretKey = sys.env("AWS_SECRET_KEY")
+  lazy private val awsAccessKey = sys.env.getOrElse("AWS_ACCESS_KEY", throw new Exception("AWS_ACCESS_KEY is unset"))
+  lazy private val awsSecretKey = sys.env.getOrElse("AWS_SECRET_KEY0", throw new Exception("AWS_SECRET_KEY is unset"))
+
   private val testBucket = "uncharted-s3-test"
   private val s3Layer = "test_layer"
 
-  private val zookeeperQuorum = sys.env.getOrElse("HBASE_ZOOKEEPER_QUORUM", throw new Exception("hbase.zookeeper.quorum is unset"))
-  private val zookeeperPort = sys.env.getOrElse("HBASE_ZOOKEEPER_CLIENTPORT", "2181")
-  private val hBaseMaster = sys.env.getOrElse("HBASE_MASTER", throw new Exception("hbase.master is unset"))
-  private val hBaseClientKeyValMaxSize = sys.env.getOrElse("HBASE_CLIENT_KEYVALUE_MAXSIZE", "0")
+  lazy private val zookeeperQuorum = sys.env.getOrElse("HBASE_ZOOKEEPER_QUORUM", throw new Exception("HBASE_ZOOKEEPER_QUORUM is unset"))
+  lazy private val zookeeperPort = sys.env.getOrElse("HBASE_ZOOKEEPER_CLIENTPORT", "2181")
+  lazy private val hBaseMaster = sys.env.getOrElse("HBASE_MASTER", throw new Exception("HBASE_MASTER is unset"))
+  lazy private val hBaseClientKeyValMaxSize = sys.env.getOrElse("HBASE_CLIENT_KEYVALUE_MAXSIZE", "0")
   private val hbaseLayer = "testTable"
 
   private val configFile = Seq(classOf[JobUtilTest].getResource("/hbase-site.xml").toURI.getPath)
@@ -61,7 +62,7 @@ class JobUtilTest extends SparkFunSpec with BeforeAndAfterAll {
   private val testFile = "metadata.json"
   private val jsonBytes = Seq[Byte](0, 1, 2, 3, 4, 5)
 
-  private val s3c = new S3Client(awsAccessKey, awsSecretKey)
+  lazy private val s3c = new S3Client(awsAccessKey, awsSecretKey)
 
   protected override def beforeAll() = {
     s3c.createBucket(testBucket)
@@ -73,7 +74,7 @@ class JobUtilTest extends SparkFunSpec with BeforeAndAfterAll {
 
   describe("JobUtilTest") {
 
-    it("should throw an exception when config is invalid") {
+    it("should throw an exception when config is invalid", S3Test) {
       val config = ConfigFactory.empty()
       val tileOpResult = createTileOutputOperation(config)
       val tilingError = "No output operation given"
@@ -88,6 +89,8 @@ class JobUtilTest extends SparkFunSpec with BeforeAndAfterAll {
 
     describe("#createTileOutputOperation") {
       it("should create a writeToS3 function when it is a s3 config file", S3Test) {
+
+                s3c.createBucket(testBucket)
 
         val data = sc.parallelize(dataSeq)
         val outputOp = createTileOutputOperation(s3config).get
