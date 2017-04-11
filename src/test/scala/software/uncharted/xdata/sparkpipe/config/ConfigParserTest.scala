@@ -17,16 +17,15 @@ import com.typesafe.config.ConfigFactory
 
 class ConfigParserTest extends FunSpec with ConfigParser {
 
-  describe("#testing functions in configParser") {
+  describe("#ConfigParserTest") {
 
-    it ("test all functions in configParser") {
+    it ("should return values from the supplied config") {
       val configKey = "testConfig"
 
       val sentence = "hello there"
 
       val otherConfig = ConfigFactory.parseString(
-        s"""otherConfig = "testValue"
-         """.stripMargin)
+        s"""otherConfig = "testValue"""".stripMargin)
 
       val config = ConfigFactory.parseString(
         s"""testConfig.keyZero { otherConfig = "testValue" }
@@ -41,7 +40,7 @@ class ConfigParserTest extends FunSpec with ConfigParser {
            |testConfig.keyNine = 20
            |testConfig.keyTen = 1.8
            |testConfig.keyEleven = true
-    """.stripMargin).resolve()
+        """.stripMargin).resolve()
 
       val testConfig = config.getConfig(configKey)
 
@@ -70,10 +69,9 @@ class ConfigParserTest extends FunSpec with ConfigParser {
       assertResult(20)(intValue)
       assertResult(1.8)(doubleVal)
       assertResult(true)(boolVal)
-
     }
 
-    it ("should return default values") {
+    it ("should return default values when a key isn't found a default is supplied") {
       val sampleConfig = ConfigFactory.empty()
       val strDefault = getString(sampleConfig, "stringKey", "defaultString")
       val intDefault = getInt(sampleConfig, "integerKey", 10)
@@ -86,7 +84,7 @@ class ConfigParserTest extends FunSpec with ConfigParser {
       assertResult(false)(boolDefault)
     }
 
-    it ("should return empty sequences since the keys do not exist") {
+    it ("should return empty sequences when a key isn't found") {
       val sampleConfig = ConfigFactory.empty()
       val emptyStrList = getStringList(sampleConfig, "stringListKey")
       val emptyIntList = getIntList(sampleConfig, "intListKey")
@@ -95,7 +93,6 @@ class ConfigParserTest extends FunSpec with ConfigParser {
       assertResult(Seq[Double]())(emptyStrList)
       assertResult(Seq[Int]())(emptyIntList)
       assertResult(Seq[Double]())(emptyDoubleList)
-
     }
 
   }

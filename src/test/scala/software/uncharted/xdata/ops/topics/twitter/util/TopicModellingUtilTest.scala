@@ -16,7 +16,7 @@ import java.util.Date
 import org.scalatest.FunSpec
 
 class TopicModellingUtilTest extends FunSpec {
-  describe("#test various utility functions for topic modelling jobs") {
+  describe("#TopicModellingUtilTest") {
     it ("should test dateRange which takes in Java Date inputs") {
       val yearVal = 2017 - 1900
       val monthVal = 3 - 1 //month value is zero indexed
