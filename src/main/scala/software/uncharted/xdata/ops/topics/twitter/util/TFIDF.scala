@@ -50,7 +50,7 @@ object TFIDF extends Serializable {
   /**
   * Load pre computed tfidf scores from a DataFrame
   * @param input The DataFrame from which to read
-  * @return and Array in the form of (date, word, score)
+  * @return an Array in the form of (date, word, score)
   */
   def loadTFIDF(input: DataFrame): Array[(String, String, Double)] = {
     input.collect.map{row => (

@@ -36,7 +36,7 @@ package object twitter {
     * @param input DataFrame of the tweet corpus.
     * @return DataFrame containing only unique tweet rows.
     */
-  def removeReTweets(textCol: String)(input: DataFrame): DataFrame ={
+  def removeReTweets(textCol: String)(input: DataFrame): DataFrame = {
     //Keep distinct (clean) text.
     //Since we need the whole Row, group by text and return one row / group.
     val text = input.rdd.map(t => (t(t.schema.fieldIndex(textCol)).asInstanceOf[String], t))
