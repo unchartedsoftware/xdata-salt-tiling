@@ -10,15 +10,14 @@
   * accordance with the terms of the license agreement you entered into
   * with Uncharted Software Inc.
   */
-package software.uncharted.xdata.ops.salt.text
+package software.uncharted.sparkpipe.ops.xdata.text
 
 import com.typesafe.config.ConfigFactory
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row}
-import software.uncharted.xdata.spark.SparkFunSpec
-import software.uncharted.sparkpipe.ops.xdata.util.DataFrameOperations
-import software.uncharted.xdata.tiling.config.LDAConfig
 import software.uncharted.sparkpipe.ops.core.rdd
+import software.uncharted.xdata.spark.SparkFunSpec
+import software.uncharted.xdata.tiling.config.LDAConfig
 
 class LDAOperationTests extends SparkFunSpec {
   val defaultDictionaryConfig = DictionaryConfigurationParser.parse(ConfigFactory.empty())

@@ -10,16 +10,16 @@
   * accordance with the terms of the license agreement you entered into
   * with Uncharted Software Inc.
   */
-package software.uncharted.xdata.ops.salt.text
-
-
+package software.uncharted.sparkpipe.ops.xdata.salt
 
 import org.apache.spark.sql.DataFrame
 import software.uncharted.salt.core.projection.numeric.CartesianProjection
+import software.uncharted.salt.core.util.SparseArray
+import software.uncharted.salt.xdata.analytic.WordCounter
+import software.uncharted.sparkpipe.ops.xdata.text.{DictionaryConfiguration, LogIDF, RawTF, TFIDFConfiguration}
 import software.uncharted.xdata.spark.SparkFunSpec
 
 import scala.collection.mutable.{Map => MutableMap}
-import software.uncharted.salt.core.util.SparseArray
 
 
 
@@ -113,9 +113,9 @@ class TFIDFWordCloudTest extends SparkFunSpec {
       val data = createTestData()
 
       val projection = new CartesianProjection(Seq(0, 1, 2), (0.0, 0.0), (8.0, 8.0))
-      val termFrequencies = TextOperations.termFrequencyOp("x", "y", "text", projection, Seq(0, 1, 2))(data)
+      val termFrequencies = TileTextOperations.termFrequencyOp("x", "y", "text", projection, Seq(0, 1, 2))(data)
 
-      val tfidf = TextOperations.doTFIDFByTileFast[Nothing](tfidfConf)(termFrequencies).collect.sortBy { r =>
+      val tfidf = TileTextOperations.doTFIDFByTileFast[Nothing](tfidfConf)(termFrequencies).collect.sortBy { r =>
         16 * r.coords._1 + 4 * r.coords._2 + r.coords._3
       }.map { r =>
         (r.coords, r.bins(0).toMap)
@@ -165,9 +165,9 @@ class TFIDFWordCloudTest extends SparkFunSpec {
       val data = createTestData()
 
       val projection = new CartesianProjection(Seq(0, 1, 2), (0.0, 0.0), (8.0, 8.0))
-      val termFrequencies = TextOperations.termFrequencyOp("x", "y", "text", projection, Seq(0, 1, 2))(data)
+      val termFrequencies = TileTextOperations.termFrequencyOp("x", "y", "text", projection, Seq(0, 1, 2))(data)
 
-      val tfidf = TextOperations.doTFIDFByTileSlow[Nothing](tfidfConf)(termFrequencies).collect.sortBy { r =>
+      val tfidf = TileTextOperations.doTFIDFByTileSlow[Nothing](tfidfConf)(termFrequencies).collect.sortBy { r =>
         16 * r.coords._1 + 4 * r.coords._2 + r.coords._3
       }.map { r =>
         (r.coords, r.bins(0).toMap)
@@ -216,15 +216,15 @@ class TFIDFWordCloudTest extends SparkFunSpec {
   describe("timing trials") {
     def runNewFast (data: DataFrame): Unit = {
       val projection = new CartesianProjection(Seq(0, 1, 2), (0.0, 0.0), (8.0, 8.0))
-      val termFrequencies = TextOperations.termFrequencyOp("x", "y", "text", projection, Seq(0, 1, 2))(data)
+      val termFrequencies = TileTextOperations.termFrequencyOp("x", "y", "text", projection, Seq(0, 1, 2))(data)
 
-      val tfidf = TextOperations.doTFIDFByTileFast[Nothing](tfidfConf)(termFrequencies).collect
+      val tfidf = TileTextOperations.doTFIDFByTileFast[Nothing](tfidfConf)(termFrequencies).collect
     }
     def runNewSlow (data: DataFrame): Unit = {
       val projection = new CartesianProjection(Seq(0, 1, 2), (0.0, 0.0), (8.0, 8.0))
-      val termFrequencies = TextOperations.termFrequencyOp("x", "y", "text", projection, Seq(0, 1, 2))(data)
+      val termFrequencies = TileTextOperations.termFrequencyOp("x", "y", "text", projection, Seq(0, 1, 2))(data)
 
-      val tfidf = TextOperations.doTFIDFByTileSlow[Nothing](tfidfConf)(termFrequencies).collect
+      val tfidf = TileTextOperations.doTFIDFByTileSlow[Nothing](tfidfConf)(termFrequencies).collect
     }
     def time[T] (f: => T): (T, Long) = {
       val startTime = System.currentTimeMillis()

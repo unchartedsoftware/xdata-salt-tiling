@@ -10,104 +10,23 @@
   * accordance with the terms of the license agreement you entered into
   * with Uncharted Software Inc.
   */
-package software.uncharted.xdata.ops.salt.text
+package software.uncharted.sparkpipe.ops.xdata.text
 
 import java.io.FileInputStream
 
 import org.apache.spark.mllib.linalg.{SparseVector, Vector}
-
-import scala.collection.mutable.{Map => MutableMap}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.DataFrame
-import software.uncharted.salt.core.generation.output.SeriesData
-import software.uncharted.salt.core.generation.request.TileLevelRequest
-import software.uncharted.salt.core.projection.numeric.NumericProjection
-import software.uncharted.sparkpipe.ops.xdata.salt.ZXYOp
 
+import scala.collection.mutable.{Map => MutableMap}
 import scala.reflect.ClassTag
 
 /**
   * Various generic text operations, not specific to a single textual analytic
   */
-object TextOperations extends ZXYOp {
-  type TileData[T, X] = SeriesData[(Int, Int, Int), (Int, Int), T, X]
+object TextOperations {
+
   private[text] val notWord = "('[^a-zA-Z]|[^a-zA-Z]'|[^a-zA-Z'])+"
-
-  // This method is specifically to avoid problems with null; as such, it is allowed to use null itself.
-  // scalastyle:off null
-  private def nullToOption[T] (t: T): Option[T] =
-    if (null == t) {
-      None
-    } else {
-      Some(t)
-    }
-  // scalastyle:on null
-
-  private def getWordFile (fileNameOpt: Option[String], caseSensitive: Boolean): Option[Set[String]] = {
-    fileNameOpt.map { fileName =>
-      val fileStream =
-        nullToOption(getClass.getResourceAsStream(fileName))
-        .getOrElse(new FileInputStream(fileName))
-
-      val rawWords = scala.io.Source.fromInputStream(fileStream).getLines.map(_.trim)
-      if (caseSensitive) {
-        rawWords.toSet
-      } else {
-        rawWords.map(_.toLowerCase).toSet
-      }
-    }
-  }
-
-
-  private def documentToWordBag (document: String,
-                                 caseSensitive: Boolean,
-                                 stopWords: Option[Set[String]],
-                                 goWords: Option[Set[String]]): Map[String, Int] = {
-    val wordCounts = MutableMap[String, Int]()
-    document.split(notWord).foreach { uncasedWord =>
-      val word =
-        if (caseSensitive) {
-          uncasedWord.trim
-        } else {
-          uncasedWord.trim.toLowerCase
-        }
-      if (
-        stopWords.map(!_.contains(word)).getOrElse(true) &&
-        goWords.map(_.contains(word)).getOrElse(true)
-      ) {
-        wordCounts(word) = wordCounts.getOrElse(word, 0) + 1
-      }
-    }
-
-    wordCounts.toMap
-  }
-
-
-  /**
-    * Take a dataframe with a column containing text documents, and tile the documents into term-frequency collections.
-    *
-    * @param xCol The column with the x coordinate of each record
-    * @param yCol The column with the y coordinate of each record
-    * @param textCol The column containing the document in each record
-    * @param projection The projection dermining how x and y coordinates are interpretted
-    * @param zoomLevels The tile levels to generate
-    * @param input The input data
-    * @return A set of tiles containing, by tile, the words appearing in each tile, and the number of times each word
-    *         appears
-    */
-  def termFrequencyOp(xCol: String,
-                      yCol: String,
-                      textCol: String,
-                      projection: NumericProjection[(Double, Double), (Int, Int, Int), (Int, Int)],
-                      zoomLevels: Seq[Int])
-                     (input: DataFrame):
-  RDD[SeriesData[(Int, Int, Int), (Int, Int), Map[String, Int], Nothing]] = {
-    // Pull out term and document frequencies for each tile
-    val request = new TileLevelRequest(zoomLevels, (tc: (Int, Int, Int)) => tc._1)
-    val binAggregator = new WordCounter
-
-    super.apply(projection, 1, xCol, yCol, textCol, binAggregator, None)(request)(input)
-  }
 
   /**
     * Convert an input DataFrame into an RDD of word bags
@@ -132,6 +51,7 @@ object TextOperations extends ZXYOp {
       // Change simple document strings to word bags
       map { case (id, document) => (id, documentToWordBag(document, config.caseSensitive, stopWords, goWords)) }
   }
+
 
   /**
     * Convert an input dataset that contains texts into an output dataset that contains word bags
@@ -190,6 +110,7 @@ object TextOperations extends ZXYOp {
       map { case (id, document) => (id, documentToWordBag(document, config.caseSensitive, stopWords, goWords)) }
   }
 
+
   /**
     * Take an RDD of (id, word bag) pairs, and transform the word bags into vector references into a common dictionary,
     * with the entries being the count of words in each word bag.
@@ -211,31 +132,6 @@ object TextOperations extends ZXYOp {
     wordVectors
   }
 
-  /**
-    * Take a dataframe containing documents, and transform it to a tile set of word bags - transforming each document
-    * into a word bag, then combining them.
-    *
-    * @param xColumn The column of the input DataFrame containing the x coordinate of each document
-    * @param yColumn The column of the input DataFrame containing the y coordinate of each document
-    * @param documentColumn  The column of the input DataFrame containing the documents to be analyzed
-    * @param projection The projection from (x, y) to tile space
-    * @param zoomLevels The zoom levels to tile
-    * @param input The input data
-    * @return
-    */
-  def tileWordBags(xColumn: String,
-                   yColumn: String,
-                   documentColumn: String,
-                   projection: NumericProjection[(Double, Double), (Int, Int, Int), (Int, Int)],
-                   zoomLevels: Seq[Int])
-                  (input: DataFrame):
-  RDD[TileData[Map[String, Int], Nothing]] = {
-    // Pull out term and document frequencies for each tile
-    val request = new TileLevelRequest(zoomLevels, (tc: (Int, Int, Int)) => tc._1)
-    val binAggregator = new WordCounter
-
-    super.apply(projection, 1, xColumn, yColumn, documentColumn, binAggregator, None)(request)(input)
-  }
 
   /**
     * Create a dictionary of the terms seen in a set of documents, along with the term frequency (the number of
@@ -273,25 +169,6 @@ object TextOperations extends ZXYOp {
     }.sortWith(_._2 > _._2)
   }
 
-  // Helper function for getDictionaries.  This limits values to indexed minima and maxima - so if the index of the
-  // value is n, the value has to lie between minDF(n) and maxDF(n)
-  // Basically, this is only outside getDictionaries to reduce it's complexity so it passes scalastyle tests.  That
-  // being said this does make sense as a separate function, so does actually reduce complexity, so I guess scalastyle
-  // works... sort-of.
-  private def rangeLimitation (minDF: Option[Map[Int, Double]], maxDF: Option[Map[Int, Double]])
-                              (documentCounts: Map[Int, Int])
-                              (docData: (Int, Int)): Option[(Int, Int)] = {
-    val (docIndex, termCount) = docData
-
-    if (
-      minDF.map(_ (docIndex) <= documentCounts(docIndex)).getOrElse(true) &&
-        maxDF.map(_ (docIndex) >= documentCounts(docIndex)).getOrElse(true)
-    ) {
-      Some((docIndex, termCount))
-    } else {
-      None
-    }
-  }
 
   /**
     * Create a series of dictionaries of the terms seen in a set of documents, along with the term frequency (the
@@ -310,8 +187,8 @@ object TextOperations extends ZXYOp {
     * @return The dictionaries to use with this set of word bags
     */
   def getDictionaries[T] (config: DictionaryConfiguration,
-                                  wordBagExtractorFcn: T => (Int, Map[String, Int]))
-                                 (input: RDD[T]): Array[(String, Map[Int, Int])] = {
+                          wordBagExtractorFcn: T => (Int, Map[String, Int]))
+                         (input: RDD[T]): Array[(String, Map[Int, Int])] = {
     val indexedDocuments = input.map(wordBagExtractorFcn)
 
     val docCounts = config.needDocCount.map { yes =>
@@ -342,6 +219,7 @@ object TextOperations extends ZXYOp {
     ).sortBy(_._1)
   }
 
+
   /**
     * Convert an RDD of word bags into an RDD of word vectors (i.e., eliminate references to the strings, make it
     * all numeric).  Word vectors are still stored sparsely (i.e., as maps)
@@ -360,122 +238,64 @@ object TextOperations extends ZXYOp {
     }
   }
 
-  /**
-    * Perform TFIDF on the output of termFrequency, on a tile by tile basis
-    *
-    * This version operates level by level; it is easier to understand, but slower than version 2 below.
-    *
-    * @param config Configuration specifying how to perform TF*IDF analytic
-    * @param input
-    * @return
-    */
-  def doTFIDFByTileSlow[X](config: TFIDFConfiguration)(input: RDD[TileData[Map[String, Int], X]])
-  : RDD[TileData[List[(String, Double)], X]] = {
-    // Cache input - we're going to be going through it a lot
-    input.cache()
-    val levels = input.map(_.coords._1).distinct.collect().sorted
-    val results = for (level <- levels) yield {
-      val lvlData = input.filter(_.coords._1 == level)
-      val lvlDocs = lvlData.flatMap(_.bins.seq).filter(!_.isEmpty).count
-      val lvlDict = getDictionary[Map[String, Int]](config.dictionaryConfig, map => map)(lvlData.flatMap(_.bins.seq))
-      val lvlIdfs = lvlDict.map { case (term, documentsWithTerm) =>
-        (term, config.idf.inverseDocumentFrequency(lvlDocs, documentsWithTerm))
-      }.toMap
-      tileTransformationOp((binData: Map[String, Int], tile: (Int, Int, Int), bin: (Int, Int)) => {
-        if (binData.isEmpty) {
-          List[(String, Double)]()
+
+  // Helper function for getDictionaries.  This limits values to indexed minima and maxima - so if the index of the
+  // value is n, the value has to lie between minDF(n) and maxDF(n)
+  // Basically, this is only outside getDictionaries to reduce it's complexity so it passes scalastyle tests.  That
+  // being said this does make sense as a separate function, so does actually reduce complexity, so I guess scalastyle
+  // works... sort-of.
+  private def rangeLimitation (minDF: Option[Map[Int, Double]], maxDF: Option[Map[Int, Double]])
+                              (documentCounts: Map[Int, Int])
+                              (docData: (Int, Int)): Option[(Int, Int)] = {
+    val (docIndex, termCount) = docData
+
+    if (
+      minDF.map(_ (docIndex) <= documentCounts(docIndex)).getOrElse(true) &&
+        maxDF.map(_ (docIndex) >= documentCounts(docIndex)).getOrElse(true)
+    ) {
+      Some((docIndex, termCount))
+    } else {
+      None
+    }
+  }
+
+
+  private def getWordFile (fileNameOpt: Option[String], caseSensitive: Boolean): Option[Set[String]] = {
+    fileNameOpt.map { fileName =>
+      val fileStream =
+        Option(getClass.getResourceAsStream(fileName))
+          .getOrElse(new FileInputStream(fileName))
+
+      val rawWords = scala.io.Source.fromInputStream(fileStream).getLines.map(_.trim)
+      if (caseSensitive) {
+        rawWords.toSet
+      } else {
+        rawWords.map(_.toLowerCase).toSet
+      }
+    }
+  }
+
+
+  private def documentToWordBag (document: String,
+                                 caseSensitive: Boolean,
+                                 stopWords: Option[Set[String]],
+                                 goWords: Option[Set[String]]): Map[String, Int] = {
+    val wordCounts = MutableMap[String, Int]()
+    document.split(notWord).foreach { uncasedWord =>
+      val word =
+        if (caseSensitive) {
+          uncasedWord.trim
         } else {
-          val maxRawFrequency = binData.map(_._2).max
-          val terms = binData.size
-          binData.map { case (term, rawFrequency) =>
-            val tf = config.tf.termFrequency(rawFrequency, terms, maxRawFrequency)
-            val idf = lvlIdfs(term)
-            (term, tf * idf)
-          }.toList.sortBy(_._2).take(config.wordsToKeep)
+          uncasedWord.trim.toLowerCase
         }
-      })(lvlData)
+      if (
+        stopWords.map(!_.contains(word)).getOrElse(true) &&
+          goWords.map(_.contains(word)).getOrElse(true)
+      ) {
+        wordCounts(word) = wordCounts.getOrElse(word, 0) + 1
+      }
     }
-    results.reduce(_ union _)
-  }
 
-  /**
-    * Perform TFIDF on the output of termFrequency, on a tile by tile basis
-    *
-    * This version acts on all levels at once, so is faster than the level by level version, but more complex.
-    *
-    * @param config Configuration specifying how to perform TF*IDF analytic
-    * @param input
-    * @return
-    */
-  def doTFIDFByTileFast[X](config: TFIDFConfiguration)(input: RDD[TileData[Map[String, Int], X]])
-  : RDD[TileData[List[(String, Double)], X]] = {
-    input.cache
-    val docsWithLevel = input.flatMap(datum => datum.bins.seq.map(bin => (datum.coords._1, bin)))
-    val dictionary = getDictionaries[(Int, Map[String, Int])](config.dictionaryConfig, datum => datum)(docsWithLevel)
-    val docCountByLevel = docsWithLevel.map { case (level, doc) =>
-      if (doc.isEmpty) {
-        (level, 0)
-      } else {
-        (level, 1)
-      }
-    }.reduceByKey(_ + _).collect.toMap
-    val idfs = dictionary.map { case (term, termDocsByLevel) =>
-      (
-        term,
-        termDocsByLevel.map { case (level, documentsWithTerm) =>
-          (level, config.idf.inverseDocumentFrequency(docCountByLevel(level), documentsWithTerm))
-        }
-        )
-    }.toMap
-
-    tileTransformationOp((binData: Map[String, Int], tile: (Int, Int, Int), bin: (Int, Int)) => {
-      if (binData.isEmpty) {
-        List[(String, Double)]()
-      } else {
-        val level = tile._1
-        // Filter out terms that aren't in our dictionary
-        val knownWords = binData.filter { case (term, termFrequency) =>
-            idfs.contains(term)
-        }
-
-        val maxRawFrequency = knownWords.map(_._2).max
-        val terms = knownWords.size
-
-        binData.map { case (term, rawFrequency) =>
-          val tf = config.tf.termFrequency(rawFrequency, terms, maxRawFrequency)
-          val idf = idfs(term)(level)
-          (term, tf * idf)
-        }.toList.sortBy(_._2).take(config.wordsToKeep)
-      }
-    })(input)
-  }
-
-  /**
-    * Take a set of tiles, and transform the tile contents
-    *
-    * @param input The input data set of already tiled data
-    * @tparam TC The tile coordinate type
-    * @tparam BC The bin coordinate type
-    * @tparam X The aggregators' coordinate type
-    * @tparam VI The input value type
-    * @tparam VO The output value type
-    * @return A new set of tiles with the contents transformed as per the input function
-    */
-  def tileTransformationOp[TC, BC, X, VI, VO: ClassTag] (transformation: (VI, TC, BC) => VO)
-                                                        (input: RDD[SeriesData[TC, BC, VI, X]]): RDD[SeriesData[TC, BC, VO, X]] = {
-    input.map { data =>
-      val tileCoordinate = data.coords
-      val projection = data.projection
-      val maxBin = data.maxBin
-
-      val outputBins = data.bins.mapWithIndex { (value, index) =>
-        val binCoordinate = projection.binFrom1D(index, maxBin)
-        transformation(value, tileCoordinate, binCoordinate)
-      }
-
-      new SeriesData[TC, BC, VO, X](
-        data.projection, maxBin, tileCoordinate, outputBins, data.tileMeta
-      )
-    }
+    wordCounts.toMap
   }
 }

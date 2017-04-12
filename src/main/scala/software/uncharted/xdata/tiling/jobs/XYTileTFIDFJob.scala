@@ -16,9 +16,11 @@ import com.typesafe.config.Config
 import org.apache.spark.sql.SparkSession
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.xdata.io.serializeElementDoubleScore
-import software.uncharted.xdata.ops.salt.text.{TFIDFConfigurationParser, TextOperations}
+import software.uncharted.sparkpipe.ops.xdata.salt.TileTextOperations
+import software.uncharted.sparkpipe.ops.xdata.text.{TFIDFConfigurationParser, TextOperations}
 import software.uncharted.xdata.tiling.config.TileTopicConfig
 import software.uncharted.xdata.tiling.jobs.JobUtil.dataframeFromSparkCsv
+
 import scala.util.{Failure, Success}
 
 object XYTileTFIDFJob extends AbstractJob {
@@ -55,7 +57,7 @@ object XYTileTFIDFJob extends AbstractJob {
     val tfidfConfig = parseTFIDFConfig(config)
 
     val projection = tileTopicConfig.projectionConfig.createProjection(tilingConfig.levels)
-    val wordCloudTileOp = TextOperations.termFrequencyOp(
+    val wordCloudTileOp = TileTextOperations.termFrequencyOp(
       tileTopicConfig.xColumn,
       tileTopicConfig.yColumn,
       tileTopicConfig.textColumn,
@@ -68,7 +70,7 @@ object XYTileTFIDFJob extends AbstractJob {
     // Process our data
     Pipe(df)
       .to(wordCloudTileOp)
-      .to(TextOperations.doTFIDFByTileFast(tfidfConfig))
+      .to(TileTextOperations.doTFIDFByTileFast(tfidfConfig))
       .to(serializeElementDoubleScore)
       .to(outputOperation)
       .run

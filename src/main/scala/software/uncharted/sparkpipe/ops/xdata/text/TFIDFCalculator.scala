@@ -10,7 +10,7 @@
   * accordance with the terms of the license agreement you entered into
   * with Uncharted Software Inc.
   */
-package software.uncharted.xdata.ops.salt.text
+package software.uncharted.sparkpipe.ops.xdata.text
 
 import com.typesafe.config.Config
 import software.uncharted.xdata.tiling.config.ConfigParser

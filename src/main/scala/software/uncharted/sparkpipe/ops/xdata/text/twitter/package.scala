@@ -10,7 +10,7 @@
   * accordance with the terms of the license agreement you entered into
   * with Uncharted Software Inc.
   */
-package software.uncharted.xdata.ops.topics
+package software.uncharted.sparkpipe.ops.xdata.text
 
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.sql.{Column, DataFrame}
@@ -21,7 +21,7 @@ import software.uncharted.salt.xdata.util.RangeDescription
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.addColumn
 import software.uncharted.sparkpipe.ops.core.dataframe.temporal.dateFilter
-import software.uncharted.xdata.ops.topics.twitter.util.{BDPParallel, BTMUtil, TFIDF, TopicModellingUtil, TwitterTokenizer}
+import software.uncharted.sparkpipe.ops.xdata.text.twitter.util.{BDPParallel, BTMUtil, TFIDF, TopicModellingUtil, TwitterTokenizer}
 
 /**
   * This package contains the operation (doTopicModelling) to compute the topics of a given corpus.

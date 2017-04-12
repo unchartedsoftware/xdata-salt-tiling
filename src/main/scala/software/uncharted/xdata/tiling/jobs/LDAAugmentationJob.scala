@@ -16,7 +16,7 @@ import com.typesafe.config.Config
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
-import software.uncharted.xdata.ops.salt.text.{DictionaryConfiguration, DictionaryConfigurationParser, LDAOp}
+import software.uncharted.sparkpipe.ops.xdata.text.{DictionaryConfiguration, DictionaryConfigurationParser, LDAOp}
 import software.uncharted.xdata.tiling.config.{HdfsCsvConfig, HdfsCsvConfigParser, LDAConfig}
 
 import scala.util.{Failure, Success}

@@ -11,7 +11,7 @@
   * with Uncharted Software Inc.
   */
 
-package software.uncharted.xdata.ops.topics.twitter.util
+package software.uncharted.sparkpipe.ops.xdata.text.twitter.util
 
 import org.apache.spark.sql.DataFrame
 

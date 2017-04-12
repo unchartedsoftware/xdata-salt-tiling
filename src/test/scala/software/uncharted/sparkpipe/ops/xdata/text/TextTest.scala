@@ -1,22 +1,20 @@
 /**
-  * Copyright (c) 2014-2015 Uncharted Software Inc. All rights reserved.
-  *
-  * Property of Uncharted(tm), formerly Oculus Info Inc.
-  * http://uncharted.software/
-  *
-  * This software is the confidential and proprietary information of
-  * Uncharted Software Inc. ("Confidential Information"). You shall not
-  * disclose such Confidential Information and shall use it only in
-  * accordance with the terms of the license agreement you entered into
-  * with Uncharted Software Inc.
-  */
-
+ * Copyright (c) 2014-2015 Uncharted Software Inc. All rights reserved.
+ *
+ * Property of Uncharted(tm), formerly Oculus Info Inc.
+ * http://uncharted.software/
+ *
+ * This software is the confidential and proprietary information of
+ * Uncharted Software Inc. ("Confidential Information"). You shall not
+ * disclose such Confidential Information and shall use it only in
+ * accordance with the terms of the license agreement you entered into
+ * with Uncharted Software Inc.
+ */
 package software.uncharted.sparkpipe.ops.xdata.text
 
-import software.uncharted.xdata.spark.SparkFunSpec
 import org.apache.spark.mllib.feature.{HashingTF => TestTF}
 import org.apache.spark.ml.linalg.SparseVector
-import software.uncharted.sparkpipe.ops.xdata.text
+import software.uncharted.xdata.spark.SparkFunSpec
 
 class TextTest extends SparkFunSpec {
   describe("Pipeline Text Analytics Test") {
@@ -31,7 +29,7 @@ class TextTest extends SparkFunSpec {
 
       val dfData = sparkSession.createDataFrame(rddData)
 
-      val result = text.tfidf("text", "tfs", "tfidfs")(dfData)
+      val result = tfidf("text", "tfs", "tfidfs")(dfData)
 
       assert(result.count() === 5)
 

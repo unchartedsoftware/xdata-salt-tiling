@@ -11,7 +11,7 @@
   * with Uncharted Software Inc.
   */
 
-package software.uncharted.xdata.ops.topics.twitter
+package software.uncharted.sparkpipe.ops.xdata.text.twitter.util
 
 import java.text.SimpleDateFormat
 
@@ -19,8 +19,8 @@ import org.apache.spark.sql.types.{DoubleType, StringType, StructField, StructTy
 import software.uncharted.salt.xdata.util.RangeDescription
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.xdata.util.DataFrameOperations.toDataFrame
-import software.uncharted.xdata.ops.topics.twitter.util._
 import software.uncharted.xdata.spark.SparkFunSpec
+import software.uncharted.sparkpipe.ops.xdata.text.twitter
 
 class TwitterTest extends SparkFunSpec {
   val path = classOf[TwitterTest].getResource("/topic-modelling/topic-modelling.conf").toURI.getPath
@@ -56,7 +56,7 @@ class TwitterTest extends SparkFunSpec {
         val maxTime = formatter.parse("2016-10-03").getTime
         val timeRange: RangeDescription[Long] = RangeDescription.fromStep(minTime, maxTime, 24 * 60 * 60 * 1000L)
 
-        val result = getDocumentTopic(
+        val result = twitter.getDocumentTopic(
           "date",
           "id",
           "text",
@@ -94,7 +94,7 @@ class TwitterTest extends SparkFunSpec {
         val maxTime = formatter.parse("2016-09-03").getTime
         val timeRange = RangeDescription.fromStep(minTime, maxTime, 24 * 60 * 60 * 1000).asInstanceOf[RangeDescription[Long]]
 
-        val result = getDocumentTopic(
+        val result = twitter.getDocumentTopic(
           "date",
           "id",
           "text",
@@ -142,7 +142,7 @@ class TwitterTest extends SparkFunSpec {
       ))
       val dfData = sparkSession.createDataFrame(rddData)
 
-      val unique = removeReTweets("text")(dfData)
+      val unique = twitter.removeReTweets("text")(dfData)
       assert(unique.count() === 2)
     }
   }
@@ -177,7 +177,7 @@ class TwitterTest extends SparkFunSpec {
   }
 
   describe("#TwitterTokenizer") {
-    import software.uncharted.xdata.ops.topics.twitter.util.TwitterTokenizer._
+    import software.uncharted.sparkpipe.ops.xdata.text.twitter.util.TwitterTokenizer._
     it("should test normalizeEmoji") {
       val textEmoji = "Today is a sunny day ☺" // scalastyle:ignore
       val repeatEmoji = "Today is a sunny day ☺☺"
@@ -310,7 +310,7 @@ class TwitterTest extends SparkFunSpec {
           StructField("score", DoubleType)))
         val tfidfScores = toDataFrame(sparkSession, Map[String, String](), schemaTFIDF)(rddScores)
 
-        val result = getDocumentTopicRawTFIDF(
+        val result = twitter.getDocumentTopicRawTFIDF(
           "date",
           "id",
           "text",

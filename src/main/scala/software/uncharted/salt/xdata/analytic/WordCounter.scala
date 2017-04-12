@@ -10,9 +10,7 @@
   * accordance with the terms of the license agreement you entered into
   * with Uncharted Software Inc.
   */
-package software.uncharted.xdata.ops.salt.text
-
-
+package software.uncharted.salt.xdata.analytic
 
 import software.uncharted.salt.core.analytic.Aggregator
 

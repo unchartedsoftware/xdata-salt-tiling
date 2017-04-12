@@ -18,7 +18,7 @@ import scala.util.Try
 import com.typesafe.config.Config
 import grizzled.slf4j.Logging
 import software.uncharted.salt.xdata.util.RangeDescription
-import software.uncharted.xdata.ops.topics.twitter.util.WordDict
+import software.uncharted.sparkpipe.ops.xdata.text.twitter.util.WordDict
 
 case class TopicModellingConfig (
   alpha: Option[Double],
