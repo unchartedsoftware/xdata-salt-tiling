@@ -167,6 +167,13 @@ object BDPParallel extends Serializable with Logging {
     Row.fromSeq(document.toSeq ++ Array(topics))
   }
 
+  /**
+    * Utility function
+    * Takes in an RDD of string array of size three
+    *
+    * @param rdd
+    * @return RDD with the original array split into string Tuple2
+    */
   def keyvalueRDD(rdd: RDD[Array[String]]) : RDD[(String, (String, String))] = {
     rdd.map(x => (x(0), (x(1), x(2))))
   }

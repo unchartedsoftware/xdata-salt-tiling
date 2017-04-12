@@ -13,7 +13,6 @@
 package software.uncharted.xdata.ops.salt.text
 
 import org.apache.spark.SparkContext
-import software.uncharted.xdata.spark.mllib.MatrixUtilities
 
 import scala.collection.mutable.{Map => MutableMap}
 import org.apache.spark.mllib.clustering.{DistributedLDAModel, LDA, LDAModel, LocalLDAModel}
@@ -22,7 +21,8 @@ import org.apache.spark.mllib.linalg.{DenseVector, Matrix, SparseVector, Vector}
 import org.apache.spark.rdd.RDD
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.util.SparseArray
-import software.uncharted.xdata.sparkpipe.config.LDAConfig
+import software.uncharted.sparkpipe.ops.xdata.util.MatrixUtilities
+import software.uncharted.xdata.tiling.config.LDAConfig
 
 /**
   * An operation to run Latent Dirichlet Allocation on texts in a corpus

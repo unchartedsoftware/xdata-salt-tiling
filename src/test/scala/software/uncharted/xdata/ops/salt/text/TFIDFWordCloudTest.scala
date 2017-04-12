@@ -251,6 +251,8 @@ class TFIDFWordCloudTest extends SparkFunSpec {
       }
 
       println(s"Timing stats for $N runs:")
+      println(s"new fast tfidf implementation: $tnf")
+      println(s"new slow tfidf implementation: $tns")
     }
   }
 }

@@ -16,8 +16,8 @@ import com.typesafe.config.ConfigFactory
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row}
 import software.uncharted.xdata.spark.SparkFunSpec
-import software.uncharted.xdata.ops.util.DataFrameOperations
-import software.uncharted.xdata.sparkpipe.config.LDAConfig
+import software.uncharted.sparkpipe.ops.xdata.util.DataFrameOperations
+import software.uncharted.xdata.tiling.config.LDAConfig
 import software.uncharted.sparkpipe.ops.core.rdd
 
 class LDAOperationTests extends SparkFunSpec {

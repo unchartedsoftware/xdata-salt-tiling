@@ -15,8 +15,10 @@ package software.uncharted.xdata.ops.topics.twitter
 
 import java.text.SimpleDateFormat
 
+import org.apache.spark.sql.types.{DoubleType, StringType, StructField, StructType}
+import software.uncharted.salt.xdata.util.RangeDescription
 import software.uncharted.sparkpipe.Pipe
-import software.uncharted.xdata.ops.salt.RangeDescription
+import software.uncharted.sparkpipe.ops.xdata.util.DataFrameOperations.toDataFrame
 import software.uncharted.xdata.ops.topics.twitter.util._
 import software.uncharted.xdata.spark.SparkFunSpec
 
@@ -145,7 +147,7 @@ class TwitterTest extends SparkFunSpec {
     }
   }
 
-  describe("#test keyvalueRDD functionality") {
+  describe("#BDPParallel") {
     it("should split RDD of string array of size 3") {
       val data1 = Array("great", "jazz", "music")
       val data2 = Array("that cat", "was", "cool")
@@ -158,7 +160,7 @@ class TwitterTest extends SparkFunSpec {
     }
   }
 
-  describe("test BDP") {
+  describe("BDP") {
     it ("should initialize a BDP instance's tfidf dictionary/map with the input map.") {
       val bdp = new BDP(3)
 
@@ -174,8 +176,8 @@ class TwitterTest extends SparkFunSpec {
     }
   }
 
-  describe("#test extraction of tokens") {
-    import TwitterTokenizer._
+  describe("#TwitterTokenizer") {
+    import software.uncharted.xdata.ops.topics.twitter.util.TwitterTokenizer._
     it("should test normalizeEmoji") {
       val textEmoji = "Today is a sunny day ☺" // scalastyle:ignore
       val repeatEmoji = "Today is a sunny day ☺☺"
@@ -248,7 +250,7 @@ class TwitterTest extends SparkFunSpec {
     }
   }
 
-  describe("#test TextUtil functions") {
+  describe("#TextUtil") {
     it("should test cleanStopwords ") {
       val result = TextUtil.cleanStopwords("Sometimes I believe in as many as six impossible things before breakfast. That is an excellent practice.",stopWords)
       val expected = "impossible breakfast excellent practice"
@@ -256,7 +258,7 @@ class TwitterTest extends SparkFunSpec {
     }
   }
 
-  describe("#test SampleRecorder") {
+  describe("#SampleRecorder") {
     it ("should set a TFIDF dictionary and get the weight of its words") {
       val words = Array("engineering", "science", "art")
       val m = words.length
@@ -269,6 +271,68 @@ class TwitterTest extends SparkFunSpec {
       assertResult(sample_tfidf)(SR.tfidf_dict)
       assertResult(2.0)(SR.getWeight(1, 0.1))
       assertResult(1.0)(SR.getWeight(3, 0.1))
+    }
+  }
+
+  describe("#getDocumentTopicRawTFIDF") {
+    it("should perform tfidf processing on a given corpus") {
+      try {
+        val corpusRDD = sc.parallelize(Seq(
+          Tweet("1", "Wed Apr 12 00:00:10 +0000 2017", "Cats are the best pets"),
+          Tweet("2", "Sun Apr 16 00:00:10 +0000 2017", "Happy national pets day"),
+          Tweet("3", "Mon Apr 17 00:00:10 +0000 2017", "Cats are fluffy")
+        ))
+        val corpusDF = sparkSession.createDataFrame(corpusRDD)
+
+        val formatter = new SimpleDateFormat("yyyy-MM-dd")
+        val minTime = formatter.parse("2017-04-01").getTime
+        val maxTime = formatter.parse("2017-10-03").getTime
+        val timeRange: RangeDescription[Long] = RangeDescription.fromStep(minTime, maxTime, 24 * 60 * 60 * 1000L)
+
+        val stopwords_bcst = sc.broadcast(stopWords)
+
+        val scoresSeq = Seq("2017-04-12,Cats,0.287682072",
+                            "2017-04-12,are,0.287682072",
+                            "2017-04-12,the,0.693147181",
+                            "2017-04-12,best,0.693147181",
+                            "2017-04-12,pets,0.287682072",
+                            "2017-04-16,Happy,0.693147181",
+                            "2017-04-16,national,0.693147181",
+                            "2017-04-16,pets,0.287682072",
+                            "2017-04-16,day,0.693147181",
+                            "2017-04-17,Cats,0.287682072",
+                            "2017-04-17,are,0.287682072",
+                            "2017-04-17,fluffy,0.693147181")
+        val rddScores = sc.parallelize(scoresSeq)
+        val schemaTFIDF = StructType(Seq(
+          StructField("date", StringType),
+          StructField("term", StringType),
+          StructField("score", DoubleType)))
+        val tfidfScores = toDataFrame(sparkSession, Map[String, String](), schemaTFIDF)(rddScores)
+
+        val result = getDocumentTopicRawTFIDF(
+          "date",
+          "id",
+          "text",
+          "topic",
+          Some(1 / Math.E),
+          Some(0.01),
+          timeRange,
+          Some(10),
+          Some(2),
+          Some(10),
+          stopwords_bcst
+        )(corpusDF, tfidfScores)
+
+        //Every row should be returned.
+        assert(result.count() === 3)
+
+        //The output field should exist.
+        assert(result.schema.fieldIndex("topic") > 0)
+
+      } finally {
+        System.setProperty("user.dir", oldDir)
+      }
     }
   }
 }

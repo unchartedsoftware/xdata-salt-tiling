@@ -17,13 +17,11 @@ import org.apache.spark.sql.{Column, DataFrame}
 import java.util.Date
 
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
+import software.uncharted.salt.xdata.util.RangeDescription
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.addColumn
 import software.uncharted.sparkpipe.ops.core.dataframe.temporal.dateFilter
-import software.uncharted.xdata.ops.salt.RangeDescription
 import software.uncharted.xdata.ops.topics.twitter.util.{BDPParallel, BTMUtil, TFIDF, TopicModellingUtil, TwitterTokenizer}
-
-import scala.tools.nsc.util.ShowPickled
 
 /**
   * This package contains the operation (doTopicModelling) to compute the topics of a given corpus.
@@ -38,7 +36,7 @@ package object twitter {
     * @param input DataFrame of the tweet corpus.
     * @return DataFrame containing only unique tweet rows.
     */
-  def removeReTweets(textCol: String)(input: DataFrame): DataFrame ={
+  def removeReTweets(textCol: String)(input: DataFrame): DataFrame = {
     //Keep distinct (clean) text.
     //Since we need the whole Row, group by text and return one row / group.
     val text = input.rdd.map(t => (t(t.schema.fieldIndex(textCol)).asInstanceOf[String], t))
