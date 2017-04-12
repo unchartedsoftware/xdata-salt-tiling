@@ -12,16 +12,18 @@
   */
 package software.uncharted.xdata.ops.topics.twitter.util
 
-import java.util.Date
+import java.util.{Calendar, Date, GregorianCalendar}
+
 import org.scalatest.FunSpec
 
 class TopicModellingUtilTest extends FunSpec {
   describe("#TopicModellingUtilTest") {
     it ("should test dateRange which takes in Java Date inputs") {
-      val yearVal = 2017 - 1900
-      val monthVal = 3 - 1 //month value is zero indexed
-      val startDate = new Date(yearVal, 2, 17)
-      val endDate = new Date(yearVal, 2, 20)
+      val c = Calendar.getInstance()
+      c.set(2017, 2, 17)
+      val startDate = c.getTime
+      c.set(2017, 2, 20)
+      val endDate = c.getTime
 
       val result = TopicModellingUtil.dateRange(startDate, endDate)
       val expected = Array("2017-03-17", "2017-03-18", "2017-03-19", "2017-03-20")
@@ -38,7 +40,9 @@ class TopicModellingUtilTest extends FunSpec {
     }
 
     it ("should cast results from BDP operation to appropriate types") {
-      val date = new Date(117, 2, 17)
+      val c = Calendar.getInstance
+      c.set(2017, 2, 17)
+      val date = c.getTime
       val topic_dist = Array((0.18, Vector("hello", "world")), (0.21, Vector("music", "countdown")))
       val theta = Array(1.0, 2.0, 5.0)
       val phi = Array(1.3E-4, 1.2E-4, 1.98E-5)

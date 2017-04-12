@@ -83,7 +83,12 @@ object XYSegmentJob extends AbstractJob {
 
     val seqCols = segmentConfig.valueCol match {
       case None => Seq(segmentConfig.x1Col, segmentConfig.y1Col, segmentConfig.x2Col, segmentConfig.y2Col)
-      case _ => Seq(segmentConfig.x1Col, segmentConfig.y1Col, segmentConfig.x2Col, segmentConfig.y2Col,segmentConfig.valueCol.getOrElse(throw new Exception("Value column is not set")))
+      case _ => Seq(
+        segmentConfig.x1Col,
+        segmentConfig.y1Col,
+        segmentConfig.x2Col,
+        segmentConfig.y2Col,
+        segmentConfig.valueCol.getOrElse(throw new Exception("Value column is not set")))
     }
     val selectCols = seqCols.map(new Column(_))
 

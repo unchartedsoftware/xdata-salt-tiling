@@ -15,10 +15,11 @@ package software.uncharted.xdata.ops.topics.twitter
 
 import java.text.SimpleDateFormat
 
+import org.apache.spark.sql.types.{DoubleType, StringType, StructField, StructType}
 import software.uncharted.salt.xdata.util.RangeDescription
 import software.uncharted.sparkpipe.Pipe
+import software.uncharted.sparkpipe.ops.xdata.util.DataFrameOperations.toDataFrame
 import software.uncharted.xdata.ops.topics.twitter.util._
-import software.uncharted.xdata.ops.util.DataFrameOperations.toDataFrame
 import software.uncharted.xdata.spark.SparkFunSpec
 
 class TwitterTest extends SparkFunSpec {
@@ -303,7 +304,10 @@ class TwitterTest extends SparkFunSpec {
                             "2017-04-17,are,0.287682072",
                             "2017-04-17,fluffy,0.693147181")
         val rddScores = sc.parallelize(scoresSeq)
-        val schemaTFIDF = StructType(Seq(StructField("date", StringType), StructField("term", StringType), StructField("score", DoubleType)))
+        val schemaTFIDF = StructType(Seq(
+          StructField("date", StringType),
+          StructField("term", StringType),
+          StructField("score", DoubleType)))
         val tfidfScores = toDataFrame(sparkSession, Map[String, String](), schemaTFIDF)(rddScores)
 
         val result = getDocumentTopicRawTFIDF(
