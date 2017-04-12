@@ -28,7 +28,7 @@ object HBaseTest extends Tag("hbc.test")
 class JobUtilTest extends SparkFunSpec with BeforeAndAfterAll {
 
   lazy private val awsAccessKey = sys.env.getOrElse("AWS_ACCESS_KEY", throw new Exception("AWS_ACCESS_KEY is unset"))
-  lazy private val awsSecretKey = sys.env.getOrElse("AWS_SECRET_KEY0", throw new Exception("AWS_SECRET_KEY is unset"))
+  lazy private val awsSecretKey = sys.env.getOrElse("AWS_SECRET_KEY", throw new Exception("AWS_SECRET_KEY is unset"))
 
   private val testBucket = "uncharted-s3-test"
   private val s3Layer = "test_layer"
