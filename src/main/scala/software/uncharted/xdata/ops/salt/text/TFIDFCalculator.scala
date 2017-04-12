@@ -13,7 +13,7 @@
 package software.uncharted.xdata.ops.salt.text
 
 import com.typesafe.config.Config
-import software.uncharted.xdata.sparkpipe.config.ConfigParser
+import software.uncharted.xdata.tiling.config.ConfigParser
 
 import scala.util.Try
 

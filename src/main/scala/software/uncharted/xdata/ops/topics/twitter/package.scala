@@ -17,10 +17,10 @@ import org.apache.spark.sql.{Column, DataFrame}
 import java.util.Date
 
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
+import software.uncharted.salt.xdata.util.RangeDescription
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.addColumn
 import software.uncharted.sparkpipe.ops.core.dataframe.temporal.dateFilter
-import software.uncharted.xdata.ops.salt.RangeDescription
 import software.uncharted.xdata.ops.topics.twitter.util.{BDPParallel, BTMUtil, TFIDF, TopicModellingUtil, TwitterTokenizer}
 
 /**

@@ -15,7 +15,7 @@ package software.uncharted.xdata.ops.topics.twitter.util
 import org.apache.spark.sql.types._
 
 import software.uncharted.xdata.spark.SparkFunSpec
-import software.uncharted.xdata.ops.util.DataFrameOperations.toDataFrame
+import software.uncharted.sparkpipe.ops.xdata.util.DataFrameOperations.toDataFrame
 
 class TFIDFTest extends SparkFunSpec {
   private val testSequence = Seq("2017-0101,cat,1.0", "2017-0105,books,1.5", "2015-0101,plants,1.6", "2016-0101,trees,3.9")
