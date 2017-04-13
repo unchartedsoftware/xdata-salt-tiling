@@ -18,8 +18,8 @@ import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.generation.request.TileLevelRequest
 import software.uncharted.salt.core.projection.numeric.NumericProjection
 import software.uncharted.salt.xdata.analytic.WordCounter
-import software.uncharted.sparkpipe.ops.xdata.text.TFIDFConfiguration
-import software.uncharted.sparkpipe.ops.xdata.text.TextOperations
+import software.uncharted.sparkpipe.ops.xdata.text.analytics.TFIDFConfig
+import software.uncharted.sparkpipe.ops.xdata.text.transformations.{getDictionaries, getDictionary}
 
 import scala.reflect.ClassTag
 
@@ -88,7 +88,7 @@ object TileTextOperations extends ZXYOp {
     * @param input
     * @return
     */
-  def doTFIDFByTileSlow[X](config: TFIDFConfiguration)(input: RDD[TileData[Map[String, Int], X]])
+  def doTFIDFByTileSlow[X](config: TFIDFConfig)(input: RDD[TileData[Map[String, Int], X]])
   : RDD[TileData[List[(String, Double)], X]] = {
     // Cache input - we're going to be going through it a lot
     input.cache()
@@ -96,7 +96,7 @@ object TileTextOperations extends ZXYOp {
     val results = for (level <- levels) yield {
       val lvlData = input.filter(_.coords._1 == level)
       val lvlDocs = lvlData.flatMap(_.bins.seq).filter(!_.isEmpty).count
-      val lvlDict = TextOperations.getDictionary[Map[String, Int]](config.dictionaryConfig, map => map)(lvlData.flatMap(_.bins.seq))
+      val lvlDict = getDictionary[Map[String, Int]](config.dictionaryConfig, map => map)(lvlData.flatMap(_.bins.seq))
       val lvlIdfs = lvlDict.map { case (term, documentsWithTerm) =>
         (term, config.idf.inverseDocumentFrequency(lvlDocs, documentsWithTerm))
       }.toMap
@@ -126,11 +126,11 @@ object TileTextOperations extends ZXYOp {
     * @param input
     * @return
     */
-  def doTFIDFByTileFast[X](config: TFIDFConfiguration)(input: RDD[TileData[Map[String, Int], X]])
+  def doTFIDFByTileFast[X](config: TFIDFConfig)(input: RDD[TileData[Map[String, Int], X]])
   : RDD[TileData[List[(String, Double)], X]] = {
     input.cache
     val docsWithLevel = input.flatMap(datum => datum.bins.seq.map(bin => (datum.coords._1, bin)))
-    val dictionary = TextOperations.getDictionaries[(Int, Map[String, Int])](config.dictionaryConfig, datum => datum)(docsWithLevel)
+    val dictionary = getDictionaries[(Int, Map[String, Int])](config.dictionaryConfig, datum => datum)(docsWithLevel)
     val docCountByLevel = docsWithLevel.map { case (level, doc) =>
       if (doc.isEmpty) {
         (level, 0)

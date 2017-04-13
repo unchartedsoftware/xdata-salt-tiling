@@ -16,18 +16,19 @@ import com.typesafe.config.ConfigFactory
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row}
 import software.uncharted.sparkpipe.ops.core.rdd
+import software.uncharted.sparkpipe.ops.xdata.text.analytics.LDAConfig
 import software.uncharted.xdata.spark.SparkFunSpec
-import software.uncharted.xdata.tiling.config.LDAConfig
+import software.uncharted.xdata.tiling.config.DictionaryConfigParser
 
 class LDAOperationTests extends SparkFunSpec {
-  val defaultDictionaryConfig = DictionaryConfigurationParser.parse(ConfigFactory.empty())
+  val defaultDictionaryConfig = DictionaryConfigParser.parse(ConfigFactory.empty())
 
   describe("Word determination") {
     it("should break a text apart into words properly, including dealing with contractions") {
       val words =
         """She said, 'The quick brown fox doesn't ever jump over the lazy
           |dog.  I say it won't, it doesn't, and it didn't, and I'm sticking
-          |to that!""".split(TextOperations.notWord).toList
+          |to that!""".split(transformations.notWord).toList
       assert(List(
         "She", "said", "The", "quick", "brown", "fox", "doesn't", "ever", "jump", "over",
         "the", "lazy", "dog", "I", "say", "it", "won't", "it", "doesn't", "and", "it",
@@ -36,7 +37,6 @@ class LDAOperationTests extends SparkFunSpec {
   }
 
   describe("#lda") {
-    import LDAOp._
     it("should perform LDA on a simple set of texts") {
       val texts = Seq(
         "aaa bbb ccc ddd",
@@ -50,7 +50,7 @@ class LDAOperationTests extends SparkFunSpec {
         new LDATestData(index, text)
       }
       val data = rdd.toDF(sparkSession)(rddData)
-      val rawResults = textLDA("index", "text", defaultDictionaryConfig, LDAConfig(4, 2, 4, None, None, "", "", ""))(data)
+      val rawResults = analytics.textLDA("index", "text", defaultDictionaryConfig, LDAConfig(4, 2, 4, None, None, "", "", ""))(data)
 
       // Make sure we get the right number of results
       val results = interpretResults(rawResults).collect
@@ -94,7 +94,7 @@ class LDAOperationTests extends SparkFunSpec {
       }
 
       val data = rdd.toDF(sparkSession)(rddData)
-      val rawResults = textLDA("index", "text", defaultDictionaryConfig, LDAConfig(2, 20, 2, None, None, "", "", ""))(data)
+      val rawResults = analytics.textLDA("index", "text", defaultDictionaryConfig, LDAConfig(2, 20, 2, None, None, "", "", ""))(data)
 
 
       // Make sure we get the right number of results

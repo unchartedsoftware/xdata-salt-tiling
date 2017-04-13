@@ -16,7 +16,7 @@ import org.apache.spark.sql.DataFrame
 import software.uncharted.salt.core.projection.numeric.CartesianProjection
 import software.uncharted.salt.core.util.SparseArray
 import software.uncharted.salt.xdata.analytic.WordCounter
-import software.uncharted.sparkpipe.ops.xdata.text.{DictionaryConfiguration, LogIDF, RawTF, TFIDFConfiguration}
+import software.uncharted.sparkpipe.ops.xdata.text.analytics.{DictionaryConfig, LogIDF, RawTF, TFIDFConfig}
 import software.uncharted.xdata.spark.SparkFunSpec
 
 import scala.collection.mutable.{Map => MutableMap}
@@ -24,8 +24,8 @@ import scala.collection.mutable.{Map => MutableMap}
 
 
 class TFIDFWordCloudTest extends SparkFunSpec {
-  private val tfidfConf = TFIDFConfiguration(
-    RawTF, LogIDF, DictionaryConfiguration(true, None, None, None, None, None), 10
+  private val tfidfConf = TFIDFConfig(
+    RawTF, LogIDF, DictionaryConfig(true, None, None, None, None, None), 10
     )
 
   private def createTestData () = {

@@ -10,22 +10,44 @@
   * accordance with the terms of the license agreement you entered into
   * with Uncharted Software Inc.
   */
+
 package software.uncharted.sparkpipe.ops.xdata.text
 
 import org.apache.spark.SparkContext
-import org.apache.spark.mllib.clustering.{DistributedLDAModel, LDA, LDAModel, LocalLDAModel}
-import org.apache.spark.mllib.linalg.{DenseVector, Matrix, SparseVector, Vector}
+import org.apache.spark.mllib.clustering.{DistributedLDAModel, LDAModel, LocalLDAModel}
+import org.apache.spark.ml.feature.{HashingTF, IDF}
+import org.apache.spark.mllib.linalg.{DenseVector, SparseVector, Vector, Matrix}
+import org.apache.spark.mllib.clustering.LDA
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Column, DataFrame, Row}
 import software.uncharted.sparkpipe.ops.xdata.util.MatrixUtilities
-import software.uncharted.xdata.tiling.config.LDAConfig
 
-/**
-  * An operation to run Latent Dirichlet Allocation on texts in a corpus
-  */
-object LDAOp {
 
-  val tmpDir: String = "/tmp"
+package object analytics {
+  case class WordScore (word: String, score: Double)
+  case class TopicScore (topic: Seq[WordScore], score: Double)
+  case class DocumentTopics (ldaDocumentIndex: Long, topics: Seq[TopicScore])
+
+  /**
+    * Calculate the TFIDF of the input column and store the TF & TFIDF results in the output columns.
+    *
+    * @param inputColumnName        Name of the input column. It should be a Seq[String].
+    * @param outputColumnNameTF     Name of the output column that will contain the term frequencies.
+    * @param outputColumnNameTFIDF  Name of the output column that will contain the TFIDF values.
+    * @param input                  Input DataFrame
+    * @return DataFrame with the calculated TFIDF values.
+    */
+  def tfidf(inputColumnName: String, outputColumnNameTF: String, outputColumnNameTFIDF: String)(input: DataFrame): DataFrame = {
+
+    //Get the TF. MLLib needs an RDD of iterable.
+    val hashingTF = new HashingTF().setInputCol(inputColumnName).setOutputCol(outputColumnNameTF)
+    val featurizedData = hashingTF.transform(input)
+    val idf = new IDF().setInputCol(outputColumnNameTF).setOutputCol(outputColumnNameTFIDF)
+    val idfModel = idf.fit(featurizedData)
+    idfModel.transform(featurizedData)
+  }
+
+    val tmpDir: String = "/tmp"
 
   /**
     * Perform LDA analysis on documents in a dataframe
@@ -37,19 +59,19 @@ object LDAOp {
     * @param input The dataframe containing the data to analyze
     * @return A dataframe containing the input data, augmented with the topics found in that input data
     */
-  def textLDA (idCol: String, textCol: String, dictionaryConfig: DictionaryConfiguration, ldaConfig: LDAConfig)
+  def textLDA (idCol: String, textCol: String, dictionaryConfig: DictionaryConfig, ldaConfig: LDAConfig)
               (input: DataFrame): DataFrame = {
     val sqlc = input.sqlContext
 
     // Mutate our input into indexed word bags
-    val inputWords = TextOperations.textToWordBags[Row, (Long, Map[String, Int])](
+    val inputWords = transformations.textToWordBags[Row, (Long, Map[String, Int])](
       dictionaryConfig,
       _.getString(1),
       (row, wordBag) => (row.getLong(0), wordBag)
     )(input.select(idCol, textCol).rdd)
 
     // Create our dictionary from the set of input words
-    val dictionary = TextOperations.getDictionary[(Long, Map[String, Int])](dictionaryConfig, _._2)(inputWords)
+    val dictionary = transformations.getDictionary[(Long, Map[String, Int])](dictionaryConfig, _._2)(inputWords)
       .zipWithIndex.map { case ((word, count), index) => (word, index)}.toMap
 
     // Perform our LDA analysis
@@ -72,19 +94,19 @@ object LDAOp {
     * @tparam T The input data type
     * @return A dataframe containing the input data, augmented with the topics found in that input data
     */
-  def textLDA[T] (dictionaryConfig: DictionaryConfiguration, ldaConfig: LDAConfig, docExtractor: T => String)
+  def textLDA[T] (dictionaryConfig: DictionaryConfig, ldaConfig: LDAConfig, docExtractor: T => String)
                  (input: RDD[T]): RDD[(T, Seq[TopicScore])] = {
     val indexedInput = input.map(t => (t, docExtractor(t))).zipWithIndex().map(_.swap)
 
     // Mutate our input into indexed word bags
-    val inputWords = TextOperations.textToWordBags[(Long, (T, String)), (Long, (T, Map[String, Int]))](
+    val inputWords = transformations.textToWordBags[(Long, (T, String)), (Long, (T, Map[String, Int]))](
       dictionaryConfig,
       _._2._2,
       (original, wordBag) => (original._1, (original._2._1, wordBag))
     )(indexedInput)
 
     // Create our dictionary from the set of input words
-    val dictionary = TextOperations.getDictionary[(Long, (T, Map[String, Int]))](dictionaryConfig, _._2._2)(inputWords)
+    val dictionary = transformations.getDictionary[(Long, (T, Map[String, Int]))](dictionaryConfig, _._2._2)(inputWords)
       .zipWithIndex.map { case ((word, count), index) => (word, index)}.toMap
 
     // Perform our LDA analysis
@@ -108,19 +130,19 @@ object LDAOp {
     * @tparam T The input data type
     * @return
     */
-  def textLDATopics[T] (dictionaryConfig: DictionaryConfiguration, ldaConfig:LDAConfig, docExtractor: T => String, idExtractor: T => Long)
+  def textLDATopics[T] (dictionaryConfig: DictionaryConfig, ldaConfig:LDAConfig, docExtractor: T => String, idExtractor: T => Long)
                        (input: RDD[T]): RDD[(Long, Seq[TopicScore])] = {
     val indexedDocuments = input.map(t => (idExtractor(t), docExtractor(t)))
 
     // Mutate our input into indexed word bags
-    val inputWords = TextOperations.textToWordBags[(Long, String), (Long, Map[String, Int])](
+    val inputWords = transformations.textToWordBags[(Long, String), (Long, Map[String, Int])](
       dictionaryConfig,
       _._2,
       (original, wordBag) => (original._1, wordBag)
     )(indexedDocuments)
 
     // Create our dictionary from the set of input words
-    val dictionary = TextOperations.getDictionary[(Long, Map[String, Int])](dictionaryConfig, _._2)(inputWords)
+    val dictionary = transformations.getDictionary[(Long, Map[String, Int])](dictionaryConfig, _._2)(inputWords)
       .zipWithIndex.map { case ((word, count), index) => (word, index)}.toMap
 
     // Perform our LDA analysis
@@ -131,9 +153,9 @@ object LDAOp {
   /**
     * Perform LDA on an arbitrary dataset of unindexed word bags
     */
-  def wordBagLDA[T] (dictionaryConfig: DictionaryConfiguration, ldaConfig: LDAConfig, wordBagExtractor: T => Map[String, Int])
+  def wordBagLDA[T] (dictionaryConfig: DictionaryConfig, ldaConfig: LDAConfig, wordBagExtractor: T => Map[String, Int])
                     (input: RDD[T]): RDD[(T, Seq[TopicScore])] = {
-    val dictionary = TextOperations.getDictionary(dictionaryConfig, wordBagExtractor)(input)
+    val dictionary = transformations.getDictionary(dictionaryConfig, wordBagExtractor)(input)
       .zipWithIndex.map { case ((word, count), index) => (word, index)}.toMap
 
     val wordBagsWithIds = input.map(t => (t, wordBagExtractor(t))).zipWithIndex().map(_.swap)
@@ -155,7 +177,7 @@ object LDAOp {
     *         Seq[(word, wordScoreForTopic)]
     */
   def wordBagLDATopics (config: LDAConfig, dictionary: Map[String, Int], input: RDD[(Long, Map[String, Int])]): RDD[(Long, Seq[TopicScore])] = {
-    val documents = TextOperations.wordBagToWordVector(dictionary)(input)
+    val documents = transformations.wordBagToWordVector(dictionary)(input)
     lda(config, dictionary, documents)
   }
 
@@ -217,7 +239,3 @@ object LDAOp {
     }.toMap
   }
 }
-
-case class WordScore (word: String, score: Double)
-case class TopicScore (topic: Seq[WordScore], score: Double)
-case class DocumentTopics (ldaDocumentIndex: Long, topics: Seq[TopicScore])

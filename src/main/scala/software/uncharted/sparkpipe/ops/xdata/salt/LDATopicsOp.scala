@@ -16,9 +16,9 @@ package software.uncharted.sparkpipe.ops.xdata.salt
 import org.apache.spark.rdd.RDD
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.util.SparseArray
-import software.uncharted.sparkpipe.ops.xdata.text.DictionaryConfiguration
-import software.uncharted.xdata.tiling.config.LDAConfig
-import software.uncharted.sparkpipe.ops.xdata.text.LDAOp.wordBagLDA
+import software.uncharted.sparkpipe.ops.xdata.text.analytics
+import software.uncharted.sparkpipe.ops.xdata.text.analytics.{DictionaryConfig, LDAConfig}
+
 import scala.collection.mutable
 
 object LDATopicsOp {
@@ -35,14 +35,14 @@ object LDATopicsOp {
     * @tparam X The type of metadata associated with each tile
     * @return A new tile set containing the LDA results on each word bag
     */
-  def ldaTopicsByTile[X] (dictionaryConfig: DictionaryConfiguration, ldaConfig: LDAConfig)
+  def ldaTopicsByTile[X] (dictionaryConfig: DictionaryConfig, ldaConfig: LDAConfig)
                          (input: RDD[SeriesData[(Int, Int, Int), (Int, Int), Map[String, Int], X]]):
   RDD[SeriesData[(Int, Int, Int), (Int, Int), List[(String, Double)], X]] = {
     type InSeries  = SeriesData[(Int, Int, Int), (Int, Int), Map[String, Int], X]
     type OutSeries = SeriesData[(Int, Int, Int), (Int, Int), List[(String, Double)], X]
     val transform: InSeries => Map[String, Int] = _.bins(0)
 
-    wordBagLDA(dictionaryConfig, ldaConfig, transform)(input).map { case (inData, ldaResults) =>
+    analytics.wordBagLDA(dictionaryConfig, ldaConfig, transform)(input).map { case (inData, ldaResults) =>
       val outputResults = ldaResults.map { t =>
         (t.topic.map { ws => ws.word + ldaConfig.scoreSeparator + ws.score }.mkString(ldaConfig.wordSeparator), t.score)
       }.toList
@@ -67,14 +67,14 @@ object LDATopicsOp {
     * @tparam X The type of metadata associated with each tile
     * @return A new tile set containing the LDA results on each word bag
     */
-  def ldaWordsByTile[X] (dictionaryConfig: DictionaryConfiguration, ldaConfig: LDAConfig)
+  def ldaWordsByTile[X] (dictionaryConfig: DictionaryConfig, ldaConfig: LDAConfig)
                         (input: RDD[SeriesData[(Int, Int, Int), (Int, Int), Map[String, Int], X]]):
   RDD[SeriesData[(Int, Int, Int), (Int, Int), List[(String, Double)], X]] = {
     type InSeries  = SeriesData[(Int, Int, Int), (Int, Int), Map[String, Int], X]
     type OutSeries = SeriesData[(Int, Int, Int), (Int, Int), List[(String, Double)], X]
     val transform: InSeries => Map[String, Int] = _.bins(0)
 
-    wordBagLDA(dictionaryConfig, ldaConfig, transform)(input).map { case (inData, ldaResults) =>
+    analytics.wordBagLDA(dictionaryConfig, ldaConfig, transform)(input).map { case (inData, ldaResults) =>
       val wordScores = mutable.HashMap[String, Double]()
       ldaResults.foreach { t =>
         val topicScore = t.score

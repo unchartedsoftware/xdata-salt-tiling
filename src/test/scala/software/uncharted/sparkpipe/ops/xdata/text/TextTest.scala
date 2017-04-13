@@ -29,7 +29,7 @@ class TextTest extends SparkFunSpec {
 
       val dfData = sparkSession.createDataFrame(rddData)
 
-      val result = tfidf("text", "tfs", "tfidfs")(dfData)
+      val result = analytics.tfidf("text", "tfs", "tfidfs")(dfData)
 
       assert(result.count() === 5)
 

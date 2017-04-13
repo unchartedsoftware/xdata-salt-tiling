@@ -17,8 +17,7 @@ import org.apache.spark.sql.SparkSession
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.xdata.io.serializeElementDoubleScore
 import software.uncharted.sparkpipe.ops.xdata.salt.{LDATopicsOp, TileTextOperations}
-import software.uncharted.sparkpipe.ops.xdata.text.{DictionaryConfigurationParser, LDAOp, TextOperations}
-import software.uncharted.xdata.tiling.config.{LDAConfig, TileTopicConfig}
+import software.uncharted.xdata.tiling.config.{DictionaryConfigParser, LDAConfigParser, TileTopicConfig}
 import software.uncharted.xdata.tiling.jobs.JobUtil.dataframeFromSparkCsv
 
 import scala.util.{Failure, Success}
@@ -41,7 +40,7 @@ object XYTileLDAJob extends AbstractJob {
 
   // Get LDA-specific configuration
   private def parseLDAConfig (config: Config) = {
-    LDAConfig.parse(config) match {
+    LDAConfigParser.parse(config) match {
       case Success(c) => c
       case Failure(e) =>
         logger.error("Error getting LDA configuration")
@@ -51,7 +50,7 @@ object XYTileLDAJob extends AbstractJob {
 
   // Get dictionary creation configuration
   private def parseDictionaryConfig (config: Config) = {
-    DictionaryConfigurationParser.parse(config)
+    DictionaryConfigParser.parse(config)
   }
 
   /**

@@ -17,6 +17,7 @@ import java.io.FileInputStream
 import org.apache.spark.mllib.linalg.{SparseVector, Vector}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.DataFrame
+import software.uncharted.sparkpipe.ops.xdata.text.analytics.DictionaryConfig
 
 import scala.collection.mutable.{Map => MutableMap}
 import scala.reflect.ClassTag
@@ -24,7 +25,7 @@ import scala.reflect.ClassTag
 /**
   * Various generic text operations, not specific to a single textual analytic
   */
-object TextOperations {
+package object transformations {
 
   private[text] val notWord = "('[^a-zA-Z]|[^a-zA-Z]'|[^a-zA-Z'])+"
 
@@ -37,7 +38,7 @@ object TextOperations {
     * @param input The input DataFrame
     * @return An RDD of word bags, indexed by record ID
     */
-  def dataframeToWordBags (config: DictionaryConfiguration,
+  def dataframeToWordBags (config: DictionaryConfig,
                            idColumn: String,
                            documentColumn: String)
                           (input: DataFrame): RDD[(Any, Map[String, Int])] = {
@@ -55,6 +56,7 @@ object TextOperations {
 
   /**
     * Convert an input dataset that contains texts into an output dataset that contains word bags
+ *
     * @param config A dictionary configuration that indicates how dictionaries are to be formed.  This is currently
     *               only used to determine case sensitivity, but could be used for more in the future.
     * @param textExtractorFcn A function to extract the text from an input data record
@@ -65,7 +67,7 @@ object TextOperations {
     * @tparam U The output data type
     * @return A dataset containing the created word bags
     */
-  def textToWordBags[T, U: ClassTag] (config: DictionaryConfiguration,
+  def textToWordBags[T, U: ClassTag] (config: DictionaryConfig,
                                       textExtractorFcn: T => String,
                                       wordBagInjectorFcn: (T,   Map[String, Int]) => U)(input: RDD[T]): RDD[U] = {
     input.map { t =>
@@ -95,7 +97,7 @@ object TextOperations {
     * @tparam T The type of input record
     * @return An RDD of word bags, indexed by record ID
     */
-  def rddToWordBags[I, T] (config: DictionaryConfiguration,
+  def rddToWordBags[I, T] (config: DictionaryConfig,
                            idExtractorFcn: T => I,
                            documentExtractorFcn: T => String)
                           (input: RDD[T]): RDD[(I, Map[String, Int])] = {
@@ -142,7 +144,7 @@ object TextOperations {
     * @param wordBags The input data, already processed into word bags by dataFrameToWordBags or rddToWordBags
     * @return The dictionary to use with this set of word bags
     */
-  def getDictionary[T] (config: DictionaryConfiguration,
+  def getDictionary[T] (config: DictionaryConfig,
                         wordBagExtractorFcn: T => Map[String, Int])
                        (wordBags: RDD[T]): Array[(String, Int)] = {
     val docCount = config.needDocCount.map(yes => wordBags.count)
@@ -186,7 +188,7 @@ object TextOperations {
     * @tparam T The type of input record
     * @return The dictionaries to use with this set of word bags
     */
-  def getDictionaries[T] (config: DictionaryConfiguration,
+  def getDictionaries[T] (config: DictionaryConfig,
                           wordBagExtractorFcn: T => (Int, Map[String, Int]))
                          (input: RDD[T]): Array[(String, Map[Int, Int])] = {
     val indexedDocuments = input.map(wordBagExtractorFcn)

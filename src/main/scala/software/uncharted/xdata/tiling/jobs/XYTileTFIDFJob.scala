@@ -17,8 +17,7 @@ import org.apache.spark.sql.SparkSession
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.xdata.io.serializeElementDoubleScore
 import software.uncharted.sparkpipe.ops.xdata.salt.TileTextOperations
-import software.uncharted.sparkpipe.ops.xdata.text.{TFIDFConfigurationParser, TextOperations}
-import software.uncharted.xdata.tiling.config.TileTopicConfig
+import software.uncharted.xdata.tiling.config.{TFIDFConfigParser, TileTopicConfig}
 import software.uncharted.xdata.tiling.jobs.JobUtil.dataframeFromSparkCsv
 
 import scala.util.{Failure, Success}
@@ -36,7 +35,7 @@ object XYTileTFIDFJob extends AbstractJob {
 
   // Parse TF*IDF config parameters out of supplied config
   private def parseTFIDFConfig (config: Config) = {
-    TFIDFConfigurationParser.parse(config) match {
+    TFIDFConfigParser.parse(config) match {
       case Success(c) => c
       case Failure(e) =>
         error("Error getting TF*IDF config", e)
