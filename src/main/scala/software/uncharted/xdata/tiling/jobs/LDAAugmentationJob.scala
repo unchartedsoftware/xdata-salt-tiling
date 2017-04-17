@@ -32,8 +32,9 @@ import com.typesafe.config.Config
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
-import software.uncharted.xdata.ops.salt.text.{DictionaryConfiguration, DictionaryConfigurationParser, LDAOp}
-import software.uncharted.xdata.tiling.config.{HdfsCsvConfig, HdfsCsvConfigParser, LDAConfig}
+import software.uncharted.sparkpipe.ops.xdata.text.analytics.{DictionaryConfig, LDAConfig}
+import software.uncharted.sparkpipe.ops.xdata.text.analytics
+import software.uncharted.xdata.tiling.config.{DictionaryConfigParser, HdfsCsvConfig, HdfsCsvConfigParser, LDAConfigParser}
 
 import scala.util.{Failure, Success}
 
@@ -65,15 +66,15 @@ object LDAAugmentationJob extends AbstractJob {
   }
 
   private def readLDAConfig (config: Config): LDAConfig = {
-    LDAConfig.parse(config) match {
+    LDAConfigParser.parse(config) match {
       case Success(c) => c
       case Failure(e) =>
         error("Error reading LDA configuration", e)
         sys.exit(-1)
     }
   }
-  private def readDictionaryConfig (config: Config): DictionaryConfiguration = {
-    DictionaryConfigurationParser.parse(config)
+  private def readDictionaryConfig (config: Config): DictionaryConfig = {
+    DictionaryConfigParser.parse(config)
   }
 
   /**
@@ -102,7 +103,7 @@ object LDAAugmentationJob extends AbstractJob {
     val texts = inputData.map { case (id, (rawRecord, text)) => (id, text) }
     dbg("(1) There are " + texts.count + " texts")
     // Perform LDA on the text column
-    val docTopics = LDAOp.textLDATopics[(Long, String)](dictionaryConfig, ldaConfig, _._2, _._1)(texts)
+    val docTopics = analytics.textLDATopics[(Long, String)](dictionaryConfig, ldaConfig, _._2, _._1)(texts)
     dbg("(2) There are " + docTopics.count + " topic records")
     // Reformat topics for output
     val formattedTopics = docTopics.map { case (docId, topics) =>

@@ -1,47 +1,31 @@
 /**
- * Copyright © 2013-2017 Uncharted Software Inc.
- *
- * Property of Uncharted™, formerly Oculus Info Inc.
- *
- * http://uncharted.software/
- *
- * Released under the MIT License.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
-package software.uncharted.xdata.ops.salt.text
-
-
+  * Copyright (c) 2014-2015 Uncharted Software Inc. All rights reserved.
+  *
+  * Property of Uncharted(tm), formerly Oculus Info Inc.
+  * http://uncharted.software/
+  *
+  * This software is the confidential and proprietary information of
+  * Uncharted Software Inc. ("Confidential Information"). You shall not
+  * disclose such Confidential Information and shall use it only in
+  * accordance with the terms of the license agreement you entered into
+  * with Uncharted Software Inc.
+  */
+package software.uncharted.sparkpipe.ops.xdata.salt
 
 import org.apache.spark.sql.DataFrame
 import software.uncharted.salt.core.projection.numeric.CartesianProjection
+import software.uncharted.salt.core.util.SparseArray
+import software.uncharted.salt.xdata.analytic.WordCounter
+import software.uncharted.sparkpipe.ops.xdata.text.analytics.{DictionaryConfig, LogIDF, RawTF, TFIDFConfig}
 import software.uncharted.xdata.spark.SparkFunSpec
 
 import scala.collection.mutable.{Map => MutableMap}
-import software.uncharted.salt.core.util.SparseArray
 
 
 
 class TFIDFWordCloudTest extends SparkFunSpec {
-  private val tfidfConf = TFIDFConfiguration(
-    RawTF, LogIDF, DictionaryConfiguration(true, None, None, None, None, None), 10
+  private val tfidfConf = TFIDFConfig(
+    RawTF, LogIDF, DictionaryConfig(true, None, None, None, None, None), 10
     )
 
   private def createTestData () = {
@@ -129,9 +113,9 @@ class TFIDFWordCloudTest extends SparkFunSpec {
       val data = createTestData()
 
       val projection = new CartesianProjection(Seq(0, 1, 2), (0.0, 0.0), (8.0, 8.0))
-      val termFrequencies = TextOperations.termFrequencyOp("x", "y", "text", projection, Seq(0, 1, 2))(data)
+      val termFrequencies = TileTextOperations.termFrequencyOp("x", "y", "text", projection, Seq(0, 1, 2))(data)
 
-      val tfidf = TextOperations.doTFIDFByTileFast[Nothing](tfidfConf)(termFrequencies).collect.sortBy { r =>
+      val tfidf = TileTextOperations.doTFIDFByTileFast[Nothing](tfidfConf)(termFrequencies).collect.sortBy { r =>
         16 * r.coords._1 + 4 * r.coords._2 + r.coords._3
       }.map { r =>
         (r.coords, r.bins(0).toMap)
@@ -181,9 +165,9 @@ class TFIDFWordCloudTest extends SparkFunSpec {
       val data = createTestData()
 
       val projection = new CartesianProjection(Seq(0, 1, 2), (0.0, 0.0), (8.0, 8.0))
-      val termFrequencies = TextOperations.termFrequencyOp("x", "y", "text", projection, Seq(0, 1, 2))(data)
+      val termFrequencies = TileTextOperations.termFrequencyOp("x", "y", "text", projection, Seq(0, 1, 2))(data)
 
-      val tfidf = TextOperations.doTFIDFByTileSlow[Nothing](tfidfConf)(termFrequencies).collect.sortBy { r =>
+      val tfidf = TileTextOperations.doTFIDFByTileSlow[Nothing](tfidfConf)(termFrequencies).collect.sortBy { r =>
         16 * r.coords._1 + 4 * r.coords._2 + r.coords._3
       }.map { r =>
         (r.coords, r.bins(0).toMap)
@@ -232,15 +216,15 @@ class TFIDFWordCloudTest extends SparkFunSpec {
   describe("timing trials") {
     def runNewFast (data: DataFrame): Unit = {
       val projection = new CartesianProjection(Seq(0, 1, 2), (0.0, 0.0), (8.0, 8.0))
-      val termFrequencies = TextOperations.termFrequencyOp("x", "y", "text", projection, Seq(0, 1, 2))(data)
+      val termFrequencies = TileTextOperations.termFrequencyOp("x", "y", "text", projection, Seq(0, 1, 2))(data)
 
-      val tfidf = TextOperations.doTFIDFByTileFast[Nothing](tfidfConf)(termFrequencies).collect
+      val tfidf = TileTextOperations.doTFIDFByTileFast[Nothing](tfidfConf)(termFrequencies).collect
     }
     def runNewSlow (data: DataFrame): Unit = {
       val projection = new CartesianProjection(Seq(0, 1, 2), (0.0, 0.0), (8.0, 8.0))
-      val termFrequencies = TextOperations.termFrequencyOp("x", "y", "text", projection, Seq(0, 1, 2))(data)
+      val termFrequencies = TileTextOperations.termFrequencyOp("x", "y", "text", projection, Seq(0, 1, 2))(data)
 
-      val tfidf = TextOperations.doTFIDFByTileSlow[Nothing](tfidfConf)(termFrequencies).collect
+      val tfidf = TileTextOperations.doTFIDFByTileSlow[Nothing](tfidfConf)(termFrequencies).collect
     }
     def time[T] (f: => T): (T, Long) = {
       val startTime = System.currentTimeMillis()
