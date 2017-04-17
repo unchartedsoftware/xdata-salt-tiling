@@ -1,3 +1,31 @@
+====
+    Copyright © 2013-2017 Uncharted Software Inc.
+
+    Property of Uncharted™, formerly Oculus Info Inc.
+
+    http://uncharted.software/
+
+    Released under the MIT License.
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+====
+
 id	date	C2	C3	C4	C5	text	C7	C8	C9	C10	C11	C12	C13	C14	C15	C16	C17	C18	C19	C20	C21	C22	C23	C24	C25	C26	C27	C28	C29	C30	C31	C32	C33	C34	C35	C36
 771135624527085568	Fri Sep 02 00:00:34 +0000 2016	reeem_sz1		None	None	RT @AtefDalgamouni: الصوفية يعني إسلام الدروشة..لا تتدخل في السياسة. . و هل جاء سيدنا محمد بالتصوف ؟ أم الإسلام الحركي الذي غير العالم. htt…	ar	<a href="http://twitter.com/download/iphone" rel="nofollow">Twitter for iPhone</a>		False	0	False	0	22	42	https://twitter.com/EHSANFAKEEH/status/713228822515228672			AtefDalgamouni	None	None		3180065814	11694	827	294	حريتي ملكي ' لا احب ملامح الإستعباد'ما أخطه بقلمي جزء من حريتي 'لدي ثوابت استمدها من الله .ولا احد يستحق ان الزم نفسي بطاعته سوى الله وإن كنت مقصره-ksa	Thu Apr 30 02:16:25 +0000 2015	False	2		https://pbs.twimg.com/profile_banners/3180065814/1468638345	None	None	False
 771135624933941248	Fri Sep 02 00:00:34 +0000 2016	198kov		None	None	RT @das_aj_: #قاطعوا_حكومة_العراق #العراق #بغداد #إيران #سعودي_وادق_الحوثي  📌هذا عدو الله👇 📌هذا رأس اﻷفعى   https://t.co/Z7lolnGatF	ar	<a href="https://apps.twitter.com/app/new" rel="nofollow">نصف الحب اهتمام فـ النصف الآخر ه</a>	قاطعوا_حكومة_العراق,العراق,بغداد,إيران,سعودي_وادق_الحوثي	False	0	False	0	17	13				das_aj_	None	None	[u'photo,http://pbs.twimg.com/tweet_video_thumb/CqmXRK3XYAAADOw.jpg']	3092916960	873	1313	1436	يبعثهإلى معاودة المسألة	Tue Mar 17 09:02:37 +0000 2015	False	0		https://pbs.twimg.com/profile_banners/3092916960/1429219618	Belgrade	None	False

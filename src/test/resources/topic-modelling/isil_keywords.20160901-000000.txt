@@ -1,3 +1,31 @@
+====
+    Copyright © 2013-2017 Uncharted Software Inc.
+
+    Property of Uncharted™, formerly Oculus Info Inc.
+
+    http://uncharted.software/
+
+    Released under the MIT License.
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+====
+
 id	date	C2	C3	C4	C5	text	C7	C8	C9	C10	C11	C12	C13	C14	C15	C16	C17	C18	C19	C20	C21	C22	C23	C24	C25	C26	C27	C28	C29	C30	C31	C32	C33	C34	C35	C36
 771135622849433600	Fri Sep 02 00:00:34 +0000 2016	rt__a4		None	None	RT @LATOOFa_hamad: إعلان🔴  نشتري القروض العقارية التي صدرت لها موافقة صندوق التنمية العقاري في جميع مناطق المملكة بمبلغ ١٠٠ ألف ابو. محمد 0…	ar	<a href="http://twitter.com/#!/download/ipad" rel="nofollow">Twitter for iPad</a>		False	0	False	0	1	14				LATOOFa_hamad	None	None		3248091402	63676	102994	96442	ننشر تغريداتك واعلاناتك لأكثر من 10 مليون مغرد - رتويت تلقائي - بيع متابعين تويتر - انستقرام - لايكات - للتواصل واتس أب - السعودية 0563015559	Wed Jun 17 20:12:27 +0000 2015	False	188		https://pbs.twimg.com/profile_banners/3248091402/1471517255	Kuwait	None	False
 771135622866141184	Fri Sep 02 00:00:34 +0000 2016	REC_NEWS_2_24		None	None	RT @H_S_Z_1: صحيفة"National Interest"الأمريكية:على الولايات المتحدة أن تخشى خمسةأنواع من #الأسلحة_الروسية https://t.co/PrjMSz9s5g https://t…	ar	<a href="http://twitter.com/download/android" rel="nofollow">Twitter for Android</a>	الأسلحة_الروسية	False	0	False	0	5	45	https://arabic.rt.com/news/770657--%D8%A3%D9%86%D9%88%D8%A7%D8%B9-%D9%85%D9%86-%D8%A7%D9%84%D8%A3%D8%B3%D9%84%D8%AD%D8%A9-%D8%A7%D9%84%D8%B1%D9%88%D8%B3%D9%8A%D8%A9-%D8%A7%D9%84%D9%88%D9%84%D8%A7%D9%8A%D8%A7%D8%AA-%D8%A7%D9%84%D9%85%D8%AA%D8%AD%D8%AF%D8%A9/			H_S_Z_1	None	None	[u'photo,http://pbs.twimg.com/media/CgDiWu7VAAAIDoT.jpg']	2567231827	9859	608	720		Sat Jun 14 14:32:29 +0000 2014	False	2	المتحرك	https://pbs.twimg.com/profile_banners/2567231827/1460431559	Baghdad	None	False
