@@ -42,13 +42,13 @@ class XYTileTFIDFJobTest extends FunSpec {
       it("should create tiles from source csv data", FileIOTest) {
         // When test are run from another project that includes this project, the current working directory is set such
         // that the data files referenced in tiling-file-io.conf can't be found.  We reset the CWD to the
-        // xdata-pipeline-ops directory, and reset it afterwards, to get around this problem.
+        // xdata-salt-tiling directory, and reset it afterwards, to get around this problem.
         val oldDir = System.getProperty("user.dir")
         try {
           // run the job
           val config = classOf[XYTileTFIDFJobTest].getResource("/tile-topic-test.conf").toURI.getPath
           // Make sure to run the test from the correct directory
-          val project = "xdata-pipeline-ops"
+          val project = "xdata-salt-tiling"
           val newDir = config.substring(0, config.indexOf(project) + project.length)
           System.setProperty("user.dir", newDir)
           XYTileTFIDFJob.execute(Array(config))

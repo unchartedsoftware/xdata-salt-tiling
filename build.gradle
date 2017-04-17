@@ -1,4 +1,4 @@
-description = "XDATA pipeline operations"
+description = "XDATA salt tiling pipelines"
 group = "software.uncharted.xdata"
 version = "0.2.0-SNAPSHOT"
 
@@ -152,7 +152,7 @@ testScoverage {
 // execution scripts.
 distributions {
   main {
-    baseName = 'xdata-pipeline-ops'
+    baseName = 'xdata-salt-tiling'
     contents {
       // Copy the run scripts over
       into ("scripts"){

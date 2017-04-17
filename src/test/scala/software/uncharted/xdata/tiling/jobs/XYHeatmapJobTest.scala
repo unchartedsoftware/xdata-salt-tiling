@@ -42,13 +42,13 @@ class XYHeatmapJobTest extends FunSpec {
       it("should create tiles from source csv data", FileIOTest) {
         // When test are run from another project that includes this project, the current working directory is set such
         // that the data files referenced in tiling-file-io.conf can't be found.  We reset the CWD to the
-        // xdata-pipeline-ops directory, and reset it afterwards, to get around this problem.
+        // xdata-salt-tiling directory, and reset it afterwards, to get around this problem.
         val oldDir = System.getProperty("user.dir")
         try {
           // run the job
           val config = classOf[XYHeatmapJobTest].getResource("/XYHeatmapJobTest/tiling-file-io.conf").toURI.getPath
           // Make sure to run the test from the correct directory
-          val project = "xdata-pipeline-ops"
+          val project = "xdata-salt-tiling"
           val newDir = config.substring(0, config.indexOf(project) + project.length)
           System.setProperty("user.dir", newDir)
           XYHeatmapJob.execute(Array(config))
@@ -70,7 +70,7 @@ class XYHeatmapJobTest extends FunSpec {
       it ("should use XYbounds when specified", FileIOTest) {
         try {
           val config = classOf[XYHeatmapJobTest].getResource("/XYHeatmapJobTest/tiling-file-io-xyBoundsSpec.conf").toURI.getPath
-          val project = "xdata-pipeline-ops"
+          val project = "xdata-salt-tiling"
           val newDir = config.substring(0, config.indexOf(project) + project.length)
           System.setProperty("user.dir", newDir)
           XYHeatmapJob.execute(Array(config))
@@ -90,7 +90,7 @@ class XYHeatmapJobTest extends FunSpec {
       it ("use defaults of Cartesian projection and xyBounds", FileIOTest) {
         try {
           val config = classOf[XYHeatmapJobTest].getResource("/XYHeatmapJobTest/tiling-file-io-defaultProjection.conf").toURI.getPath
-          val project = "xdata-pipeline-ops"
+          val project = "xdata-salt-tiling"
           val newDir = config.substring(0, config.indexOf(project) + project.length)
           System.setProperty("user.dir", newDir)
           XYHeatmapJob.execute(Array(config))

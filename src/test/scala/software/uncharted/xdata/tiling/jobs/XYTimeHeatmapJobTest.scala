@@ -46,13 +46,13 @@ class XYTimeHeatmapJobTest extends FunSpec {
       it("should create tiles from source csv data with time filter applied", FileIOTest) {
         // When test are run from another project that includes this project, the current working directory is set such
         // that the data files referenced in tiling-file-io.conf can't be found.  We reset the CWD to the
-        // xdata-pipeline-ops directory, and reset it afterwards, to get around this problem.
+        // xdata-salt-tiling directory, and reset it afterwards, to get around this problem.
         val oldDir = System.getProperty("user.dir")
         try {
           // run the job
           val path = classOf[XYTimeHeatmapJobTest].getResource("/XYTimeHeatmapJobTest/tiling-time-file-io.conf").toURI.getPath
           // Make sure to run the test from the correct directory
-          val newDir = path.substring(0, path.indexOf("xdata-pipeline-ops") + 18)
+          val newDir = path.substring(0, path.indexOf("xdata-salt-tiling") + 18)
           System.setProperty("user.dir", newDir)
           XYTimeHeatmapJob.execute(Array(path))
 
@@ -105,7 +105,7 @@ class XYTimeHeatmapJobTest extends FunSpec {
           // run the job
           val path = classOf[XYTimeHeatmapJobTest].getResource("/XYTimeHeatmapJobTest/tiling-time-file-io-xyBoundsSpec.conf").toURI.getPath
           // Make sure to run the test from the correct directory
-          val newDir = path.substring(0, path.indexOf("xdata-pipeline-ops") + 18)
+          val newDir = path.substring(0, path.indexOf("xdata-salt-tiling") + 18)
           System.setProperty("user.dir", newDir)
           XYTimeHeatmapJob.execute(Array(path))
 
@@ -137,13 +137,13 @@ class XYTimeHeatmapJobTest extends FunSpec {
       it("should use default projection when no projection is specified", FileIOTest) {
         // When test are run from another project that includes this project, the current working directory is set such
         // that the data files referenced in tiling-file-io.conf can't be found.  We reset the CWD to the
-        // xdata-pipeline-ops directory, and reset it afterwards, to get around this problem.
+        // xdata-salt-tiling directory, and reset it afterwards, to get around this problem.
         val oldDir = System.getProperty("user.dir")
         try {
           // run the job
           val path = classOf[XYTimeHeatmapJobTest].getResource("/XYTimeHeatmapJobTest/tiling-time-file-io-defaultProjection.conf").toURI.getPath
           // Make sure to run the test from the correct directory
-          val newDir = path.substring(0, path.indexOf("xdata-pipeline-ops") + 18)
+          val newDir = path.substring(0, path.indexOf("xdata-salt-tiling") + 18)
           System.setProperty("user.dir", newDir)
           XYTimeHeatmapJob.execute(Array(path))
 

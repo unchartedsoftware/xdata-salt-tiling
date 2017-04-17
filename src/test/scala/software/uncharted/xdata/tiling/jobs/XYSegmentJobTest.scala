@@ -44,13 +44,13 @@ class XYSegmentJobTest extends FunSpec {
       it("should create tiles from source csv data", FileIOTest) {
         // When test are run from another project that includes this project, the current working directory is set such
         // that the data files referenced in tiling-file-io.conf can't be found.  We reset the CWD to the
-        // xdata-pipeline-ops directory, and reset it afterwards, to get around this problem.
+        // xdata-salt-tiling directory, and reset it afterwards, to get around this problem.
         val oldDir = System.getProperty("user.dir")
         try {
           // run the job
           val path = classOf[XYSegmentJobTest].getResource("/XYSegmentJobTest/xysegment.conf").toURI.getPath
           // Make sure to run the test from the correct directory
-          val newDir = path.substring(0, path.indexOf("xdata-pipeline-ops") + 18)
+          val newDir = path.substring(0, path.indexOf("xdata-salt-tiling") + 18)
           System.setProperty("user.dir", newDir)
           XYSegmentJob.main(Array(path))
 
@@ -73,7 +73,7 @@ class XYSegmentJobTest extends FunSpec {
           // run the job
           val path = classOf[XYSegmentJobTest].getResource("/XYSegmentJobTest/xysegment-defaultProjection.conf").toURI.getPath
           // Make sure to run the test from the correct directory
-          val newDir = path.substring(0, path.indexOf("xdata-pipeline-ops") + 18)
+          val newDir = path.substring(0, path.indexOf("xdata-salt-tiling") + 18)
           System.setProperty("user.dir", newDir)
           XYSegmentJob.main(Array(path))
 
@@ -96,7 +96,7 @@ class XYSegmentJobTest extends FunSpec {
           // run the job
           val path = classOf[XYSegmentJobTest].getResource("/XYSegmentJobTest/xysegment-xyBoundsDefault.conf").toURI.getPath
           // Make sure to run the test from the correct directory
-          val newDir = path.substring(0, path.indexOf("xdata-pipeline-ops") + 18)
+          val newDir = path.substring(0, path.indexOf("xdata-salt-tiling") + 18)
           System.setProperty("user.dir", newDir)
           XYSegmentJob.main(Array(path))
 
@@ -119,7 +119,7 @@ class XYSegmentJobTest extends FunSpec {
           // run the job
           val path = classOf[XYSegmentJobTest].getResource("/XYSegmentJobTest/xysegment-xyBoundsSpec.conf").toURI.getPath
           // Make sure to run the test from the correct directory
-          val newDir = path.substring(0, path.indexOf("xdata-pipeline-ops") + 18)
+          val newDir = path.substring(0, path.indexOf("xdata-salt-tiling") + 18)
           System.setProperty("user.dir", newDir)
           XYSegmentJob.main(Array(path))
 
