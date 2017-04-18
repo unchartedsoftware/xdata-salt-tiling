@@ -107,8 +107,6 @@ class JobUtilTest extends SparkFunSpec with BeforeAndAfterAll {
     describe("#createTileOutputOperation") {
       it("should create a writeToS3 function when it is a s3 config file", S3Test) {
 
-                s3c.createBucket(testBucket)
-
         val data = sc.parallelize(dataSeq)
         val outputOp = createTileOutputOperation(s3config).get
 

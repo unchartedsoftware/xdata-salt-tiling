@@ -30,7 +30,6 @@ package software.uncharted.salt.xdata.projection
 
 import org.scalatest.FunSuite
 
-
 class TwoStageLineProjectionTestSuite extends FunSuite {
   test("Leader line projection") {
     val maxBin = ((3, 3), (3, 3))
@@ -56,7 +55,6 @@ class TwoStageLineProjectionTestSuite extends FunSuite {
       }
     }
   }
-
   // A single-instance check, to make it easier to find the problem when the above exhaustive check fails
   ignore("Single instance leader line projection") {
     val maxBin = ((3, 3), (3, 3))
@@ -77,5 +75,34 @@ class TwoStageLineProjectionTestSuite extends FunSuite {
     val tiles = projection.project(Some((x0.toDouble, y0.toDouble, x1.toDouble, y1.toDouble)), maxBin).get.map(_._1).toSet
     assert(bruteForceTiles === tiles, "Points [%d, %d x %d, %d]".format(x0, y0, x1, y1))
   }
+
+  test("Test giving empty coords to project method of LeaderLineProjectionStageOne") {
+    val maxBin = ((3, 3), (3, 3))
+    val bounds = ((-40.0, -40.0), (40.0, 40.0))
+    val leaderLength = 7
+    val tms = false
+
+    val projection = new LeaderLineProjectionStageOne(Seq(4), leaderLength, bounds._1, bounds._2, tms)
+    val result = projection.project(None, maxBin)
+
+    assertResult(None)(result)
+  }
+
+  test("Test binTo1D and binFrom1D functions in LeaderLineProjectionStageOne") {
+    val maxBin = ((3, 3), (3, 3))
+    val bounds = ((-40.0, -40.0), (40.0, 40.0))
+    val leaderLength = 7
+    val tms = false
+
+    val projection = new LeaderLineProjectionStageOne(Seq(4), leaderLength, bounds._1, bounds._2, tms)
+    val coord1D = projection.binTo1D(((2, 2),(10, 10)), maxBin)
+    assertResult(10)(coord1D)
+
+    val caughtMsg = intercept[UnsupportedOperationException] {
+      projection.binFrom1D(1, maxBin)
+    }
+    assert(caughtMsg.getMessage() == "Stage one leader line projection doesn't support retrieving bins from indices")
+  }
+
 }
 

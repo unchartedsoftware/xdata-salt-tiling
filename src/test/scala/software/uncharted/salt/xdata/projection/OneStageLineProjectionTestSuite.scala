@@ -33,8 +33,8 @@ import org.scalatest.Matchers._
 import software.uncharted.salt.xdata.projection.geometry.Line
 import software.uncharted.salt.xdata.spreading.FadingSpreadingFunction
 
-
 class OneStageLineProjectionTestSuite extends FunSuite {
+  //SimpleLeaderLineProjection tests
   test("Test lots of possible leader lines") {
     val maxBin = (3, 3)
     val bounds = ((-16.0, -16.0), (16.0, 16.0))
@@ -55,7 +55,6 @@ class OneStageLineProjectionTestSuite extends FunSuite {
       }
     }
   }
-
   test("Test giving empty coords to project method of SimpleLeaderLineProjection") {
     val maxBin = (3, 3)
     val bounds = ((-16.0, -16.0), (16.0, 16.0))
@@ -108,7 +107,6 @@ class OneStageLineProjectionTestSuite extends FunSuite {
       }
     }
   }
-
   test("Test binTo1D and binFrom1D functions in SimpleLeaderLineProjection") {
     val maxBin = (3, 3)
     val bounds = ((-16.0, -16.0), (16.0, 16.0))
@@ -116,10 +114,10 @@ class OneStageLineProjectionTestSuite extends FunSuite {
     val tms = false
     val projection = new SimpleLeaderLineProjection(Seq(4), bounds._1, bounds._2, leaderLength, tms = tms)
 
-    val coord1D = projection.binTo1D((2, 2), (3, 3))
+    val coord1D = projection.binTo1D((2, 2), maxBin)
     assertResult(10)(coord1D)
 
-    val binCoord = projection.binFrom1D(9, (3, 3))
+    val binCoord = projection.binFrom1D(9, maxBin)
     assertResult((1, 2))(binCoord)
   }
 
@@ -138,6 +136,7 @@ class OneStageLineProjectionTestSuite extends FunSuite {
     assert(usingBruteForce === usingProjection, "Points [%d, %d x %d, %d]".format(x0, y0, x1, y1))
   }
 
+  //SimpleLineProjection tests
   test("Test lots of possible full lines") {
     // 2x2-bin tiles and a data range of 32 should give us a data range of 1 per bin
     val maxBin = (1, 1)
@@ -163,6 +162,33 @@ class OneStageLineProjectionTestSuite extends FunSuite {
         }
       }
     }
+  }
+  test("Test giving empty coords to project method of SimpleLineProjection") {
+    val maxBin = (1, 1)
+    val bounds = ((-16.0, -16.0), (16.0, 16.0))
+    val minLength = Some(3)
+    val maxLength = Some(7)
+    val tms = false
+
+    val projection = new SimpleLineProjection(Seq(4), bounds._1, bounds._2, minLength, maxLength, tms = tms)
+    val result = projection.project(None, maxBin)
+
+    assertResult(None)(result)
+  }
+  test("Test binTo1D and binFrom1D functions in SimpleLineProjection") {
+    val maxBin = (1, 1)
+    val bounds = ((-16.0, -16.0), (16.0, 16.0))
+    val minLength = Some(3)
+    val maxLength = Some(7)
+    val tms = false
+
+    val projection = new SimpleLineProjection(Seq(4), bounds._1, bounds._2, minLength, maxLength, tms = tms)
+
+    val coord1D = projection.binTo1D((2, 2), (3, 3))
+    assertResult(10)(coord1D)
+
+    val binCoord = projection.binFrom1D(9, (3, 3))
+    assertResult((1, 2))(binCoord)
   }
 
   // This test is here to activate in case anything fails in the previous test, so as to make debugging it simpler.
@@ -199,6 +225,7 @@ class OneStageLineProjectionTestSuite extends FunSuite {
     ), Some(4.0)).map(_._3.get).toList)
   }
 
+  //SimpleLeaderArcProjection tests
   test("Test arc leader lines projection - no gap") {
     import Line.{distance, intPointToDoublePoint}
 
@@ -228,10 +255,8 @@ class OneStageLineProjectionTestSuite extends FunSuite {
       assert(start._2 >= uBin._2 && uBin._2 >= end._2)
     }
   }
-
   test("Test arc leader lines projection - with gap") {
     import Line.{distance, intPointToDoublePoint}
-
 
     val projection = new SimpleLeaderArcProjection(Seq(4), (0.0, 0.0), (64.0, 64.0), 8)
     val pointsOpt = projection.project(Some((34.0, 17.0, 10.0, 7.0)), (3, 3))
@@ -255,4 +280,106 @@ class OneStageLineProjectionTestSuite extends FunSuite {
       assert(uBin._2 >= start._2)
     }
   }
+  test("Test giving empty coords to project method of SimpleLeaderArcProjection") {
+    val maxBin = (3, 3)
+    val projection = new SimpleLeaderArcProjection(Seq(4), (0.0, 0.0), (64.0, 64.0), 8)
+    val result = projection.project(None, maxBin)
+
+    assertResult(None)(result)
+  }
+  test("Test when minLengthOpt is None") {
+    import Line.{distance, intPointToDoublePoint}
+
+    val projection = new SimpleLeaderArcProjection(Seq(4), (0.0, 0.0), (64.0, 64.0), 8, minLengthOpt = None)
+    val pointsOpt = projection.project(Some((34.0, 17.0, 10.0, 7.0)), (3, 3))
+
+    val start = (34, 64 - 17)
+    val end = (10, 64 - 7)
+    val center = (22.0 + 5.0 * math.sqrt(3.0), 64.0 - (12.0 - 12.0 * math.sqrt(3.0)))
+
+    assert(pointsOpt.isDefined)
+
+    val points = pointsOpt.get
+    points.foreach{point =>
+      val (tile, bin) = point
+      val uBin = (tile._2 * 4 + bin._1, tile._3 * 4 + bin._2)
+      distance(center, uBin) should be (26.0 +- math.sqrt(0.5))
+      assert(distance(start, uBin) < 9.0 || distance(end, uBin) < 9.0)
+      assert(end._1 <= uBin._1 && uBin._1 <= start._1)
+      assert(uBin._2 >= start._2)
+    }
+  }
+  test("Test when minLength is greater than chordLength") {
+
+    val projection = new SimpleLeaderArcProjection(Seq(4), (0.0, 0.0), (64.0, 64.0), 8, minLengthOpt = Some(100))
+    val pointsOpt = projection.project(Some((34.0, 17.0, 10.0, 7.0)), (3, 3))
+
+    val start = (34, 64 - 17)
+    val end = (10, 64 - 7)
+    val center = (22.0 + 5.0 * math.sqrt(3.0), 64.0 - (12.0 - 12.0 * math.sqrt(3.0)))
+
+    assert(pointsOpt.isEmpty)
+  }
+  test("Test binTo1D and binFrom1D functions in SimpleLeaderArcProjection") {
+    val maxBin = (3, 3)
+    val bounds = ((-16.0, -16.0), (16.0, 16.0))
+    val leaderLength = 5
+    val tms = false
+    val projection = new SimpleLeaderArcProjection(Seq(4), bounds._1, bounds._2, leaderLength, tms = tms)
+
+    val coord1D = projection.binTo1D((2, 2), (3, 3))
+    assertResult(10)(coord1D)
+
+    val binCoord = projection.binFrom1D(9, (3, 3))
+    assertResult((1, 2))(binCoord)
+  }
+
+  //SimpleArcProjection tests
+  test("Test giving empty coords to project method of SimpleArcProjection") {
+    val maxBin = (3, 3)
+    val projection = new SimpleArcProjection(Seq(4), (0.0, 0.0), (64.0, 64.0), 8)
+    val result = projection.project(None, maxBin)
+
+    assertResult(None)(result)
+  }
+  test("Test binTo1D and binFrom1D functions in SimpleArcProjection") {
+    val maxBin = (3, 3)
+    val projection = new SimpleArcProjection(Seq(4), (0.0, 0.0), (64.0, 64.0), 8)
+    val result = projection.project(None, maxBin)
+
+    val coord1D = projection.binTo1D((2, 2), (3, 3))
+    assertResult(10)(coord1D)
+
+    val binCoord = projection.binFrom1D(9, (3, 3))
+    assertResult((1, 2))(binCoord)
+  }
+  test("Test SimpleArcProjection projection") {
+
+    val projection = new SimpleArcProjection(Seq(4), (0.0, 0.0), (64.0, 64.0), 8)
+    val pointsOpt = projection.project(Some((24.0, 24.0, 36.0, 33.0)), (3, 3))
+    assert(pointsOpt.isDefined)
+
+    val points = pointsOpt.get
+    val expected = Seq(
+      ((4,6,10),(0,0)),
+      ((4,6,10),(1,0)),
+      ((4,6,10),(2,0)),
+      ((4,6,10),(3,0)),
+      ((4,7,10),(0,0)),
+      ((4,7,10),(1,0)),
+      ((4,7,9),(2,3)),
+      ((4,7,9),(3,3)),
+      ((4,8,9),(0,2)),
+      ((4,8,9),(1,1)),
+      ((4,8,9),(2,0)),
+      ((4,8,8),(2,3)),
+      ((4,8,8),(3,2)),
+      ((4,8,8),(3,1)),
+      ((4,9,8),(0,0)),
+      ((4,9,7),(0,3))
+    )
+    assert(points == expected)
+
+  }
+
 }
