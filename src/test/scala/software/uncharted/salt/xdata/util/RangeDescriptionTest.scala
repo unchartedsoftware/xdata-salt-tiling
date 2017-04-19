@@ -29,6 +29,7 @@
 package software.uncharted.salt.xdata.util
 
 import org.scalatest.FunSpec
+import software.uncharted.sparkpipe.ops.xdata.text.util.RangeDescription
 
 // scalastyle:off magic.number
 class RangeDescriptionTest extends FunSpec {

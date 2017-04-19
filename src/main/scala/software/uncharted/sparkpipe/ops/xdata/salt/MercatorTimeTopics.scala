@@ -33,7 +33,7 @@ import org.apache.spark.sql.{DataFrame, Row}
 import software.uncharted.salt.core.analytic.collection.TopElementsAggregator
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.generation.request.TileLevelRequest
-import software.uncharted.salt.xdata.util.RangeDescription
+import software.uncharted.sparkpipe.ops.xdata.text.util.RangeDescription
 
 object MercatorTimeTopics extends MercatorTimeOp {
 

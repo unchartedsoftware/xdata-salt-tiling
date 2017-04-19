@@ -39,9 +39,9 @@ import software.uncharted.salt.core.generation.Series
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.generation.request.TileRequest
 import software.uncharted.salt.xdata.projection.XYTimeProjection
-import software.uncharted.salt.xdata.util.RangeDescription
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.castColumns
+import software.uncharted.sparkpipe.ops.xdata.text.util.RangeDescription
 
 trait XYTimeOp {
 

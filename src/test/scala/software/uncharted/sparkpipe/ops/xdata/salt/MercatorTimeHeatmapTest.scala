@@ -30,7 +30,7 @@ package software.uncharted.sparkpipe.ops.xdata.salt
 
 import org.apache.spark.sql.DataFrame
 import software.uncharted.salt.xdata.projection.MercatorTimeProjection
-import software.uncharted.salt.xdata.util.RangeDescription
+import software.uncharted.sparkpipe.ops.xdata.text.util.RangeDescription
 import software.uncharted.xdata.spark.SparkFunSpec
 
 case class TestData(lon: Double, lat: Double, value: Double, time: Long)

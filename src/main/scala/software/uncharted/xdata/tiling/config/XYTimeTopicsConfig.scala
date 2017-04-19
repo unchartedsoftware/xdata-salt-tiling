@@ -32,7 +32,7 @@ import java.io.FileReader
 
 import com.typesafe.config.Config
 import org.apache.commons.csv.CSVFormat
-import software.uncharted.salt.xdata.util.RangeDescription
+import software.uncharted.sparkpipe.ops.xdata.text.util.RangeDescription
 import scala.collection.JavaConverters._ //scalastyle:ignore
 import scala.util.Try
 
