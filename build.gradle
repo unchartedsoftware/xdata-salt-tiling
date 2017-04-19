@@ -89,8 +89,10 @@ idea {
   }
 }
 
+// enforces license inclusion and includes tools to update liscense info
 license {
   header = rootProject.file('LICENSE.md')
+  include "**/*.scala"
 }
 
 // configure scala style checking plugin
