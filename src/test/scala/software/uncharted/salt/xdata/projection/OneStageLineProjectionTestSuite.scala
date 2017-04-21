@@ -187,15 +187,22 @@ class OneStageLineProjectionTestSuite extends FunSuite {
   }
 
   test("Test leader line fading spreader function") {
-    val spreader = new FadingSpreadingFunction(4, (3, 3), false)
-    assert(List(4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0) === spreader.spread(Seq(
+    val spreader1 = new FadingSpreadingFunction(4, (3, 3), false)
+    assert(List(4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0) === spreader1.spread(Seq(
       ((2, 0, 0), (0, 0)), ((2, 0, 0), (1, 0)), ((2, 0, 0), (2, 0)), ((2, 0, 0), (3, 0)),
       ((2, 1, 0), (0, 0)), ((2, 1, 0), (1, 0)), ((2, 1, 0), (2, 0)), ((2, 1, 0), (3, 0))
     ), Some(4.0)).map(_._3.get).toList)
 
-    assert(List(4.0, 3.0, 2.0, 1.0, 1.0, 2.0, 3.0, 4.0) === spreader.spread(Seq(
+    assert(List(4.0, 3.0, 2.0, 1.0, 1.0, 2.0, 3.0, 4.0) === spreader1.spread(Seq(
       ((2, 0, 0), (0, 0)), ((2, 0, 0), (1, 0)), ((2, 0, 0), (2, 0)), ((2, 0, 0), (3, 0)),
       ((2, 1, 0), (1, 0)), ((2, 1, 0), (2, 0)), ((2, 1, 0), (3, 0)), ((2, 2, 0), (0, 0))
+    ), Some(4.0)).map(_._3.get).toList)
+
+
+    val spreader2 = new FadingSpreadingFunction(5, (3, 3), false)
+    assert(List(4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0) === spreader2.spread(Seq(
+      ((2, 0, 0), (0, 0)), ((2, 0, 0), (1, 0)), ((2, 0, 0), (2, 0)), ((2, 0, 0), (3, 0)),
+      ((2, 1, 0), (0, 0)), ((2, 1, 0), (1, 0)), ((2, 1, 0), (2, 0)), ((2, 1, 0), (3, 0))
     ), Some(4.0)).map(_._3.get).toList)
   }
 
@@ -254,5 +261,31 @@ class OneStageLineProjectionTestSuite extends FunSuite {
       assert(end._1 <= uBin._1 && uBin._1 <= start._1)
       assert(uBin._2 >= start._2)
     }
+  }
+
+  //MercatorLineProjection
+  test("Test giving empty coords to project method of MercatorLineProjection") {
+    val projection = new MercatorLineProjection(Seq(4))
+
+    val result = projection.project(None, (3, 3))
+    assertResult(None)(result)
+  }
+  test("Test binTo1D and binFrom1D functions in MercatorLineProjection") {
+    val maxBin = (3, 3)
+    val projection = new MercatorLineProjection(Seq(4))
+    val result = projection.project(None, maxBin)
+
+    val coord1D = projection.binTo1D((2, 2), (3, 3))
+    assertResult(10)(coord1D)
+
+    val binCoord = projection.binFrom1D(9, (3, 3))
+    assertResult((1, 2))(binCoord)
+  }
+
+  test("Test out of bounds coordinates for project method of MercatorLineProjection") {
+    val maxBin = (3, 3)
+    val projection = new MercatorLineProjection(Seq(4), (10, 10))
+    val result = projection.project(Some((50, 50, 1, 1)), maxBin)
+    assertResult(None)(result)
   }
 }
