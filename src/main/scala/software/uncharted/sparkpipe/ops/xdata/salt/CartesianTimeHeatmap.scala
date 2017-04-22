@@ -37,6 +37,8 @@ import software.uncharted.sparkpipe.ops.xdata.text.util.RangeDescription
 
 object CartesianTimeHeatmap extends CartesianTimeOp {
 
+  val DefaultTileSize = 256
+
   def apply(// scalastyle:ignore
             xCol: String,
             yCol: String,
@@ -45,7 +47,7 @@ object CartesianTimeHeatmap extends CartesianTimeOp {
             latLonBounds: Option[(Double, Double, Double, Double)],
             timeRange: RangeDescription[Long],
             zoomLevels: Seq[Int],
-            tileSize: Int = defaultTileSize)
+            tileSize: Int = DefaultTileSize)
            (input: DataFrame):
   RDD[SeriesData[(Int, Int, Int), (Int, Int, Int), Double, (Double, Double)]] = {
 
@@ -56,7 +58,7 @@ object CartesianTimeHeatmap extends CartesianTimeOp {
         if (!r.isNullAt(rowIndex)) Some(r.getDouble(rowIndex)) else None
       }
       case _ => (r: Row) => {
-        Some(1.0)
+        None
       }
     }
 

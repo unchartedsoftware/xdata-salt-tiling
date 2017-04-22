@@ -32,9 +32,9 @@ import com.typesafe.config.Config
 import org.apache.spark.sql.{Column, SparkSession}
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.xdata.io.serializeBinArray
-import software.uncharted.sparkpipe.ops.xdata.salt.{CartesianTimeHeatmap, MercatorTimeHeatmap}
+import software.uncharted.sparkpipe.ops.xdata.salt.{CartesianTimeHeatmap, HeatmapOp, MercatorTimeHeatmap}
 import software.uncharted.xdata.tiling.config.{CartesianProjectionConfig, MercatorProjectionConfig, TilingConfig, XYTimeHeatmapConfig}
-import software.uncharted.xdata.tiling.jobs.JobUtil.{dataframeFromSparkCsv, createMetadataOutputOperation}
+import software.uncharted.xdata.tiling.jobs.JobUtil.{createMetadataOutputOperation, dataframeFromSparkCsv}
 
 // scalastyle:off method.length
 object XYTimeHeatmapJob extends AbstractJob {
@@ -57,6 +57,8 @@ object XYTimeHeatmapJob extends AbstractJob {
       case _ => logger.error("Invalid XYbounds"); sys.exit(-1)
     }
 
+    val bins = tilingConfig.bins.getOrElse(HeatmapOp.DefaultTileSize)
+
     // create the heatmap operation based on the projection
     val heatmapOperation = heatmapConfig.projection match {
       case _: MercatorProjectionConfig => MercatorTimeHeatmap(
@@ -67,7 +69,7 @@ object XYTimeHeatmapJob extends AbstractJob {
         if (xyBoundsFound) heatmapConfig.projection.xyBounds else None,
         heatmapConfig.timeRange,
         tilingConfig.levels,
-        tilingConfig.bins.getOrElse(MercatorTimeHeatmap.defaultTileSize))(_)
+        bins)(_)
       case _: CartesianProjectionConfig => CartesianTimeHeatmap(
         heatmapConfig.xCol,
         heatmapConfig.yCol,
@@ -76,7 +78,7 @@ object XYTimeHeatmapJob extends AbstractJob {
         if (xyBoundsFound) heatmapConfig.projection.xyBounds else None,
         heatmapConfig.timeRange,
         tilingConfig.levels,
-        tilingConfig.bins.getOrElse(CartesianTimeHeatmap.defaultTileSize))(_)
+        bins)(_)
       case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
     }
 
@@ -103,7 +105,7 @@ object XYTimeHeatmapJob extends AbstractJob {
     import net.liftweb.json.JsonAST._ // scalastyle:ignore
     import net.liftweb.json.JsonDSL._ // scalastyle:ignore
 
-    val binCount = tilingConfig.bins.getOrElse(MercatorTimeHeatmap.defaultTileSize)
+    val binCount = tilingConfig.bins
     val levelMetadata =
       ("bins" -> binCount) ~
       ("range" ->

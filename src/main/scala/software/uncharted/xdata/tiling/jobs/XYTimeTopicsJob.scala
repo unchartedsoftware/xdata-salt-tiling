@@ -89,7 +89,7 @@ object XYTimeTopicsJob extends AbstractJob {
     // Pipe the dataframe
     Pipe(df)
       .to(split(topicsConfig.textCol, "\\b+"))
-      .to(includeTermFilter(topicsConfig.textCol, topicsConfig.termList.keySet))
+      .to(includeTermFilter(topicsConfig.textCol, topicsConfig.termList.toSet))
       .to(_.select(topicsConfig.xCol, topicsConfig.yCol, topicsConfig.timeCol, topicsConfig.textCol))
       .to(_.cache())
       .to(topicsOp)

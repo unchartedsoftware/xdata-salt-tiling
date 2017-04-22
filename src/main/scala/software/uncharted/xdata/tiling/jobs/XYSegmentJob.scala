@@ -79,8 +79,7 @@ object XYSegmentJob extends AbstractJob {
         segmentConfig.valueCol,
         if (xyBoundsFound) segmentConfig.projectionConfig.xyBounds else None,
         tilingConfig.levels,
-        segmentConfig.tileSize,
-        tms = tilingConfig.tms)(_)
+        segmentConfig.tileSize)(_)
       case _: CartesianProjectionConfig => CartesianSegmentOp(
         segmentConfig.arcType,
         segmentConfig.minSegLen,
@@ -92,8 +91,7 @@ object XYSegmentJob extends AbstractJob {
         segmentConfig.valueCol,
         if (xyBoundsFound) segmentConfig.projectionConfig.xyBounds else None,
         tilingConfig.levels,
-        segmentConfig.tileSize,
-        tms = tilingConfig.tms)(_)
+        segmentConfig.tileSize)(_)
       case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
     }
 

@@ -48,13 +48,12 @@ trait MercatorTimeOp extends XYTimeOp {
                            binAggregator: Aggregator[T, U, V],
                            tileAggregator: Option[Aggregator[V, W, X]],
                            zoomLevels: Seq[Int],
-                           tileSize: Int,
-                           tms: Boolean)
+                           tileSize: Int)
                           (request: TileRequest[(Int, Int, Int)])(input: DataFrame):
   RDD[SeriesData[(Int, Int, Int), (Int, Int, Int), V, X]] = {
     // create a default projection from data-space into mercator tile space
     val projection = lonLatBounds.map { b =>
-      new MercatorTimeProjection(zoomLevels, (b._1, b._2, timeRange.min), (b._3, b._4, timeRange.max), timeRange.count, tms)
+      new MercatorTimeProjection(zoomLevels, (b._1, b._2, timeRange.min), (b._3, b._4, timeRange.max), timeRange.count)
     }.getOrElse(new MercatorTimeProjection(zoomLevels, timeRange))
 
     super.apply(lonCol, latCol, rangeCol, timeRange, valueExtractor, binAggregator, tileAggregator,

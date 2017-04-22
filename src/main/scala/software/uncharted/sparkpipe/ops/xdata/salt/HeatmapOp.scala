@@ -30,34 +30,33 @@ package software.uncharted.sparkpipe.ops.xdata.salt
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.DataFrame
-import software.uncharted.salt.core.analytic.collection.TopElementsAggregator
+import software.uncharted.salt.core.analytic.numeric.{MinMaxAggregator, SumAggregator}
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.generation.request.TileLevelRequest
+import software.uncharted.salt.core.projection.numeric.NumericProjection
 
-object CartesianTopics extends CartesianOp {
+object HeatmapOp extends ZXYOp {
 
-    def apply(// scalastyle:ignore
-              xCol: String,
-              yCol: String,
-              textCol: String,
-              latLonBounds: Option[(Double, Double, Double, Double)],
-              topicLimit: Int,
-              zoomLevels: Seq[Int],
-              tileSize: Int)
-             (input: DataFrame):
-    RDD[SeriesData[(Int, Int, Int), (Int, Int), List[(String, Int)], Nothing]] = {
+  val DefaultTileSize = 256
 
-    val aggregator = new TopElementsAggregator[String](topicLimit)
-
+  def apply(// scalastyle:ignore
+            xCol: String,
+            yCol: String,
+            valueCol: String,
+            projection: NumericProjection[(Double, Double), (Int, Int, Int), (Int, Int)],
+            zoomLevels: Seq[Int],
+            tileSize: Int = DefaultTileSize
+           )(input: DataFrame): RDD[SeriesData[(Int, Int, Int), (Int, Int), Double, (Double, Double)]] = {
     val request = new TileLevelRequest(zoomLevels, (tc: (Int, Int, Int)) => tc._1)
+
     super.apply(
-    tileSize,
-    xCol,
-    yCol,
-    textCol,
-    latLonBounds.get,
-    zoomLevels,
-    aggregator,
-    None)(request)(input)
+      projection,
+      tileSize,
+      xCol,
+      yCol,
+      valueCol,
+      SumAggregator,
+      Some(MinMaxAggregator)
+    )(request)(input)
   }
 }

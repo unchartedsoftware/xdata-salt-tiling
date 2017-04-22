@@ -60,7 +60,7 @@ object MercatorTimeTopics extends MercatorTimeOp {
     val aggregator = new TopElementsAggregator[String](topicLimit)
 
     val request = new TileLevelRequest(zoomLevels, (tc: (Int, Int, Int)) => tc._1)
-    super.apply(latCol, lonCol, rangeCol, latLonBounds, timeRange, valueExtractor, aggregator, None, zoomLevels, tileSize, tms)(request)(input)
+    super.apply(latCol, lonCol, rangeCol, latLonBounds, timeRange, valueExtractor, aggregator, None, zoomLevels, tileSize)(request)(input)
   }
 }
 

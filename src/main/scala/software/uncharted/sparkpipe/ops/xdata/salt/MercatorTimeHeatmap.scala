@@ -37,6 +37,8 @@ import software.uncharted.sparkpipe.ops.xdata.text.util.RangeDescription
 
 object MercatorTimeHeatmap extends MercatorTimeOp {
 
+  val DefaultTileSize = 256
+
   def apply(// scalastyle:ignore
             latCol: String,
             lonCol: String,
@@ -45,8 +47,7 @@ object MercatorTimeHeatmap extends MercatorTimeOp {
             latLonBounds: Option[(Double, Double, Double, Double)],
             timeRange: RangeDescription[Long],
             zoomLevels: Seq[Int],
-            tileSize: Int = defaultTileSize,
-            tms: Boolean = true
+            tileSize: Int = DefaultTileSize
            )(input: DataFrame): RDD[SeriesData[(Int, Int, Int), (Int, Int, Int), Double, (Double, Double)]] = {
 
     // Extracts value data from row
@@ -62,6 +63,6 @@ object MercatorTimeHeatmap extends MercatorTimeOp {
 
     val request = new TileLevelRequest(zoomLevels, (tc: (Int, Int, Int)) => tc._1)
     super.apply(latCol, lonCol, rangeCol, latLonBounds, timeRange, valueExtractor, SumAggregator,
-      Some(MinMaxAggregator), zoomLevels, tileSize, tms)(request)(input)
+      Some(MinMaxAggregator), zoomLevels, tileSize)(request)(input)
   }
 }

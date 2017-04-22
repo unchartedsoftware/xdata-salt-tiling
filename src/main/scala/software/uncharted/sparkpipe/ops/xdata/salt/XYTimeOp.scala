@@ -45,8 +45,6 @@ import software.uncharted.sparkpipe.ops.xdata.text.util.RangeDescription
 
 trait XYTimeOp {
 
-  val defaultTileSize = 256
-
   def apply[T, U, V, W, X](// scalastyle:ignore
                            xCol: String,
                            yCol: String,

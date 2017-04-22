@@ -29,12 +29,12 @@
 package software.uncharted.xdata.tiling.jobs
 
 import com.typesafe.config.Config
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{DataFrame, SparkSession, functions}
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.xdata.io.serializeBinArray
-import software.uncharted.sparkpipe.ops.xdata.salt.{CartesianHeatmapOp, MercatorHeatmapOp, ZXYOp}
-import software.uncharted.xdata.tiling.config.{CartesianProjectionConfig, MercatorProjectionConfig, XYHeatmapConfig}
-import software.uncharted.xdata.tiling.jobs.JobUtil.{dataframeFromSparkCsv, createMetadataOutputOperation}
+import software.uncharted.sparkpipe.ops.xdata.salt.HeatmapOp
+import software.uncharted.xdata.tiling.config.XYHeatmapConfig
+import software.uncharted.xdata.tiling.jobs.JobUtil.{createMetadataOutputOperation, dataframeFromSparkCsv}
 
 /**
   * Simple job to do ordinary 2-d tiling
@@ -53,42 +53,27 @@ object XYHeatmapJob extends AbstractJob {
     val outputOperation = parseOutputOperation(config)
 
     // Parse geo heatmap parameters out of supplied config
-    val heatmapConfig = XYHeatmapConfig.parse(config).getOrElse {
-      logger.error("Invalid heatmap op config")
+    val heatmapConfig = XYHeatmapConfig.parse(config).recover { case err: Exception =>
+      logger.error("Invalid heatmapOp config", err)
       sys.exit(-1)
-    }
+    }.get
 
-    val xyBoundsFound = heatmapConfig.projection.xyBounds match {
-      case ara: Some[(Double, Double, Double, Double)] => true
-      case None => false
-      case _ => logger.error("Invalid XYbounds"); sys.exit(-1)
-    }
-
-    val tileSize = tilingConfig.bins.getOrElse(ZXYOp.TILE_SIZE_DEFAULT)
+    val tileSize = tilingConfig.bins.getOrElse(HeatmapOp.DefaultTileSize)
 
     // create the heatmap operation based on the projection
-    val heatmapOperation = heatmapConfig.projection match {
-      case _: MercatorProjectionConfig => MercatorHeatmapOp(
-        heatmapConfig.xCol,
-        heatmapConfig.yCol,
-        heatmapConfig.valueCol,
-        tilingConfig.levels,
-        if (xyBoundsFound) heatmapConfig.projection.xyBounds else None,
-        tileSize
-      )(_)
-      case _: CartesianProjectionConfig  => CartesianHeatmapOp(
-        heatmapConfig.xCol,
-        heatmapConfig.yCol,
-        heatmapConfig.valueCol,
-        tilingConfig.levels,
-        if (xyBoundsFound) heatmapConfig.projection.xyBounds else None,
-        tileSize
-      )(_)
-      case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
-    }
+    val heatmapOperation = HeatmapOp(
+      heatmapConfig.xCol,
+      heatmapConfig.yCol,
+      heatmapConfig.valueCol.getOrElse("__count__"),
+      heatmapConfig.projection.createProjection(tilingConfig.levels),
+      tilingConfig.levels,
+      tileSize)(_)
 
-    // Pipe the dataframe
+    // Pipe the dataframe.  There may be a case where we don't have a value column specified, and just
+    // want to count each row as 1.  This can be accomplished by adding a new '__count__' column adding
+    // setting values to 1.0.
     Pipe(dataframeFromSparkCsv(config, tilingConfig.source, schema, sparkSession))
+      .to(df => heatmapConfig.valueCol.map(x => df).getOrElse(df.withColumn("__count__", functions.lit(1.0))))
       .to(_.cache)
       .to(heatmapOperation)
       .to(serializeBinArray)

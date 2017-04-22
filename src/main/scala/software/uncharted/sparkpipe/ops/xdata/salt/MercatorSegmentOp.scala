@@ -73,8 +73,7 @@ object MercatorSegmentOp {
             valueCol: Option[String],
             xyBounds: Option[(Double, Double, Double, Double)],
             zoomLevels: Seq[Int],
-            tileSize: Int,
-            tms: Boolean = true)
+            tileSize: Int)
            (input: DataFrame): RDD[SeriesData[(Int, Int, Int), (Int, Int), Double, (Double, Double)]] = {
     val valueExtractor: (Row) => Option[Double] = valueCol match {
       case Some(colName: String) => (r: Row) => {
@@ -102,7 +101,7 @@ object MercatorSegmentOp {
       minBounds = (geo_bounds._1, geo_bounds._2)
       maxBounds = (geo_bounds._3, geo_bounds._4)
     }
-    val projection = new MercatorLineProjection(zoomLevels, minBounds, maxBounds, minSegLen, maxSegLen, tms = tms)
+    val projection = new MercatorLineProjection(zoomLevels, minBounds, maxBounds, minSegLen, maxSegLen)
 
     val request = new TileLevelRequest(zoomLevels, (tc: (Int, Int, Int)) => tc._1)
 

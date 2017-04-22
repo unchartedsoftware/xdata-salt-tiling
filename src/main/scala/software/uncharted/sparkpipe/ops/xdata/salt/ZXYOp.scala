@@ -38,16 +38,14 @@ import software.uncharted.salt.core.projection.numeric.NumericProjection
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.castColumns
 
-object ZXYOp extends ZXYOp {
-  final val TILE_SIZE_DEFAULT = 256
-}
 /**
   * A superclass for operations which generate
   * zxy tile layers from a DataFrame, using Salt
   */
 trait ZXYOp {
   // scalastyle:off parameter.number
-  private val DOUBLE_TYPE = "double"
+  // scalastyle:off method.length
+  private val DoubleType = "double"
   /**
     * Main tiling operation.
     *
@@ -68,11 +66,12 @@ trait ZXYOp {
                            tileAggregator: Option[Aggregator[V, W, X]]
                           )(request: TileRequest[(Int, Int, Int)])(input: DataFrame): RDD[SeriesData[(Int, Int, Int), (Int, Int), V, X]] = {
 
+    // Select columns based on those supplied
     val selectCols = Seq(xCol, yCol, vCol).map(new Column(_))
 
     // Use the pipeline to convert x/y cols to doubles, and select them along with v col first
     val frame = Pipe(input)
-      .to(castColumns(Map(xCol -> DOUBLE_TYPE, yCol -> DOUBLE_TYPE)))
+      .to(castColumns(Map(xCol -> DoubleType, yCol -> DoubleType)))
       .to(_.select(selectCols: _*))
       .run()
 
