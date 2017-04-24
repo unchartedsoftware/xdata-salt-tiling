@@ -71,6 +71,7 @@ object XYTimeHeatmapJob extends AbstractJob {
                                                 tilingConfig.levels,
                                                 bins)(_)
 
+    // list of columns we want to filter down to for the computation
     val selectCols = Seq(Some(heatmapConfig.xCol),
                          Some(heatmapConfig.yCol),
                          Some(heatmapConfig.timeCol),

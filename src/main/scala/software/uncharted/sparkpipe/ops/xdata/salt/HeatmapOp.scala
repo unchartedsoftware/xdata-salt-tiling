@@ -29,7 +29,7 @@
 package software.uncharted.sparkpipe.ops.xdata.salt
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.{DataFrame, functions}
 import software.uncharted.salt.core.analytic.numeric.{MinMaxAggregator, SumAggregator}
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.generation.request.TileLevelRequest
@@ -42,21 +42,26 @@ object HeatmapOp extends ZXYOp {
   def apply(// scalastyle:ignore
             xCol: String,
             yCol: String,
-            valueCol: String,
+            valueCol: Option[String],
             projection: NumericProjection[(Double, Double), (Int, Int, Int), (Int, Int)],
             zoomLevels: Seq[Int],
             tileSize: Int = DefaultTileSize
            )(input: DataFrame): RDD[SeriesData[(Int, Int, Int), (Int, Int), Double, (Double, Double)]] = {
     val request = new TileLevelRequest(zoomLevels, (tc: (Int, Int, Int)) => tc._1)
 
+    // if there is no value column specified update the input data frame with a new
+    // column of ones
+    val updated = valueCol.map(v => (v, input))
+      .getOrElse(("__count__", input.withColumn("__count__", functions.lit(1.0))))
+
     super.apply(
       projection,
       tileSize,
       xCol,
       yCol,
-      valueCol,
+      updated._1,
       SumAggregator,
       Some(MinMaxAggregator)
-    )(request)(input)
+    )(request)(updated._2)
   }
 }

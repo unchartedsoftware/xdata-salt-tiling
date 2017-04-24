@@ -29,7 +29,7 @@
 package software.uncharted.xdata.tiling.jobs
 
 import com.typesafe.config.Config
-import org.apache.spark.sql.{DataFrame, SparkSession, functions}
+import org.apache.spark.sql.{Column, DataFrame, SparkSession, functions}
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.xdata.io.serializeBinArray
 import software.uncharted.sparkpipe.ops.xdata.salt.HeatmapOp
@@ -39,7 +39,6 @@ import software.uncharted.xdata.tiling.jobs.JobUtil.{createMetadataOutputOperati
 /**
   * Simple job to do ordinary 2-d tiling
   */
-// scalastyle:off method.length
 object XYHeatmapJob extends AbstractJob {
   /**
     * This function actually executes the task the job describes
@@ -64,16 +63,19 @@ object XYHeatmapJob extends AbstractJob {
     val heatmapOperation = HeatmapOp(
       heatmapConfig.xCol,
       heatmapConfig.yCol,
-      heatmapConfig.valueCol.getOrElse("__count__"),
+      heatmapConfig.valueCol,
       heatmapConfig.projection.createProjection(tilingConfig.levels),
       tilingConfig.levels,
       tileSize)(_)
 
-    // Pipe the dataframe.  There may be a case where we don't have a value column specified, and just
-    // want to count each row as 1.  This can be accomplished by adding a new '__count__' column adding
-    // setting values to 1.0.
+    // list of columns we want to filter down to for the computation
+    val selectCols = Seq(Some(heatmapConfig.xCol),
+                         Some(heatmapConfig.yCol),
+                         heatmapConfig.valueCol).flatten.map(new Column(_))
+
+    // Pipe the dataframe.
     Pipe(dataframeFromSparkCsv(config, tilingConfig.source, schema, sparkSession))
-      .to(df => heatmapConfig.valueCol.map(x => df).getOrElse(df.withColumn("__count__", functions.lit(1.0))))
+      .to(_.select(selectCols: _*))
       .to(_.cache)
       .to(heatmapOperation)
       .to(serializeBinArray)
