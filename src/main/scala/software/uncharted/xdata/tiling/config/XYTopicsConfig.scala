@@ -34,7 +34,7 @@ import java.nio.file.Files
 import com.typesafe.config.Config
 import software.uncharted.sparkpipe.ops.xdata.salt.TopicsOp
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters._ //scalastyle:off
 import scala.util.Try
 
 case class XYTopicsConfig(xCol: String,

@@ -32,10 +32,9 @@ import java.io.{File, FileReader}
 import java.nio.file.Files
 
 import com.typesafe.config.Config
-import org.apache.commons.csv.CSVFormat
 import software.uncharted.sparkpipe.ops.xdata.text.util.RangeDescription
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters._ //scalastyle:off
 import scala.util.Try
 
 // Parse config for mercator time heatmap sparkpipe op

@@ -28,7 +28,7 @@
 package software.uncharted.sparkpipe.ops.xdata.salt
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql._
+import org.apache.spark.sql.DataFrame
 import software.uncharted.salt.core.analytic.collection.TopElementsAggregator
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.generation.request.TileLevelRequest

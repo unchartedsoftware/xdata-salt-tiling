@@ -28,13 +28,9 @@
 
 package software.uncharted.xdata.tiling.config
 
-import java.io.{File, FileReader}
-import java.nio.file.Files
-
 import com.typesafe.config.Config
-import software.uncharted.sparkpipe.ops.xdata.salt.TopicsOp
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters._ // scalastyle:off
 import scala.util.Try
 
 case class XYHeatmapConfig(xCol: String,

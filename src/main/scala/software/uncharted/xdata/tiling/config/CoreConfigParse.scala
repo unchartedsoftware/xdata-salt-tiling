@@ -31,9 +31,8 @@ package software.uncharted.xdata.tiling.config
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.SparkConf
 import com.typesafe.config.Config
-import software.uncharted.sparkpipe.ops.xdata.salt.{TopicsOp, ZXYOp}
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters._ // scalastyle:off
 import scala.util.Try
 
 // scalastyle:off multiple.string.literals
