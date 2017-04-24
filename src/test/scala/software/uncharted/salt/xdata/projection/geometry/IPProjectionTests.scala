@@ -28,6 +28,8 @@
 
 package software.uncharted.salt.xdata.projection.geometry
 
+import java.text.DecimalFormat
+
 import org.scalactic.TolerantNumerics
 import org.scalatest.FunSuite
 import software.uncharted.salt.xdata.projection.{IPProjection, IPSegmentProjection, SimpleLineProjection}
@@ -153,5 +155,19 @@ class IPProjectionTests extends FunSuite {
     assert(((4, 4, 2), (1, 2)) === result(1))
     assert(((4, 4, 2), (2, 3)) === result(2))
     assert(((4, 4, 2), (3, 3)) === result(3))
+  }
+
+  test("IPv6 addresses to Cartesian coordinates") {
+    val maxBin = (3, 3)
+
+    val emptyIPv6 = "::"
+    val centreCoords = IPProjection.ipToCartesian(Some(emptyIPv6),maxBin)
+    assertResult(Some((0.0,0.0)))(centreCoords)
+
+    val nonEmptyIPv6 = "FFFF:ffff:FFFF:ffff:FFFF:ffff"
+    val resultCoords = IPProjection.ipToCartesian(Some(nonEmptyIPv6),maxBin).get
+    val df = new DecimalFormat("#.#")
+    assert(df.format(resultCoords._1) == "1")
+    assert(df.format(resultCoords._2) == "1")
   }
 }

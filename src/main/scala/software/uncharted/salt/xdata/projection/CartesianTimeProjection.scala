@@ -29,7 +29,7 @@
 package software.uncharted.salt.xdata.projection
 
 import software.uncharted.salt.core.projection.numeric.CartesianProjection
-import software.uncharted.salt.xdata.util.RangeDescription
+import software.uncharted.sparkpipe.ops.xdata.text.util.RangeDescription
 
 class CartesianTimeProjection(zoomLevels: Seq[Int],
                               min: (Double, Double, Long) = (0.0, 0.0, 0),

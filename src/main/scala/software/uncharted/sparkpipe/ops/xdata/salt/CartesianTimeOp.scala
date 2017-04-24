@@ -34,7 +34,7 @@ import software.uncharted.salt.core.analytic.Aggregator
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.generation.request.TileRequest
 import software.uncharted.salt.xdata.projection.CartesianTimeProjection
-import software.uncharted.salt.xdata.util.RangeDescription
+import software.uncharted.sparkpipe.ops.xdata.text.util.RangeDescription
 
 trait CartesianTimeOp extends XYTimeOp {
 

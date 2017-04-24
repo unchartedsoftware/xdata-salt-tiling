@@ -29,7 +29,7 @@
 package software.uncharted.salt.xdata.projection
 
 import software.uncharted.salt.core.projection.numeric.MercatorProjection
-import software.uncharted.salt.xdata.util.RangeDescription
+import software.uncharted.sparkpipe.ops.xdata.text.util.RangeDescription
 
 object MercatorTimeProjection  {
   val minLon = -180.0

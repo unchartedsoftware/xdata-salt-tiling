@@ -89,8 +89,10 @@ idea {
   }
 }
 
+// enforces license inclusion and includes tools to update liscense info
 license {
   header = rootProject.file('LICENSE.md')
+  include "**/*.scala"
 }
 
 // configure scala style checking plugin
@@ -236,7 +238,7 @@ ext {
 dependencies {
   // Compile config - needed to build and required at runtime
   compile "software.uncharted.salt:salt-core:4.1.0"
-  compile "software.uncharted.sparkpipe:sparkpipe-core:1.1.0-SNAPSHOT"
+  compile "software.uncharted.sparkpipe:sparkpipe-core:1.1.0"
   compile "software.uncharted.sparkpipe:sparkpipe-xdata-text:0.1.0-SNAPSHOT"
   compile "org.clapper:grizzled-slf4j_$dependencyScalaVersion:1.0.2"
   compile 'log4j:apache-log4j-extras:1.2.17'
@@ -246,7 +248,8 @@ dependencies {
   compile "org.joda:joda-convert:1.8.1"
   compile "net.liftweb:lift-json_$dependencyScalaVersion:2.6.2"
   // Any version of typesafe config over 1.2.1 REQUIRES java 1.8.
-  // XData cluster nodes only have java 1.7.
+  // so an older version is used to promote compatibility with older
+  //  clusters
   compile "com.typesafe:config:1.2.1"
   compile "org.apache.hbase:hbase-client:$cdhVersion"
   compile "org.apache.hbase:hbase-common:$cdhVersion"

@@ -30,6 +30,7 @@ package software.uncharted.salt.xdata.projection.geometry
 
 import org.scalatest.FunSuite
 import org.scalatest.Matchers._
+import scala.collection.Set
 
 
 class LineTests extends FunSuite {
@@ -67,6 +68,20 @@ class LineTests extends FunSuite {
     (Line(0, 1, 5) intersection Line(1, 0, 3)) should be (3.0, 5.0)
     (Line(0, 1, 0) intersection Line(5, 2, 3)) should be (0.6, 0.0)
     (Line(1, 0, 0) intersection Line(4, 10, 7)) should be (0.0, 0.7)
+
+    assert(Set((6.0, 8.0), (6.0, -8.0)) === Line(1, 0, 6).intersection(Circle((0, 0), 10)).productIterator.toSet)
+    assert(Set((2.0, 4.0), (4.0, 2.0)) === Line(1, 1, 6).intersection(Circle(2.0, 2.0, 2.0)).productIterator.toSet)
+    assert(Set((2.0, 0.0), (0.0, 2.0)) === Line(1, 1, 2).intersection(Circle(2.0, 2.0, 2.0)).productIterator.toSet)
+    assert(Set((0.0, 2.0), (2.0, 4.0)) === Line(1, -1, -2).intersection(Circle(2.0, 2.0, 2.0)).productIterator.toSet)
+    assert(Set((2.0, 0.0), (4.0, 2.0)) === Line(1, -1, 2).intersection(Circle(2.0, 2.0, 2.0)).productIterator.toSet)
+    assert(Set((2.0, 0.0), (2.0, 4.0)) === Line(1, 0, 2).intersection(Circle(2.0, 2.0, 2.0)).productIterator.toSet)
+    assert(Set((0.0, 2.0)) === Line(1, 0, 0).intersection(Circle(2.0, 2.0, 2.0)).productIterator.toSet)
+    assert(Set((4.0, 2.0)) === Line(1, 0, 4).intersection(Circle(2.0, 2.0, 2.0)).productIterator.toSet)
+
+    assert(Set((0.0, 2.0), (4.0, 2.0)) === Line(0, 1, 2).intersection(Circle(2.0, 2.0, 2.0)).productIterator.toSet)
+    assert(Set((2.0, 0.0)) === Line(0, 1, 0).intersection(Circle(2.0, 2.0, 2.0)).productIterator.toSet)
+    assert(Set((2.0, 4.0)) === Line(0, 1, 4).intersection(Circle(2.0, 2.0, 2.0)).productIterator.toSet)
+
   }
 
   test("distance") {
@@ -75,5 +90,10 @@ class LineTests extends FunSuite {
     Line(0, 1, -3).distanceTo(21.0, -4.0) should be (1.0 +- epsilon)
     Line(0, 1, -3).distanceTo(21.0, -2.0) should be (1.0 +- epsilon)
     Line(1, 2, 10).distanceTo( 0.0,  0.0) should be (math.sqrt(20) +- epsilon)
+
+    Line(1, 2, 10).distanceTo(Circle((0, 0), 3)) should be ((math.sqrt(20) - 3) +- epsilon)
+    Line(1, 2, 10).distanceTo(Circle((0, 0), 4)) should be ((math.sqrt(20) - 4) +- epsilon)
+    Line(1, 2, 10).distanceTo(Circle((0, 0), 5)) should be (0.0)
   }
+
 }
