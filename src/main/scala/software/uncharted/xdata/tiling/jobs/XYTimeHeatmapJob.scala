@@ -29,10 +29,10 @@
 package software.uncharted.xdata.tiling.jobs
 
 import com.typesafe.config.Config
-import org.apache.spark.sql.{Column, SparkSession}
+import org.apache.spark.sql.{Column, SparkSession, functions}
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.xdata.io.serializeBinArray
-import software.uncharted.sparkpipe.ops.xdata.salt.{TimeHeatmapOp, HeatmapOp}
+import software.uncharted.sparkpipe.ops.xdata.salt.{HeatmapOp, TimeHeatmapOp}
 import software.uncharted.xdata.tiling.config.{CartesianProjectionConfig, MercatorProjectionConfig, TilingConfig, XYTimeHeatmapConfig}
 import software.uncharted.xdata.tiling.jobs.JobUtil.{createMetadataOutputOperation, dataframeFromSparkCsv}
 
@@ -71,11 +71,10 @@ object XYTimeHeatmapJob extends AbstractJob {
                                                 tilingConfig.levels,
                                                 bins)(_)
 
-    val seqCols = heatmapConfig.valueCol match {
-      case None => Seq(heatmapConfig.xCol, heatmapConfig.yCol, heatmapConfig.timeCol)
-      case _ => Seq(heatmapConfig.xCol, heatmapConfig.yCol, heatmapConfig.timeCol, heatmapConfig.valueCol.getOrElse(throw new Exception("Value column is not set")))
-    }
-    val selectCols = seqCols.map(new Column(_))
+    val selectCols = Seq(Some(heatmapConfig.xCol),
+                         Some(heatmapConfig.yCol),
+                         Some(heatmapConfig.timeCol),
+                         heatmapConfig.valueCol).flatten.map(new Column(_))
 
     // Pipe the dataframe
     Pipe(dataframeFromSparkCsv(config, tilingConfig.source, schema, sparkSession))

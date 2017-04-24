@@ -33,7 +33,7 @@ import java.sql.{Date, Timestamp}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.functions.udf
 import org.apache.spark.sql.types.{DateType, DoubleType, LongType, TimestampType}
-import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.{Column, DataFrame, Row}
 import software.uncharted.salt.core.analytic.Aggregator
 import software.uncharted.salt.core.generation.Series
 import software.uncharted.salt.core.generation.output.SeriesData
@@ -51,7 +51,7 @@ trait XYTimeOp {
                            xCol: String,
                            yCol: String,
                            rangeCol: String,
-                           valueExtractor: (Row) => Option[T],
+                           valueCol: String,
                            binAggregator: Aggregator[T, U, V],
                            tileAggregator: Option[Aggregator[V, W, X]])
                           (request: TileRequest[(Int, Int, Int)])(input: DataFrame):
@@ -70,9 +70,8 @@ trait XYTimeOp {
       conversionUdf.map(cudf => input.withColumn(rangeCol, cudf(input(rangeCol)))).getOrElse(df)
     }
 
-    // Use the pipeline to cast columns to expected values and select them into a new dataframe
+    // Use the pipeline to cast columns to expected values
     val castCols = Map(xCol -> DoubleType.simpleString, yCol -> DoubleType.simpleString, rangeCol -> LongType.simpleString)
-
     val frame = Pipe(input)
       .to(convertTimes)
       .to(castColumns(castCols))
@@ -89,6 +88,12 @@ trait XYTimeOp {
       } else {
         None
       }
+    }
+
+    // Extracts value data from row
+    val valueExtractor: (Row) => Option[T] = { r =>
+        val rowIndex = r.schema.fieldIndex(valueCol)
+        if (!r.isNullAt(rowIndex)) Some(r.getAs[T](rowIndex)) else None
     }
 
     // create the series to tie everything together

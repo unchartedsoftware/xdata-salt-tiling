@@ -55,12 +55,6 @@ object TimeTopicsOp extends XYTimeOp {
     // create a default projection from data-space into tile space
     val projection = new XYTimeProjection(timeRange.min, timeRange.max, timeRange.count, baseProjection)
 
-    // Extracts value data from row
-    val valueExtractor: (Row) => Option[Seq[String]] = (r: Row) => {
-      val rowIndex = r.schema.fieldIndex(textCol)
-      if (!r.isNullAt(rowIndex) && r.getSeq(rowIndex).nonEmpty) Some(r.getSeq(rowIndex)) else None
-    }
-
     val aggregator = new TopElementsAggregator[String](topicLimit)
 
     val request = new TileLevelRequest(zoomLevels, (tc: (Int, Int, Int)) => tc._1)
@@ -70,7 +64,7 @@ object TimeTopicsOp extends XYTimeOp {
                 xCol,
                 yCol,
                 rangeCol,
-                valueExtractor,
+                textCol,
                 aggregator,
                 None
                 )(request)(input)
