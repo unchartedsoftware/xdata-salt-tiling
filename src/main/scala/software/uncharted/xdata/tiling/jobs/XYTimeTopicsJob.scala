@@ -31,6 +31,7 @@ package software.uncharted.xdata.tiling.jobs
 import com.typesafe.config.Config
 import org.apache.spark.sql.SparkSession
 import software.uncharted.sparkpipe.Pipe
+import software.uncharted.sparkpipe.ops.core.dataframe.text
 import software.uncharted.sparkpipe.ops.core.dataframe.text.{includeTermFilter, split}
 import software.uncharted.xdata.tiling.jobs.JobUtil.{createMetadataOutputOperation, dataframeFromSparkCsv}
 import software.uncharted.sparkpipe.ops.xdata.io.serializeElementScore
@@ -66,8 +67,9 @@ object XYTimeTopicsJob extends AbstractJob {
 
     // Pipe the dataframe
     Pipe(df)
+      .to(text.includeRowTermFilter(topicsConfig.textCol, topicsConfig.termList))
       .to(split(topicsConfig.textCol, "\\b+"))
-      .to(includeTermFilter(topicsConfig.textCol, topicsConfig.termList.toSet))
+      .to(text.stopTermFilter(topicsConfig.textCol, topicsConfig.stopWordsList.toSet))
       .to(_.select(topicsConfig.xCol, topicsConfig.yCol, topicsConfig.timeCol, topicsConfig.textCol))
       .to(_.cache())
       .to(topicsOp)
