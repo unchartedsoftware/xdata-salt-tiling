@@ -42,8 +42,14 @@ trait ProjectionConfig {
 
 case class MercatorProjectionConfig(bounds: Option[(Double, Double, Double, Double)]) extends ProjectionConfig {
   override def xyBounds: Option[(Double, Double, Double, Double)] = bounds
-  override def createProjection(levels: Seq[Int]): NumericProjection[(Double, Double), (Int, Int, Int), (Int, Int)] =
-    new MercatorProjection(levels, tms = true)
+  override def createProjection(levels: Seq[Int]): NumericProjection[(Double, Double), (Int, Int, Int), (Int, Int)] = {
+    xyBounds match {
+      case Some(b) =>
+        new MercatorProjection(levels, (b._1, b._2), (b._3, b._4), tms = true)
+      case None =>
+        new MercatorProjection(levels, tms = true)
+    }
+  }
 }
 
 case class CartesianProjectionConfig (bounds: Option[(Double, Double, Double, Double)]) extends ProjectionConfig {

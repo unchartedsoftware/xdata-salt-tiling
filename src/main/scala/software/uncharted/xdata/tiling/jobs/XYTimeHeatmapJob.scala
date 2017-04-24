@@ -32,7 +32,7 @@ import com.typesafe.config.Config
 import org.apache.spark.sql.{Column, SparkSession}
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.xdata.io.serializeBinArray
-import software.uncharted.sparkpipe.ops.xdata.salt.{CartesianTimeHeatmap, HeatmapOp, MercatorTimeHeatmap}
+import software.uncharted.sparkpipe.ops.xdata.salt.{TimeHeatmapOp, HeatmapOp}
 import software.uncharted.xdata.tiling.config.{CartesianProjectionConfig, MercatorProjectionConfig, TilingConfig, XYTimeHeatmapConfig}
 import software.uncharted.xdata.tiling.jobs.JobUtil.{createMetadataOutputOperation, dataframeFromSparkCsv}
 
@@ -59,28 +59,17 @@ object XYTimeHeatmapJob extends AbstractJob {
 
     val bins = tilingConfig.bins.getOrElse(HeatmapOp.DefaultTileSize)
 
+    val projection = heatmapConfig.projection.createProjection(tilingConfig.levels)
+
     // create the heatmap operation based on the projection
-    val heatmapOperation = heatmapConfig.projection match {
-      case _: MercatorProjectionConfig => MercatorTimeHeatmap(
-        heatmapConfig.yCol,
-        heatmapConfig.xCol,
-        heatmapConfig.timeCol,
-        heatmapConfig.valueCol,
-        if (xyBoundsFound) heatmapConfig.projection.xyBounds else None,
-        heatmapConfig.timeRange,
-        tilingConfig.levels,
-        bins)(_)
-      case _: CartesianProjectionConfig => CartesianTimeHeatmap(
-        heatmapConfig.xCol,
-        heatmapConfig.yCol,
-        heatmapConfig.timeCol,
-        heatmapConfig.valueCol,
-        if (xyBoundsFound) heatmapConfig.projection.xyBounds else None,
-        heatmapConfig.timeRange,
-        tilingConfig.levels,
-        bins)(_)
-      case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
-    }
+    val heatmapOperation = TimeHeatmapOp(projection,
+                                                heatmapConfig.xCol,
+                                                heatmapConfig.yCol,
+                                                heatmapConfig.timeCol,
+                                                heatmapConfig.valueCol,
+                                                heatmapConfig.timeRange,
+                                                tilingConfig.levels,
+                                                bins)(_)
 
     val seqCols = heatmapConfig.valueCol match {
       case None => Seq(heatmapConfig.xCol, heatmapConfig.yCol, heatmapConfig.timeCol)

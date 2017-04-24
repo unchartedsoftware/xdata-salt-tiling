@@ -79,8 +79,7 @@ class XYTopicsJobTest extends FunSpec {
         }
       }
 
-      it ("use default Cartesian projection and xyBounds and tilesize of one since these " +
-        "three parameters are not specified in conf file", FileIOTest) {
+      it ("use default xyBounds and tilesize for mercator", FileIOTest) {
         try {
           val path = classOf[XYTopicsJobTest].getResource("/XYTopicsJobTest/tiling-topic-file-io-defaultProjection.conf").toURI.getPath
           XYTopicsJob.execute(Array(path))
@@ -89,7 +88,7 @@ class XYTopicsJobTest extends FunSpec {
           val expected = Set(
             (0, 0, 0),
             (1, 0, 1), (1, 0, 0), (1, 1, 0), (1, 1, 1),
-            (2, 0, 3), (2, 0, 0), (2, 1, 0), (2, 1, 3), (2, 2, 0), (2, 2, 3), (2, 3, 0), (2, 3, 3))
+            (2, 0, 0), (2, 2, 0), (2, 1, 1), (2, 3, 1), (2, 0, 2), (2, 2, 2), (2, 1, 3), (2, 3, 3), (2, 0, 3))
 
           assertResult((Set(), Set()))((expected diff files, files diff expected))
         } finally  {
@@ -106,7 +105,7 @@ class XYTopicsJobTest extends FunSpec {
           val expected = Set(
             (0, 0, 0),
             (1, 0, 1), (1, 0, 0), (1, 1, 0), (1, 1, 1),
-            (2, 0, 3), (2, 0, 0), (2, 1, 0), (2, 1, 3), (2, 2, 0), (2, 2, 3), (2, 3, 0), (2, 3, 3))
+            (2, 0, 0), (2, 2, 0), (2, 1, 1), (2, 3, 1), (2, 0, 2), (2, 2, 2), (2, 1, 3), (2, 3, 3), (2, 0, 3))
 
           assertResult((Set(), Set()))((expected diff files, files diff expected))
 

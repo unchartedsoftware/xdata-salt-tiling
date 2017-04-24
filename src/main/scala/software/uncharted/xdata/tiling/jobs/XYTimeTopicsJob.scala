@@ -34,7 +34,7 @@ import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.text.{includeTermFilter, split}
 import software.uncharted.xdata.tiling.jobs.JobUtil.{dataframeFromSparkCsv, createMetadataOutputOperation}
 import software.uncharted.sparkpipe.ops.xdata.io.serializeElementScore
-import software.uncharted.sparkpipe.ops.xdata.salt.{CartesianTimeTopics, MercatorTimeTopics}
+import software.uncharted.sparkpipe.ops.xdata.salt.{TimeTopicsOp}
 import software.uncharted.xdata.tiling.config.{CartesianProjectionConfig, MercatorProjectionConfig, TilingConfig, XYTimeTopicsConfig}
 
 // scalastyle:off method.length
@@ -50,37 +50,16 @@ object XYTimeTopicsJob extends AbstractJob {
       sys.exit(-1)
     }
 
-    val xyBoundsFound  = topicsConfig.projection.xyBounds match {
-      case ara : Some[(Double, Double, Double, Double)] => true
-      case None => false
-      case _ => logger.error("Invalid XYbounds"); sys.exit(-1)
-    }
-
-    // when time format is used, need to pick up the converted time column
-    val topicsOp = topicsConfig.projection match {
-      case _: MercatorProjectionConfig => MercatorTimeTopics(
-        topicsConfig.yCol,
-        topicsConfig.xCol,
-        topicsConfig.timeCol,
-        topicsConfig.textCol,
-        if (xyBoundsFound) topicsConfig.projection.xyBounds else None,
-        topicsConfig.timeRange,
-        topicsConfig.topicLimit,
-        tilingConfig.levels,
-        tilingConfig.bins.getOrElse(1))(_)
-      case _: CartesianProjectionConfig => CartesianTimeTopics(
-        topicsConfig.xCol,
-        topicsConfig.yCol,
-        topicsConfig.timeCol,
-        topicsConfig.textCol,
-        if (xyBoundsFound) topicsConfig.projection.xyBounds else None,
-        topicsConfig.timeRange,
-        topicsConfig.topicLimit,
-        tilingConfig.levels,
-        tilingConfig.bins.getOrElse(1))(_)
-
-      case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
-    }
+    val projection = topicsConfig.projection.createProjection(tilingConfig.levels)
+    val topicsOp = TimeTopicsOp(projection,
+                                       topicsConfig.xCol,
+                                       topicsConfig.yCol,
+                                       topicsConfig.timeCol,
+                                       topicsConfig.textCol,
+                                       topicsConfig.timeRange,
+                                       topicsConfig.topicLimit,
+                                       tilingConfig.levels,
+                                       tilingConfig.bins.getOrElse(1))(_)
 
     // Create the spark context from the supplied config
     // Create the dataframe from the input config

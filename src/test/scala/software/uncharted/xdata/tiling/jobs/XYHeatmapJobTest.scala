@@ -87,7 +87,7 @@ class XYHeatmapJobTest extends FunSpec {
         }
       }
 
-      it ("use defaults of Cartesian projection and xyBounds", FileIOTest) {
+      it ("use cartesian projection and xyBounds", FileIOTest) {
         try {
           val config = classOf[XYHeatmapJobTest].getResource("/XYHeatmapJobTest/tiling-file-io-defaultProjection.conf").toURI.getPath
           val project = "xdata-salt-tiling"

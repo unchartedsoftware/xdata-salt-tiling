@@ -57,8 +57,8 @@ class XYSegmentJobTest extends FunSpec {
           val files = JobTestUtils.collectFiles(testOutputDir, suffix)
           val expected = Set(
             (0,0,0),
-            (1,0,0), (1,1,1),
-            (2,1,1), (2,2,2)
+            (1,0,1), (1,1,0),
+            (2,1,2), (2,2,1)
           )
           assertResult((Set(), Set()))((expected diff files, files diff expected))
         } finally {

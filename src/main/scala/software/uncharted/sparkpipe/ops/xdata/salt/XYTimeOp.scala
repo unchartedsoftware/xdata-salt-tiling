@@ -44,18 +44,16 @@ import software.uncharted.sparkpipe.ops.core.dataframe.castColumns
 import software.uncharted.sparkpipe.ops.xdata.text.util.RangeDescription
 
 trait XYTimeOp {
-
-  def apply[T, U, V, W, X](// scalastyle:ignore
+  // scalastyle:off method.length
+  // scalastyle:off parameter.number
+  def apply[T, U, V, W, X](projection: XYTimeProjection,
+                           tileSize: Int,
                            xCol: String,
                            yCol: String,
                            rangeCol: String,
-                           timeRange: RangeDescription[Long],
                            valueExtractor: (Row) => Option[T],
                            binAggregator: Aggregator[T, U, V],
-                           tileAggregator: Option[Aggregator[V, W, X]],
-                           zoomLevels: Seq[Int],
-                           tileSize: Int,
-                           projection: XYTimeProjection)
+                           tileAggregator: Option[Aggregator[V, W, X]])
                           (request: TileRequest[(Int, Int, Int)])(input: DataFrame):
   RDD[SeriesData[(Int, Int, Int), (Int, Int, Int), V, X]] = {
 
@@ -95,7 +93,7 @@ trait XYTimeOp {
 
     // create the series to tie everything together
     val series = new Series(
-      (tileSize - 1, tileSize - 1, timeRange.count - 1),
+      (tileSize - 1, tileSize - 1, projection.rangeBuckets - 1),
       coordExtractor,
       projection,
       valueExtractor,

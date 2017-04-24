@@ -30,40 +30,49 @@ package software.uncharted.sparkpipe.ops.xdata.salt
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row}
-import software.uncharted.salt.core.analytic.numeric.{MinMaxAggregator, SumAggregator}
+import software.uncharted.salt.core.analytic.collection.TopElementsAggregator
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.generation.request.TileLevelRequest
+import software.uncharted.salt.core.projection.numeric.NumericProjection
+import software.uncharted.salt.xdata.projection.XYTimeProjection
 import software.uncharted.sparkpipe.ops.xdata.text.util.RangeDescription
 
-object CartesianTimeHeatmap extends CartesianTimeOp {
-
-  val DefaultTileSize = 256
+object TimeTopicsOp extends XYTimeOp {
 
   def apply(// scalastyle:ignore
+            baseProjection: NumericProjection[(Double, Double), (Int, Int, Int), (Int, Int)],
             xCol: String,
             yCol: String,
             rangeCol: String,
-            valueCol: Option[String],
-            latLonBounds: Option[(Double, Double, Double, Double)],
+            textCol: String,
             timeRange: RangeDescription[Long],
+            topicLimit: Int,
             zoomLevels: Seq[Int],
-            tileSize: Int = DefaultTileSize)
+            tileSize: Int = 1)
            (input: DataFrame):
-  RDD[SeriesData[(Int, Int, Int), (Int, Int, Int), Double, (Double, Double)]] = {
+  RDD[SeriesData[(Int, Int, Int), (Int, Int, Int), List[(String, Int)], Nothing]] = {
+
+    // create a default projection from data-space into tile space
+    val projection = new XYTimeProjection(timeRange.min, timeRange.max, timeRange.count, baseProjection)
 
     // Extracts value data from row
-    val valueExtractor: (Row) => Option[Double] = valueCol match {
-      case Some(colName: String) => (r: Row) => {
-        val rowIndex = r.schema.fieldIndex(colName)
-        if (!r.isNullAt(rowIndex)) Some(r.getDouble(rowIndex)) else None
-      }
-      case _ => (r: Row) => {
-        None
-      }
+    val valueExtractor: (Row) => Option[Seq[String]] = (r: Row) => {
+      val rowIndex = r.schema.fieldIndex(textCol)
+      if (!r.isNullAt(rowIndex) && r.getSeq(rowIndex).nonEmpty) Some(r.getSeq(rowIndex)) else None
     }
 
+    val aggregator = new TopElementsAggregator[String](topicLimit)
+
     val request = new TileLevelRequest(zoomLevels, (tc: (Int, Int, Int)) => tc._1)
-    super.apply(xCol, yCol, rangeCol, latLonBounds, timeRange, valueExtractor, SumAggregator,
-      Some(MinMaxAggregator), zoomLevels, tileSize)(request)(input)
+
+    super.apply(projection,
+                tileSize,
+                xCol,
+                yCol,
+                rangeCol,
+                valueExtractor,
+                aggregator,
+                None
+                )(request)(input)
   }
 }
