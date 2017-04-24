@@ -199,6 +199,55 @@ class ArcBinnerTestSuite extends FunSuite {
     assertResult(11)(toClosestModulus(10, 15, 4))
     assertResult(9)(toClosestModulus(10, 12, 3))
   }
+
+  test("DoubleRotation") {
+    val doubleRotation = DoubleRotation(0, 1, -1, 0)
+    val rotateResult = doubleRotation.rotate(1, 2)
+
+    assert(rotateResult == DoubleTuple(2.0, -1.0))
+  }
+
+  test("getInterveningSectors") {
+    var startSector = 1
+    var withinStartSector = 2.0
+    var endSector = 3
+    var withinEndSector = 3.5
+    var numSectors = 5
+    var positive = true
+    val result1 = getInterveningSectors(startSector, withinStartSector, endSector, withinEndSector, numSectors, positive)
+
+    assert(result1 == Seq(1, 2, 3))
+
+    startSector = 5
+    val result2 = getInterveningSectors(startSector, withinStartSector, endSector, withinEndSector, numSectors, positive)
+
+    assert(result2 == Seq(5, 6, 7, 8))
+
+    startSector = 3
+    val result3 = getInterveningSectors(startSector, withinStartSector, endSector, withinEndSector, numSectors, positive)
+    assert(result3 == Seq(3, 4, 5, 6, 7, 8))
+
+    withinStartSector = 5
+    val result4 = getInterveningSectors(startSector, withinStartSector, endSector, withinEndSector, numSectors, positive)
+    assert(result4 == Seq(3))
+
+    positive = false
+    val result5 = getInterveningSectors(startSector, withinStartSector, endSector, withinEndSector, numSectors, positive)
+    assert(result5 == Seq(3, 2, 1, 0, 4, 3))
+
+    endSector = 2
+    val result6 = getInterveningSectors(startSector, withinStartSector, endSector, withinEndSector, numSectors, positive)
+    assert(result6 == Seq(3, 2))
+
+    endSector = 5
+    val result7 = getInterveningSectors(startSector, withinStartSector, endSector, withinEndSector, numSectors, positive)
+    assert(result7 == Seq(3, 2, 1, 0))
+
+    endSector = 3
+    withinStartSector = 2
+    val result8 = getInterveningSectors(startSector, withinStartSector, endSector, withinEndSector, numSectors, positive)
+    assert(result8 == Seq(3))
+  }
 }
 
 case class DoubleTupleMatcher (right: DoubleTuple, epsilon: Double = 1E-12) extends BeMatcher[DoubleTuple] {
