@@ -29,16 +29,14 @@
 package software.uncharted.xdata.tiling.jobs
 
 import com.typesafe.config.Config
-import org.apache.spark.sql.{Column, SparkSession, functions}
+import org.apache.spark.sql.{Column, SparkSession}
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.xdata.io.serializeBinArray
 import software.uncharted.sparkpipe.ops.xdata.salt.{HeatmapOp, TimeHeatmapOp}
-import software.uncharted.xdata.tiling.config.{CartesianProjectionConfig, MercatorProjectionConfig, TilingConfig, XYTimeHeatmapConfig}
+import software.uncharted.xdata.tiling.config.{TilingConfig, XYTimeHeatmapConfig}
 import software.uncharted.xdata.tiling.jobs.JobUtil.{createMetadataOutputOperation, dataframeFromSparkCsv}
 
-// scalastyle:off method.length
 object XYTimeHeatmapJob extends AbstractJob {
-  // scalastyle:off cyclomatic.complexity
 
   def execute(sparkSession: SparkSession, config: Config): Unit = {
     val schema = parseSchema(config)
@@ -46,16 +44,11 @@ object XYTimeHeatmapJob extends AbstractJob {
     val outputOperation = parseOutputOperation(config)
 
     // Parse geo heatmap parameters out of supplied config
-    val heatmapConfig = XYTimeHeatmapConfig.parse(config).getOrElse {
-      logger.error("Invalid heatmap op config")
+    // Parse xyTopic parameters out of supplied config
+    val heatmapConfig = XYTimeHeatmapConfig.parse(config).recover { case err: Exception =>
+      logger.error(s"Invalid '${XYTimeHeatmapConfig.rootKey}' config", err)
       sys.exit(-1)
-    }
-
-    val xyBoundsFound = heatmapConfig.projection.xyBounds match {
-      case ara: Some[(Double, Double, Double, Double)] => true
-      case None => false
-      case _ => logger.error("Invalid XYbounds"); sys.exit(-1)
-    }
+    }.get
 
     val bins = tilingConfig.bins.getOrElse(HeatmapOp.DefaultTileSize)
 

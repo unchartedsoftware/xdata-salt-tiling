@@ -73,7 +73,7 @@ case class XYTimeTopicsConfig(xCol: String,
   *   supplied
   */
 object XYTimeTopicsConfig extends ConfigParser{
-  private val rootKey = "xyTimeTopics"
+  val rootKey = "xyTimeTopics"
   private val xColumnKey = "xColumn"
   private val yColumnKey = "yColumn"
   private val timeColumnKey = "timeColumn"

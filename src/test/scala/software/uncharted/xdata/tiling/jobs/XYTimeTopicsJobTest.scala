@@ -68,13 +68,6 @@ class XYTimeTopicsJobTest extends FunSpec {
               ("step" -> 86400000) ~
               ("count" -> 8)))
           assertResult(expectedJson)(jsonObject)
-
-          // check terms list
-          val termsFileStr = FileUtils.readFileToString(new File(s"$testOutputDir/terms.json"))
-          val termsJsonObject = parse(termsFileStr)
-          val expectedTermsJson = ("a" -> "alpha") ~ ("b" -> "bravo") ~ ("e" -> "echo")
-          assertResult(expectedTermsJson)(termsJsonObject)
-
         } finally {
           FileUtils.deleteDirectory(new File(testOutputDir))
         }
@@ -116,9 +109,9 @@ class XYTimeTopicsJobTest extends FunSpec {
         }
       }
 
-      it("should default to Cartesian since no projection is specified and use tilesize equal to 1 since bins parameter is not specified", FileIOTest) {
+      it("should use cartesian projection if specified and use tilesize equal to 1 when bins not specified", FileIOTest) {
         try {
-          val path = classOf[XYTimeTopicsJobTest].getResource("/XYTimeTopicsJobTest/tiling-time-topic-file-io-defaultProjection.conf").toURI.getPath
+          val path = classOf[XYTimeTopicsJobTest].getResource("/XYTimeTopicsJobTest/tiling-time-topic-file-io-cartesian.conf").toURI.getPath
           XYTimeTopicsJob.execute(Array(path))
 
           // validate created tiles

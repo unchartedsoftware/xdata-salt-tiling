@@ -32,12 +32,11 @@ import com.typesafe.config.Config
 import org.apache.spark.sql.SparkSession
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.text.{includeTermFilter, split}
-import software.uncharted.xdata.tiling.jobs.JobUtil.{dataframeFromSparkCsv, createMetadataOutputOperation}
+import software.uncharted.xdata.tiling.jobs.JobUtil.{createMetadataOutputOperation, dataframeFromSparkCsv}
 import software.uncharted.sparkpipe.ops.xdata.io.serializeElementScore
-import software.uncharted.sparkpipe.ops.xdata.salt.{TimeTopicsOp}
-import software.uncharted.xdata.tiling.config.{CartesianProjectionConfig, MercatorProjectionConfig, TilingConfig, XYTimeTopicsConfig}
+import software.uncharted.sparkpipe.ops.xdata.salt.TimeTopicsOp
+import software.uncharted.xdata.tiling.config.{TilingConfig, XYTimeTopicsConfig}
 
-// scalastyle:off method.length
 object XYTimeTopicsJob extends AbstractJob {
   def execute(session: SparkSession, config: Config): Unit = {
     val schema = parseSchema(config)
@@ -45,10 +44,10 @@ object XYTimeTopicsJob extends AbstractJob {
     val outputOperation = parseOutputOperation(config)
 
     // Parse geo heatmap parameters out of supplied config
-    val topicsConfig = XYTimeTopicsConfig.parse(config).getOrElse {
-      logger.error("Invalid heatmap op config")
+    val topicsConfig = XYTimeTopicsConfig.parse(config).recover { case err: Exception =>
+      logger.error(s"Invalid '${XYTimeTopicsConfig.rootKey}' config", err)
       sys.exit(-1)
-    }
+    }.get
 
     val projection = topicsConfig.projection.createProjection(tilingConfig.levels)
     val topicsOp = TimeTopicsOp(projection,
