@@ -56,16 +56,10 @@ object XYSegmentJob extends AbstractJob {
     val outputOperation = parseOutputOperation(config)
 
     // Parse geo heatmap parameters out of supplied config
-    val segmentConfig = XYSegmentConfig.parse(config).getOrElse {
-      logger.error("Invalid heatmap op config")
+    val segmentConfig = XYSegmentConfig.parse(config).recover { case err: Exception =>
+      logger.error(s"Invalid '${XYSegmentConfig.rootKey}' config", err)
       sys.exit(-1)
-    }
-
-    val xyBoundsFound  = segmentConfig.projectionConfig.xyBounds match {
-      case ara : Some[(Double, Double, Double, Double)] => true
-      case None => false
-      case _ => logger.error("Invalid XYbounds"); sys.exit(-1)
-    }
+    }.get
 
     // create the segment operation based on the projection
     val segmentOperation = segmentConfig.projectionConfig match {
@@ -77,9 +71,9 @@ object XYSegmentJob extends AbstractJob {
         segmentConfig.x2Col,
         segmentConfig.y2Col,
         segmentConfig.valueCol,
-        if (xyBoundsFound) segmentConfig.projectionConfig.xyBounds else None,
+        segmentConfig.projectionConfig.xyBounds,
         tilingConfig.levels,
-        segmentConfig.tileSize)(_)
+        tilingConfig.bins.getOrElse(MercatorSegmentOp.DefaultTileSize))(_)
       case _: CartesianProjectionConfig => CartesianSegmentOp(
         segmentConfig.arcType,
         segmentConfig.minSegLen,
@@ -89,9 +83,9 @@ object XYSegmentJob extends AbstractJob {
         segmentConfig.x2Col,
         segmentConfig.y2Col,
         segmentConfig.valueCol,
-        if (xyBoundsFound) segmentConfig.projectionConfig.xyBounds else None,
+        segmentConfig.projectionConfig.xyBounds,
         tilingConfig.levels,
-        segmentConfig.tileSize)(_)
+        tilingConfig.bins.getOrElse(CartesianSegmentOp.DefaultTileSize))(_)
       case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
     }
 

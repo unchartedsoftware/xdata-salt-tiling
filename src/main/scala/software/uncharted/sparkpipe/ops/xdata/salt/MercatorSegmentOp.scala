@@ -43,8 +43,8 @@ import scala.util.Try
   */
 object MercatorSegmentOp {
   // scalastyle:off method.length
-  val defaultTileSize = 256
-  val defaultMaxSegLen = 1024
+  val DefaultTileSize = 256
+  val DefaultMaxSegLen = 1024
 
   /**
     * Segment operation using the mercator projection
@@ -65,7 +65,7 @@ object MercatorSegmentOp {
     */
   // scalastyle:off parameter.number
   def apply(minSegLen: Option[Int],
-            maxSegLen: Option[Int] = Some(defaultMaxSegLen),
+            maxSegLen: Option[Int] = Some(DefaultMaxSegLen),
             x1Col: String,
             y1Col: String,
             x2Col: String,
@@ -73,8 +73,9 @@ object MercatorSegmentOp {
             valueCol: Option[String],
             xyBounds: Option[(Double, Double, Double, Double)],
             zoomLevels: Seq[Int],
-            tileSize: Int)
+            tileSize: Int = DefaultTileSize)
            (input: DataFrame): RDD[SeriesData[(Int, Int, Int), (Int, Int), Double, (Double, Double)]] = {
+
     val valueExtractor: (Row) => Option[Double] = valueCol match {
       case Some(colName: String) => (r: Row) => {
         val rowIndex = r.schema.fieldIndex(colName)
