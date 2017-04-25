@@ -29,7 +29,7 @@
 package software.uncharted.xdata.tiling.jobs
 
 import com.typesafe.config.Config
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{Column, SparkSession}
 import software.uncharted.salt.core.analytic.numeric.{MinMaxAggregator, SumAggregator}
 import software.uncharted.salt.core.generation.request.TileLevelRequest
 import software.uncharted.salt.xdata.projection.IPProjection
@@ -58,22 +58,24 @@ object IPHeatmapJob extends AbstractJob {
 
     // Parse IP tiling parameters out of supplied config
     val ipConfig = IPHeatmapConfig.parse(config).recover { case err: Exception =>
-      logger.error("Invalid heatmap op config", err)
+      logger.error(s"Invalid '${IPHeatmapConfig.rootKey}' config", err)
       sys.exit(-1)
     }.get
 
     // Create the dataframe from the input config
     val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, sparkSession)
 
-    val tilingOp = IPHeatmapOp(new IPProjection(tilingConfig.levels),
-      tilingConfig.bins.getOrElse(IPHeatmapOp.defaultTileSize),
-      ipConfig.ipCol, ipConfig.valueCol,
-      SumAggregator,
-      Some(MinMaxAggregator)
-    )(new TileLevelRequest(tilingConfig.levels, (tc: (Int, Int, Int)) => tc._1))(_)
+    val tilingOp = IPHeatmapOp(
+      ipConfig.ipCol,
+      ipConfig.valueCol,
+      tilingConfig.levels,
+      tilingConfig.bins.getOrElse(IPHeatmapOp.DefaultTileSize))(_)
+
+    val selectCols = Seq(ipConfig.ipCol, ipConfig.valueCol).map(new Column(_))
 
     // Pipe the dataframe
     Pipe(df)
+      .to(_.select(selectCols: _*))
       .to(_.cache())
       .to(tilingOp)
       .to(serializeBinArray)

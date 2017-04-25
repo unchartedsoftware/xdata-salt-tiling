@@ -39,17 +39,16 @@ import scala.util.Try
   */
 case class IPHeatmapConfig (ipCol: String, valueCol: String)
 object IPHeatmapConfig extends ConfigParser {
-  private val CATEGORY_KEY = "ipTiling"
-  private val IP_COLUMN_KEY = "ipColumn"
-  private val VALUE_COLUMN_KEY = "valueColumn"
+  val rootKey = "ipTiling"
+  private val ipColumnKey = "ipColumn"
+  private val valueColumnKey = "valueColumn"
 
   def parse (config: Config): Try[IPHeatmapConfig] = {
     Try{
-      val ipConfig = config.getConfig(CATEGORY_KEY)
-
+      val ipConfig = config.getConfig(rootKey)
       IPHeatmapConfig(
-        ipConfig.getString(IP_COLUMN_KEY),
-        ipConfig.getString(VALUE_COLUMN_KEY)
+        ipConfig.getString(ipColumnKey),
+        ipConfig.getString(valueColumnKey)
       )
     }
   }
