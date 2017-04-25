@@ -271,10 +271,10 @@ class SimpleArcProjection(zoomLevels: Seq[Int],
         val endUBin = scaledToUniversalBin(endPoint, level, maxBin)
         val chordLength = Line.distance(startUBin, endUBin)
 
-
         if (minLengthOpt.map(minLength => chordLength >= minLength).getOrElse(true) &&
           maxLengthOpt.map(maxLength => chordLength <= maxLength).getOrElse(true)) {
-          val arcToPoints = new ArcBinner(startUBin, endUBin, arcLength, true)
+          // Universal Bin Coordinates have a flipped Y axis from mathematical standard, therefore we have to flip the arc direction - i.e. clockwise = false, with a flipped Y axis, generates a clockwise arc
+          val arcToPoints = new ArcBinner(startUBin, endUBin, arcLength, clockwise = false)
           Some(arcToPoints.remaining.map(uBin =>
             universalBinIndexToTileIndex(level, uBin, maxBin)
           ).toSeq)
@@ -336,12 +336,12 @@ class SimpleLeaderArcProjection(zoomLevels: Seq[Int],
         val endUBin = scaledToUniversalBin(endPoint, level, maxBin)
         val chordLength = Line.distance(startUBin, endUBin)
 
-
         if (minLengthOpt.map(minLength => chordLength >= minLength).getOrElse(true) &&
           maxLengthOpt.map(maxLength => chordLength <= maxLength).getOrElse(true)) {
           Some {
-            val binner = new ArcBinner(startUBin, endUBin, arcLength, clockwise = true)
-            val center = ArcBinner.getArcCenter(startUBin, endUBin, arcLength, clockwise = true)
+            // Universal Bin Coordinates have a flipped Y axis from mathematical standard, therefore we have to flip the arc direction - i.e. clockwise = false, with a flipped Y axis, generates a clockwise arc
+            val binner =  new ArcBinner(startUBin, endUBin, arcLength, clockwise = false)
+            val center = ArcBinner.getArcCenter(startUBin, endUBin, arcLength, clockwise = false)
             val radius = ArcBinner.getArcRadius(startUBin, endUBin, arcLength)
             val leaderArcLength = ArcBinner.getArcLength(radius, leaderLength)
             if (arcLength <= 2.0 * leaderArcLength) {
