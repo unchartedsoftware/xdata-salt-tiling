@@ -28,11 +28,7 @@
 
 package software.uncharted.salt.xdata.projection.geometry
 
-
-
 import scala.language.implicitConversions
-
-
 
 /**
   * A line of the form Ax + By = C
@@ -65,6 +61,12 @@ case class Line (A: Double, B: Double, C: Double) {
   }
 
   // scalastyle:off method.name
+  /**
+    * Finds whether two lines are approximately equal to each other based on epsilon value (tolerance value)
+    * @param epsilon Tolerance value
+    * @param that Line we are comparing to
+    * @return Boolean that states whether the two lines are approximately equal or not
+    */
   def ~=(epsilon: Double)(that: Line): Boolean = {
     if (this.C.abs < epsilon) {
       if (this.B.abs < epsilon) {

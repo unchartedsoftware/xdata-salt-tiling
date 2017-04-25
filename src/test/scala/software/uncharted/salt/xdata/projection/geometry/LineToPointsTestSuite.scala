@@ -228,4 +228,56 @@ class LineToPointsTestSuite extends FunSuite {
     assert(throwableResult.getCause == cause)
   }
 
+  test("Various utility functions") {
+    val l2p = new LineToPoints((-1, 1), (1, 1))
+    val l2p_2 = new LineToPoints((0, -2), (1, 0))
+
+    assert(l2p.curLongAxisPosition == -1)
+
+    assert(l2p.lastLongAxisPosition == 1)
+
+    assert(l2p.curLongAxisStartDistance == 0)
+
+    assert(l2p.curLongAxisEndDistance == 2)
+
+    assert(l2p.curStartDistance == 0)
+
+    assert(l2p.curEndDistance == 2)
+
+    assert(l2p.longAxisValue(1, 2) == 1)
+    assert(l2p_2.longAxisValue(1, 2) == 2)
+
+    assert(l2p.shortAxisValue(1, 2) == 2)
+
+    assert(l2p.hasNext == true)
+
+    assert(l2p.available == 3)
+
+    assert(l2p.current == (-1, 1))
+
+    assert(l2p.increasing == true)
+  }
+
+  test("toDistance") {
+    var l2p = new LineToPoints((-1, 1), (1, 1))
+    var lineIterator = l2p.toDistance((-1, 1), 1)
+
+    assert(lineIterator.length == 2)
+
+    l2p = new LineToPoints((-1, 1), (1, 1))
+    lineIterator = l2p.toDistance((-1, 1), 1)
+
+    assert(lineIterator.hasNext == true)
+    assert(lineIterator.next() == (-1,1))
+    assert(lineIterator.next() == (0,1))
+    assert(lineIterator.next() == (1, 1))
+    assert(lineIterator.hasNext == false)
+
+    l2p = new LineToPoints((0, -2), (1, 0))
+    lineIterator = l2p.toDistance((0, -2), 1)
+
+    assert(lineIterator.next() === (0, -2))
+    assert(lineIterator.hasNext === true)
+  }
+
 }
