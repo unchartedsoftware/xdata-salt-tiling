@@ -32,11 +32,12 @@ package software.uncharted.xdata.tiling.jobs
 import com.typesafe.config.Config
 import org.apache.spark.sql.SparkSession
 import software.uncharted.sparkpipe.Pipe
-import software.uncharted.sparkpipe.ops.core.dataframe.text.{includeTermFilter, split}
-import software.uncharted.sparkpipe.ops.xdata.io.serializeElementScore
-import software.uncharted.sparkpipe.ops.xdata.salt.{CartesianTopics, MercatorTopics}
-import software.uncharted.xdata.tiling.config.{CartesianProjectionConfig, MercatorProjectionConfig, TilingConfig, XYTopicsConfig}
-import software.uncharted.xdata.tiling.jobs.JobUtil.{dataframeFromSparkCsv, createMetadataOutputOperation}
+import software.uncharted.sparkpipe.ops.core.dataframe.text
+import software.uncharted.sparkpipe.ops.xdata.io
+import software.uncharted.sparkpipe.ops.xdata.salt.TopicsOp
+import software.uncharted.xdata.tiling.config.{MercatorProjectionConfig, TilingConfig, XYTopicsConfig}
+import software.uncharted.xdata.tiling.jobs.{JobUtil => util}
+
 
 object XYTopicsJob extends AbstractJob {
 
@@ -45,46 +46,31 @@ object XYTopicsJob extends AbstractJob {
     val tilingConfig = parseTilingParameters(config)
     val outputOperation = parseOutputOperation(config)
 
-    // Parse geo heatmap parameters out of supplied config
-    val topicsConfig = XYTopicsConfig.parse(config).getOrElse {
-      logger.error("Invalid heatmap op config")
+    // Parse xyTopic parameters out of supplied config
+    val topicsConfig = XYTopicsConfig.parse(config).recover { case err: Exception =>
+      logger.error(s"Invalid '${XYTopicsConfig.rootKey}' config", err)
       sys.exit(-1)
-    }
+    }.get
 
-    val xyBoundsFound  = topicsConfig.projection.xyBounds match {
-      case ara : Some[(Double, Double, Double, Double)] => true
-      case None => false
-      case _ => logger.error("Invalid XYbounds"); sys.exit(-1)
-    }
-    // when time format is used, need to pick up the converted time column
-    val topicsOp = topicsConfig.projection match {
-      case _: MercatorProjectionConfig => MercatorTopics(
-        topicsConfig.yCol,
-        topicsConfig.xCol,
-        topicsConfig.textCol,
-        if (xyBoundsFound) topicsConfig.projection.xyBounds else None,
-        topicsConfig.topicLimit,
-        tilingConfig.levels,
-        tilingConfig.bins.getOrElse(1))(_)
-      case _: CartesianProjectionConfig => CartesianTopics(
-        topicsConfig.xCol,
-        topicsConfig.yCol,
-        topicsConfig.textCol,
-        if (xyBoundsFound) topicsConfig.projection.xyBounds else None,
-        topicsConfig.topicLimit,
-        tilingConfig.levels,
-        tilingConfig.bins.getOrElse(1))(_)
-      case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
-    }
+    val bins = tilingConfig.bins.getOrElse(TopicsOp.DefaultTileSize)
+
+    val topicsOp = TopicsOp(topicsConfig.xCol,
+                            topicsConfig.yCol,
+                            topicsConfig.textCol,
+                            topicsConfig.projection.createProjection(tilingConfig.levels),
+                            tilingConfig.levels,
+                            topicsConfig.topicLimit,
+                            bins)(_)
 
     // Pipe the dataframe
-    Pipe(dataframeFromSparkCsv(config, tilingConfig.source, schema, sparkSession))
-      .to(split(topicsConfig.textCol, "\\b+"))
-      .to(includeTermFilter(topicsConfig.textCol, topicsConfig.termList.keySet))
+    Pipe(util.dataframeFromSparkCsv(config, tilingConfig.source, schema, sparkSession))
+      .to(text.includeRowTermFilter(topicsConfig.textCol, topicsConfig.termList))
+      .to(text.split(topicsConfig.textCol, "\\b+"))
+      .to(text.stopTermFilter(topicsConfig.textCol, topicsConfig.stopList.toSet))
       .to(_.select(topicsConfig.xCol, topicsConfig.yCol, topicsConfig.textCol))
       .to(_.cache())
       .to(topicsOp)
-      .to(serializeElementScore)
+      .to(io.serializeElementScore)
       .to(outputOperation)
       .run()
 
@@ -94,9 +80,9 @@ object XYTopicsJob extends AbstractJob {
     import net.liftweb.json.JsonAST._
     import net.liftweb.json.JsonDSL._ // scalastyle:ignore
 
-    val outputOp = createMetadataOutputOperation(baseConfig)
+    val outputOp = util.createMetadataOutputOperation(baseConfig)
 
-    val binCount = tilingConfig.bins.getOrElse(1)
+    val binCount = tilingConfig.bins
     val levelMetadata = ("bins" -> binCount)
     val jsonBytes = compactRender(levelMetadata).getBytes.toSeq
     outputOp.foreach(_("metadata.json", jsonBytes))

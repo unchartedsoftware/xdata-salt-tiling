@@ -28,7 +28,7 @@
 
 package software.uncharted.xdata.tiling.config
 
-import com.typesafe.config.Config
+import com.typesafe.config.{Config, ConfigException}
 import software.uncharted.salt.core.projection.numeric.{CartesianProjection, MercatorProjection, NumericProjection}
 
 import scala.util.Try
@@ -42,15 +42,20 @@ trait ProjectionConfig {
 
 case class MercatorProjectionConfig(bounds: Option[(Double, Double, Double, Double)]) extends ProjectionConfig {
   override def xyBounds: Option[(Double, Double, Double, Double)] = bounds
-  override def createProjection(levels: Seq[Int]): NumericProjection[(Double, Double), (Int, Int, Int), (Int, Int)] =
-    new MercatorProjection(levels)
+  override def createProjection(levels: Seq[Int]): NumericProjection[(Double, Double), (Int, Int, Int), (Int, Int)] = {
+    xyBounds match {
+      case Some(b) =>
+        new MercatorProjection(levels, (b._1, b._2), (b._3, b._4), tms = true)
+      case None =>
+        new MercatorProjection(levels, tms = true)
+    }
+  }
 }
 
 case class CartesianProjectionConfig (bounds: Option[(Double, Double, Double, Double)]) extends ProjectionConfig {
   override def xyBounds: Option[(Double, Double, Double, Double)] = bounds
   override def createProjection(levels: Seq[Int]): NumericProjection[(Double, Double), (Int, Int, Int), (Int, Int)] = {
-    val xyBounds = bounds.get
-    new CartesianProjection(levels, (xyBounds._1, xyBounds._2), (xyBounds._3, xyBounds._4))
+    new CartesianProjection(levels, (xyBounds.get._1, xyBounds.get._2), (xyBounds.get._3, xyBounds.get._4))
   }
 }
 
@@ -72,10 +77,10 @@ object ProjectionConfig extends ConfigParser {
           case "mercator" =>
             MercatorProjectionConfig(xyBounds)
           case "cartesian" =>
-            CartesianProjectionConfig(xyBounds)
+            CartesianProjectionConfig(xyBounds.orElse(throw new ConfigException.Missing(xyBoundsKey)))
         }
       } else {
-        CartesianProjectionConfig(xyBounds)
+        throw new ConfigException.Missing(projectionKey)
       }
     }
   }

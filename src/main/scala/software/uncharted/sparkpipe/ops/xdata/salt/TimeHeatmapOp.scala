@@ -29,39 +29,48 @@
 package software.uncharted.sparkpipe.ops.xdata.salt
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.{DataFrame, Row, functions}
 import software.uncharted.salt.core.analytic.numeric.{MinMaxAggregator, SumAggregator}
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.generation.request.TileLevelRequest
+import software.uncharted.salt.core.projection.numeric.NumericProjection
+import software.uncharted.salt.xdata.projection.XYTimeProjection
+import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.xdata.text.util.RangeDescription
 
-object CartesianTimeHeatmap extends CartesianTimeOp {
+object TimeHeatmapOp extends XYTimeOp {
+
+  val DefaultTileSize = 256
 
   def apply(// scalastyle:ignore
+            baseProjection: NumericProjection[(Double, Double), (Int, Int, Int), (Int, Int)],
             xCol: String,
             yCol: String,
             rangeCol: String,
             valueCol: Option[String],
-            latLonBounds: Option[(Double, Double, Double, Double)],
             timeRange: RangeDescription[Long],
             zoomLevels: Seq[Int],
-            tileSize: Int = defaultTileSize)
+            tileSize: Int = DefaultTileSize)
            (input: DataFrame):
   RDD[SeriesData[(Int, Int, Int), (Int, Int, Int), Double, (Double, Double)]] = {
-
-    // Extracts value data from row
-    val valueExtractor: (Row) => Option[Double] = valueCol match {
-      case Some(colName: String) => (r: Row) => {
-        val rowIndex = r.schema.fieldIndex(colName)
-        if (!r.isNullAt(rowIndex)) Some(r.getDouble(rowIndex)) else None
-      }
-      case _ => (r: Row) => {
-        Some(1.0)
-      }
-    }
+    // create a default projection from data-space into tile space
+    val projection = new XYTimeProjection(timeRange.min, timeRange.max, timeRange.count, baseProjection)
 
     val request = new TileLevelRequest(zoomLevels, (tc: (Int, Int, Int)) => tc._1)
-    super.apply(xCol, yCol, rangeCol, latLonBounds, timeRange, valueExtractor, SumAggregator,
-      Some(MinMaxAggregator), zoomLevels, tileSize)(request)(input)
+
+    // if there is no value column specified update the input data frame with a new
+    // column of ones
+    val updated = valueCol.map(v => (v, input))
+      .getOrElse(("__count__", input.withColumn("__count__", functions.lit(1.0))))
+
+    super.apply(projection,
+                tileSize,
+                xCol,
+                yCol,
+                rangeCol,
+                updated._1,
+                SumAggregator,
+                Some(MinMaxAggregator)
+                )(request)(updated._2)
   }
 }

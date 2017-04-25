@@ -31,13 +31,13 @@ package software.uncharted.xdata.tiling.jobs
 import com.typesafe.config.Config
 import org.apache.spark.sql.SparkSession
 import software.uncharted.sparkpipe.Pipe
+import software.uncharted.sparkpipe.ops.core.dataframe.text
 import software.uncharted.sparkpipe.ops.core.dataframe.text.{includeTermFilter, split}
-import software.uncharted.xdata.tiling.jobs.JobUtil.{dataframeFromSparkCsv, createMetadataOutputOperation}
+import software.uncharted.xdata.tiling.jobs.JobUtil.{createMetadataOutputOperation, dataframeFromSparkCsv}
 import software.uncharted.sparkpipe.ops.xdata.io.serializeElementScore
-import software.uncharted.sparkpipe.ops.xdata.salt.{CartesianTimeTopics, MercatorTimeTopics}
-import software.uncharted.xdata.tiling.config.{CartesianProjectionConfig, MercatorProjectionConfig, TilingConfig, XYTimeTopicsConfig}
+import software.uncharted.sparkpipe.ops.xdata.salt.TimeTopicsOp
+import software.uncharted.xdata.tiling.config.{TilingConfig, XYTimeTopicsConfig}
 
-// scalastyle:off method.length
 object XYTimeTopicsJob extends AbstractJob {
   def execute(session: SparkSession, config: Config): Unit = {
     val schema = parseSchema(config)
@@ -45,42 +45,21 @@ object XYTimeTopicsJob extends AbstractJob {
     val outputOperation = parseOutputOperation(config)
 
     // Parse geo heatmap parameters out of supplied config
-    val topicsConfig = XYTimeTopicsConfig.parse(config).getOrElse {
-      logger.error("Invalid heatmap op config")
+    val topicsConfig = XYTimeTopicsConfig.parse(config).recover { case err: Exception =>
+      logger.error(s"Invalid '${XYTimeTopicsConfig.rootKey}' config", err)
       sys.exit(-1)
-    }
+    }.get
 
-    val xyBoundsFound  = topicsConfig.projection.xyBounds match {
-      case ara : Some[(Double, Double, Double, Double)] => true
-      case None => false
-      case _ => logger.error("Invalid XYbounds"); sys.exit(-1)
-    }
-
-    // when time format is used, need to pick up the converted time column
-    val topicsOp = topicsConfig.projection match {
-      case _: MercatorProjectionConfig => MercatorTimeTopics(
-        topicsConfig.yCol,
-        topicsConfig.xCol,
-        topicsConfig.timeCol,
-        topicsConfig.textCol,
-        if (xyBoundsFound) topicsConfig.projection.xyBounds else None,
-        topicsConfig.timeRange,
-        topicsConfig.topicLimit,
-        tilingConfig.levels,
-        tilingConfig.bins.getOrElse(1))(_)
-      case _: CartesianProjectionConfig => CartesianTimeTopics(
-        topicsConfig.xCol,
-        topicsConfig.yCol,
-        topicsConfig.timeCol,
-        topicsConfig.textCol,
-        if (xyBoundsFound) topicsConfig.projection.xyBounds else None,
-        topicsConfig.timeRange,
-        topicsConfig.topicLimit,
-        tilingConfig.levels,
-        tilingConfig.bins.getOrElse(1))(_)
-
-      case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
-    }
+    val projection = topicsConfig.projection.createProjection(tilingConfig.levels)
+    val topicsOp = TimeTopicsOp(projection,
+                                       topicsConfig.xCol,
+                                       topicsConfig.yCol,
+                                       topicsConfig.timeCol,
+                                       topicsConfig.textCol,
+                                       topicsConfig.timeRange,
+                                       topicsConfig.topicLimit,
+                                       tilingConfig.levels,
+                                       tilingConfig.bins.getOrElse(1))(_)
 
     // Create the spark context from the supplied config
     // Create the dataframe from the input config
@@ -88,8 +67,9 @@ object XYTimeTopicsJob extends AbstractJob {
 
     // Pipe the dataframe
     Pipe(df)
+      .to(text.includeRowTermFilter(topicsConfig.textCol, topicsConfig.termList))
       .to(split(topicsConfig.textCol, "\\b+"))
-      .to(includeTermFilter(topicsConfig.textCol, topicsConfig.termList.keySet))
+      .to(text.stopTermFilter(topicsConfig.textCol, topicsConfig.stopWordsList.toSet))
       .to(_.select(topicsConfig.xCol, topicsConfig.yCol, topicsConfig.timeCol, topicsConfig.textCol))
       .to(_.cache())
       .to(topicsOp)

@@ -33,7 +33,7 @@ import java.sql.{Date, Timestamp}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.functions.udf
 import org.apache.spark.sql.types.{DateType, DoubleType, LongType, TimestampType}
-import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.{Column, DataFrame, Row}
 import software.uncharted.salt.core.analytic.Aggregator
 import software.uncharted.salt.core.generation.Series
 import software.uncharted.salt.core.generation.output.SeriesData
@@ -44,20 +44,16 @@ import software.uncharted.sparkpipe.ops.core.dataframe.castColumns
 import software.uncharted.sparkpipe.ops.xdata.text.util.RangeDescription
 
 trait XYTimeOp {
-
-  val defaultTileSize = 256
-
-  def apply[T, U, V, W, X](// scalastyle:ignore
+  // scalastyle:off method.length
+  // scalastyle:off parameter.number
+  def apply[T, U, V, W, X](projection: XYTimeProjection,
+                           tileSize: Int,
                            xCol: String,
                            yCol: String,
                            rangeCol: String,
-                           timeRange: RangeDescription[Long],
-                           valueExtractor: (Row) => Option[T],
+                           valueCol: String,
                            binAggregator: Aggregator[T, U, V],
-                           tileAggregator: Option[Aggregator[V, W, X]],
-                           zoomLevels: Seq[Int],
-                           tileSize: Int,
-                           projection: XYTimeProjection)
+                           tileAggregator: Option[Aggregator[V, W, X]])
                           (request: TileRequest[(Int, Int, Int)])(input: DataFrame):
   RDD[SeriesData[(Int, Int, Int), (Int, Int, Int), V, X]] = {
 
@@ -74,9 +70,8 @@ trait XYTimeOp {
       conversionUdf.map(cudf => input.withColumn(rangeCol, cudf(input(rangeCol)))).getOrElse(df)
     }
 
-    // Use the pipeline to cast columns to expected values and select them into a new dataframe
+    // Use the pipeline to cast columns to expected values
     val castCols = Map(xCol -> DoubleType.simpleString, yCol -> DoubleType.simpleString, rangeCol -> LongType.simpleString)
-
     val frame = Pipe(input)
       .to(convertTimes)
       .to(castColumns(castCols))
@@ -95,9 +90,15 @@ trait XYTimeOp {
       }
     }
 
+    // Extracts value data from row
+    val valueExtractor: (Row) => Option[T] = { r =>
+        val rowIndex = r.schema.fieldIndex(valueCol)
+        if (!r.isNullAt(rowIndex)) Some(r.getAs[T](rowIndex)) else None
+    }
+
     // create the series to tie everything together
     val series = new Series(
-      (tileSize - 1, tileSize - 1, timeRange.count - 1),
+      (tileSize - 1, tileSize - 1, projection.rangeBuckets - 1),
       coordExtractor,
       projection,
       valueExtractor,

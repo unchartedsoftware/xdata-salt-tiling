@@ -41,7 +41,7 @@ class XYSegmentJobTest extends FunSpec {
   describe("XYSegmentJobTest") {
     // scalastyle:ignore
     describe("#execute") {
-      it("should create tiles from source csv data", FileIOTest) {
+      it("should create tiles from source csv data using cartesian projection", FileIOTest) {
         // When test are run from another project that includes this project, the current working directory is set such
         // that the data files referenced in tiling-file-io.conf can't be found.  We reset the CWD to the
         // xdata-salt-tiling directory, and reset it afterwards, to get around this problem.
@@ -55,11 +55,7 @@ class XYSegmentJobTest extends FunSpec {
           XYSegmentJob.main(Array(path))
 
           val files = JobTestUtils.collectFiles(testOutputDir, suffix)
-          val expected = Set(
-            (0,0,0),
-            (1,0,0), (1,1,1),
-            (2,1,1), (2,2,2)
-          )
+          val expected = Set((2,1,2), (2,2,1))
           assertResult((Set(), Set()))((expected diff files, files diff expected))
         } finally {
           System.setProperty("user.dir", oldDir)
@@ -67,30 +63,7 @@ class XYSegmentJobTest extends FunSpec {
         }
       }
 
-      it("default to Cartesian since no projection is specified and use specified xyBounds", FileIOTest) {
-        val oldDir = System.getProperty("user.dir")
-        try {
-          // run the job
-          val path = classOf[XYSegmentJobTest].getResource("/XYSegmentJobTest/xysegment-defaultProjection.conf").toURI.getPath
-          // Make sure to run the test from the correct directory
-          val newDir = path.substring(0, path.indexOf("xdata-salt-tiling") + 18)
-          System.setProperty("user.dir", newDir)
-          XYSegmentJob.main(Array(path))
-
-          val files = JobTestUtils.collectFiles(testOutputDir, suffix)
-          val expected = Set(
-            (0,0,0),
-            (1,0,0), (1,1,1),
-            (2,1,1), (2,2,2)
-          )
-          assertResult((Set(), Set()))((expected diff files, files diff expected))
-        } finally {
-          System.setProperty("user.dir", oldDir)
-          FileUtils.deleteDirectory(new File(testOutputDir))
-        }
-      }
-
-      it("default to Mercator xyBounds since xyBounds are not specified", FileIOTest) {
+      it("should use default mercator bounds when bounds are not specified", FileIOTest) {
         val oldDir = System.getProperty("user.dir")
         try {
           // run the job
@@ -102,9 +75,7 @@ class XYSegmentJobTest extends FunSpec {
 
           val files = JobTestUtils.collectFiles(testOutputDir, suffix)
           val expected = Set(
-            (0,0,0),
-            (1,0,0), (1,1,1),
-            (2,1,1), (2,2,2)
+            (2,1,2), (2,2,1)
           )
           assertResult((Set(), Set()))((expected diff files, files diff expected))
         } finally {
@@ -113,7 +84,7 @@ class XYSegmentJobTest extends FunSpec {
         }
       }
 
-      it("should use the mercator projection and specified xyBounds ", FileIOTest) {
+      it("should use specified bounds with mercator projection when specified", FileIOTest) {
         val oldDir = System.getProperty("user.dir")
         try {
           // run the job
@@ -125,9 +96,7 @@ class XYSegmentJobTest extends FunSpec {
 
           val files = JobTestUtils.collectFiles(testOutputDir, suffix)
           val expected = Set(
-            (0,0,0),
-            (1,0,0), (1,1,1),
-            (2,1,1), (2,2,2)
+            (2,1,2), (2,2,1)
           )
           assertResult((Set(), Set()))((expected diff files, files diff expected))
         } finally {

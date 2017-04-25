@@ -31,7 +31,8 @@ package software.uncharted.xdata.tiling.config
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.SparkConf
 import com.typesafe.config.Config
-import scala.collection.JavaConverters._ // scalastyle:ignore
+
+import scala.collection.JavaConverters._ // scalastyle:off
 import scala.util.Try
 
 // scalastyle:off multiple.string.literals
@@ -62,14 +63,12 @@ object SparkConfig {
 }
 
 // Parse tiling parameter and store results
-case class TilingConfig(levels: List[Int], source: String, bins: Option[Int] = None, tms: Boolean)
+case class TilingConfig(levels: List[Int], source: String, bins: Option[Int])
 object TilingConfig extends ConfigParser{
   private val tilingKey= "tiling"
   private val levelsKey = "levels"
   private val binsKey = "bins"
   private val sourceKey = "source"
-  private val tmsKey = "tms"
-  private val defaultTMS = false
 
   def parse(config: Config): Try[TilingConfig] = {
     Try {
@@ -77,8 +76,7 @@ object TilingConfig extends ConfigParser{
       TilingConfig(
         tilingConfig.getIntList(levelsKey).asScala.map(_.asInstanceOf[Int]).toList,
         tilingConfig.getString(sourceKey),
-        getIntOption(tilingConfig, binsKey),
-        getBoolean(tilingConfig, tmsKey, defaultTMS)
+        getIntOption(tilingConfig, binsKey)
       )
     }
   }

@@ -42,11 +42,10 @@ case class XYSegmentConfig(arcType: ArcTypes.Value,
                            x2Col: String,
                            y2Col: String,
                            valueCol: Option[String],
-                           tileSize: Int,
                            projectionConfig: ProjectionConfig)
 
 object XYSegmentConfig extends ConfigParser {
-  private val xySegmentKey = "xySegment"
+  val rootKey = "xySegment"
   private val arcTypeKey = "arcType"
   private val minSegLenKey = "minSegLen"
   private val maxSegLenKey = "maxSegLen"
@@ -59,7 +58,7 @@ object XYSegmentConfig extends ConfigParser {
 
   def parse(config: Config): Try[XYSegmentConfig] = {
     for (
-      segmentConfig <- Try(config.getConfig(xySegmentKey));
+      segmentConfig <- Try(config.getConfig(rootKey));
       projection <- ProjectionConfig.parse(segmentConfig)
     ) yield {
       val arcType: ArcTypes.Value = segmentConfig.getString(arcTypeKey).toLowerCase match {
@@ -77,7 +76,6 @@ object XYSegmentConfig extends ConfigParser {
         segmentConfig.getString(x2ColKey),
         segmentConfig.getString(y2ColKey),
         getStringOption(segmentConfig, valueColumnKey),
-        segmentConfig.getInt(tileSizeKey),
         projection
       )
     }

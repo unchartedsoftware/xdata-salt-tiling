@@ -29,8 +29,8 @@
 package software.uncharted.sparkpipe.ops.xdata.salt
 
 import org.apache.spark.sql.types._
-import software.uncharted.sparkpipe.ops.core.{dataframe, rdd}
-import software.uncharted.sparkpipe.ops.xdata.salt.BasicSaltOperations.{cartesianTiling, getBounds}
+import software.uncharted.sparkpipe.ops.core.rdd
+import software.uncharted.sparkpipe.ops.xdata.salt.BasicSaltOperations.getBounds
 import software.uncharted.sparkpipe.ops.xdata.util.DataFrameOperations.toDataFrame
 import software.uncharted.xdata.spark.SparkFunSpec
 
@@ -91,42 +91,6 @@ class BasicSaltOperationsTest extends SparkFunSpec {
         val result =  getBounds("x", "y")(converted).toList
         val expected = List((-2.0, 4.0), (-3.0, 3.0))
         assertResult(expected)(result)
-      }
-
-    }
-
-    describe("#cartesianTiling") {
-      it("should properly tile without autobounds") {
-        val data = rdd.toDF(sparkSession)(sc.parallelize(Seq(
-          Coordinates(0.0,-1.0, 0.0, 0.0),
-          Coordinates(0.0, 0.0, -1.0, 0.0),
-          Coordinates(0.0, 0.0, 0.0, 0.0),
-          Coordinates(0.0, 0.5, 0.5, 0.0),
-          Coordinates(0.0, 1.5, 3.5, 0.0),
-          Coordinates(0.0, 2.5, 2.5, 0.0),
-          Coordinates(0.0, 3.5, 1.5, 0.0),
-          Coordinates(0.0, 4.0, 0.0, 0.0),
-          Coordinates(0.0, 0.0, 4.0, 0.0)
-        )))
-        val tiles = cartesianTiling(
-          "x", "y", "count", Seq(0), Some((0.0, 0.0, 4.0, 4.0)), 4)(dataframe.addColumn("count", () => 1)(data)).collect
-
-        assert(List(0.0, 1.0, 0.0, 0.0,  0.0, 0.0, 1.0, 0.0,  0.0, 0.0, 0.0, 1.0,  2.0, 0.0, 0.0, 0.0) === tiles(0).bins.seq.toList)
-      }
-
-      it("should properly tile with autobounds") {
-        val data = rdd.toDF(sparkSession)(sc.parallelize(Seq(
-          Coordinates(0.0, 0.0, 0.0, 0.0),
-          Coordinates(0.0, 0.5, 0.5, 0.0),
-          Coordinates(0.0, 1.5, 3.5, 0.0),
-          Coordinates(0.0, 2.5, 2.5, 0.0),
-          Coordinates(0.0, 3.5, 1.5, 0.0),
-          Coordinates(0.0, 4.0, 4.0, 0.0)
-        )))
-        val tiles = cartesianTiling(
-          "x", "y", "count", Seq(0), None, 4)(dataframe.addColumn("count", () => 1)(data)).collect
-
-        assert(List(0.0, 1.0, 0.0, 1.0,  0.0, 0.0, 1.0, 0.0,  0.0, 0.0, 0.0, 1.0,  2.0, 0.0, 0.0, 0.0) === tiles(0).bins.seq.toList)
       }
     }
   }

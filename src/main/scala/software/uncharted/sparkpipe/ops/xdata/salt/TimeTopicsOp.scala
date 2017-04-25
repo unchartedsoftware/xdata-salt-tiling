@@ -30,34 +30,43 @@ package software.uncharted.sparkpipe.ops.xdata.salt
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row}
-import software.uncharted.salt.core.analytic.Aggregator
+import software.uncharted.salt.core.analytic.collection.TopElementsAggregator
 import software.uncharted.salt.core.generation.output.SeriesData
-import software.uncharted.salt.core.generation.request.TileRequest
-import software.uncharted.salt.xdata.projection.MercatorTimeProjection
+import software.uncharted.salt.core.generation.request.TileLevelRequest
+import software.uncharted.salt.core.projection.numeric.NumericProjection
+import software.uncharted.salt.xdata.projection.XYTimeProjection
 import software.uncharted.sparkpipe.ops.xdata.text.util.RangeDescription
 
-trait MercatorTimeOp extends XYTimeOp {
+object TimeTopicsOp extends XYTimeOp {
 
-  def apply[T, U, V, W, X](// scalastyle:ignore
-                           latCol: String,
-                           lonCol: String,
-                           rangeCol: String,
-                           lonLatBounds: Option[(Double, Double, Double, Double)],
-                           timeRange: RangeDescription[Long],
-                           valueExtractor: (Row) => Option[T],
-                           binAggregator: Aggregator[T, U, V],
-                           tileAggregator: Option[Aggregator[V, W, X]],
-                           zoomLevels: Seq[Int],
-                           tileSize: Int,
-                           tms: Boolean)
-                          (request: TileRequest[(Int, Int, Int)])(input: DataFrame):
-  RDD[SeriesData[(Int, Int, Int), (Int, Int, Int), V, X]] = {
-    // create a default projection from data-space into mercator tile space
-    val projection = lonLatBounds.map { b =>
-      new MercatorTimeProjection(zoomLevels, (b._1, b._2, timeRange.min), (b._3, b._4, timeRange.max), timeRange.count, tms)
-    }.getOrElse(new MercatorTimeProjection(zoomLevels, timeRange))
+  def apply(// scalastyle:ignore
+            baseProjection: NumericProjection[(Double, Double), (Int, Int, Int), (Int, Int)],
+            xCol: String,
+            yCol: String,
+            rangeCol: String,
+            textCol: String,
+            timeRange: RangeDescription[Long],
+            topicLimit: Int,
+            zoomLevels: Seq[Int],
+            tileSize: Int = 1)
+           (input: DataFrame):
+  RDD[SeriesData[(Int, Int, Int), (Int, Int, Int), List[(String, Int)], Nothing]] = {
 
-    super.apply(lonCol, latCol, rangeCol, timeRange, valueExtractor, binAggregator, tileAggregator,
-      zoomLevels, tileSize, projection)(request)(input)
+    // create a default projection from data-space into tile space
+    val projection = new XYTimeProjection(timeRange.min, timeRange.max, timeRange.count, baseProjection)
+
+    val aggregator = new TopElementsAggregator[String](topicLimit)
+
+    val request = new TileLevelRequest(zoomLevels, (tc: (Int, Int, Int)) => tc._1)
+
+    super.apply(projection,
+                tileSize,
+                xCol,
+                yCol,
+                rangeCol,
+                textCol,
+                aggregator,
+                None
+                )(request)(input)
   }
 }

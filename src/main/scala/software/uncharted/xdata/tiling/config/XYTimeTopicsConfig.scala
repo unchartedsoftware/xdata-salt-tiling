@@ -28,12 +28,13 @@
 
 package software.uncharted.xdata.tiling.config
 
-import java.io.FileReader
+import java.io.{File, FileReader}
+import java.nio.file.Files
 
 import com.typesafe.config.Config
-import org.apache.commons.csv.CSVFormat
 import software.uncharted.sparkpipe.ops.xdata.text.util.RangeDescription
-import scala.collection.JavaConverters._ //scalastyle:ignore
+
+import scala.collection.JavaConverters._ //scalastyle:off
 import scala.util.Try
 
 // Parse config for mercator time heatmap sparkpipe op
@@ -43,11 +44,36 @@ case class XYTimeTopicsConfig(xCol: String,
                               textCol: String,
                               timeRange: RangeDescription[Long],
                               topicLimit: Int,
-                              termList: Map[String, String],
+                              termList: Seq[String],
+                              stopWordsList: Seq[String],
                               projection: ProjectionConfig)
 
+/**
+  * Code for parsing XY Topic configuration settings.  Parameters are:
+  *
+  * xColumn - name of the column containing X values in the input DataFrame
+  *
+  * yColumn - name of the column containing Y values in the input DataFrame
+  *
+  * textColumn - the name of the column containing the text values in the input DataFrame
+  *
+  * topicLimit - the maximum number of topics to track per tile
+  *
+  * terms - a file or resource path pointing to a list of terms of interest.  Rows that do not contain at
+  *   least one of the terms from the list will be filtered out of the data set prior to tiling.
+  *
+  * stopwords - a file or resource path point to a list of words to ignore when computing term frequencies
+  *   for a tile
+  *
+  * projection - a string value of 'mercator' or 'cartesian' indicating the projection to apply
+  *
+  * xyBounds - a tuple of doubles indicating the min and max bounds (minX, minY, maxX, maxY).  Rows with X,Y
+  *   values outside of this region will be filtered out of the data set prior to tiling.  Bounds are required
+  *   for cartesian projections, but will be defaulted to (-180, -90, 180, 90) for mercator projections if not
+  *   supplied
+  */
 object XYTimeTopicsConfig extends ConfigParser{
-  private val xyTimeTopicsKey = "xyTimeTopics"
+  val rootKey = "xyTimeTopics"
   private val xColumnKey = "xColumn"
   private val yColumnKey = "yColumn"
   private val timeColumnKey = "timeColumn"
@@ -57,10 +83,11 @@ object XYTimeTopicsConfig extends ConfigParser{
   private val textColumnKey = "textColumn"
   private val topicLimitKey = "topicLimit"
   private val termPathKey = "terms"
+  private val stopWordPathKey = "stopWords"
 
   def parse(config: Config): Try[XYTimeTopicsConfig] = {
     for (
-      topicConfig <- Try(config.getConfig(xyTimeTopicsKey));
+      topicConfig <- Try(config.getConfig(rootKey));
       projection <- ProjectionConfig.parse(topicConfig)
     ) yield {
       XYTimeTopicsConfig(
@@ -68,21 +95,24 @@ object XYTimeTopicsConfig extends ConfigParser{
         topicConfig.getString(yColumnKey),
         topicConfig.getString(timeColumnKey),
         topicConfig.getString(textColumnKey),
-        RangeDescription.fromMin(topicConfig.getLong(timeMinKey), topicConfig.getLong(timeStepKey), topicConfig.getInt(timeCountKey)),
+        RangeDescription.fromMin(topicConfig.getLong(timeMinKey),
+                                 topicConfig.getLong(timeStepKey),
+                                 topicConfig.getInt(timeCountKey)),
         topicConfig.getInt(topicLimitKey),
-        readTerms(topicConfig.getString(termPathKey)),
+        getStringOption(topicConfig, termPathKey).map(readTerms(_)).getOrElse(Seq()),
+        getStringOption(topicConfig, stopWordPathKey).map(readTerms(_)).getOrElse(Seq()),
         projection
       )
     }
   }
 
   private def readTerms(path: String) = {
-    val in = new FileReader(path)
-    val records = CSVFormat.DEFAULT
-      .withAllowMissingColumnNames()
-      .withCommentMarker('#')
-      .withIgnoreSurroundingSpaces()
-      .parse(in)
-    records.iterator().asScala.map(x => (x.get(0), x.get(1))).toMap
+    val file = new File(path)
+    if (file.exists()) {
+      Files.readAllLines(file.toPath).asScala
+    } else {
+      val stream = getClass.getResourceAsStream(path)
+      scala.io.Source.fromInputStream(stream).getLines.toSeq
+    }
   }
 }

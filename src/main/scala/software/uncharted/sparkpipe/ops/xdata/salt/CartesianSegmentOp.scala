@@ -41,7 +41,7 @@ import scala.util.Try
 
 object CartesianSegmentOp {
 
-  val defaultTileSize = 256
+  val DefaultTileSize = 256
 
   /**
     * Segment operation using cartesian projection
@@ -72,7 +72,7 @@ object CartesianSegmentOp {
             valueCol: Option[String],
             xyBounds: Option[(Double, Double, Double, Double)],
             zoomLevels: Seq[Int],
-            tileSize: Int,
+            tileSize: Int = DefaultTileSize,
             tms: Boolean = true)
            (input: DataFrame): RDD[SeriesData[(Int, Int, Int), (Int, Int), Double, (Double, Double)]] = {
     val valueExtractor: (Row) => Option[Double] = valueCol match {

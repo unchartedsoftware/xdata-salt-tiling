@@ -53,20 +53,14 @@ class XYTopicsJobTest extends FunSpec {
           val expected = Set(
             (0, 0, 0), // l0
             (1, 0, 0), (1, 1, 0), (1, 1, 1), (1, 0, 1), // l1
-            (2, 0, 0), (2, 0, 2), (2, 0, 3), (2, 1, 1), (2, 1, 3), (2, 2, 0), (2, 2, 2), (2, 3, 1), (2, 3, 3)) // l2
+            (2, 0, 0), (2, 2, 0), (2, 1, 1), (2, 3, 1), (2, 0, 2), (2, 2, 2), (2, 1, 3), (2, 3, 3), (2, 0, 3)) // l2
 
           assertResult((Set(), Set()))((expected diff files, files diff expected))
-
-          // check terms list
-          val termsFileStr = FileUtils.readFileToString(new File(s"$testOutputDir/terms.json"))
-          val termsJsonObject = parse(termsFileStr)
-          val expectedTermsJson = ("a" -> "alpha") ~ ("b" -> "bravo") ~ ("e" -> "echo")
-
-          assertResult(expectedTermsJson)(termsJsonObject)
         } finally {
           FileUtils.deleteDirectory(new File(testOutputDir))
         }
       }
+
       it("should use xyBounds specified in configuration file", FileIOTest) {
         try {
           val path = classOf[XYTopicsJobTest].getResource("/XYTopicsJobTest/tiling-topic-file-io-xyBoundsSpec.conf").toURI.getPath
@@ -84,7 +78,8 @@ class XYTopicsJobTest extends FunSpec {
           FileUtils.deleteDirectory(new File(testOutputDir))
         }
       }
-      it ("use default Cartesian projection and xyBounds and tilesize of one since these three parameters are not specified in conf file", FileIOTest) {
+
+      it ("use default xyBounds and tilesize for mercator", FileIOTest) {
         try {
           val path = classOf[XYTopicsJobTest].getResource("/XYTopicsJobTest/tiling-topic-file-io-defaultProjection.conf").toURI.getPath
           XYTopicsJob.execute(Array(path))
@@ -93,13 +88,14 @@ class XYTopicsJobTest extends FunSpec {
           val expected = Set(
             (0, 0, 0),
             (1, 0, 1), (1, 0, 0), (1, 1, 0), (1, 1, 1),
-            (2, 0, 3), (2, 0, 0), (2, 1, 0), (2, 1, 3), (2, 2, 0), (2, 2, 3), (2, 3, 0), (2, 3, 3))
+            (2, 0, 0), (2, 2, 0), (2, 1, 1), (2, 3, 1), (2, 0, 2), (2, 2, 2), (2, 1, 3), (2, 3, 3), (2, 0, 3))
 
           assertResult((Set(), Set()))((expected diff files, files diff expected))
         } finally  {
           FileUtils.deleteDirectory(new File(testOutputDir))
         }
       }
+
       it("should extract the tile size parameter", FileIOTest) {
         try {
           val path = classOf[XYTopicsJobTest].getResource("/XYTopicsJobTest/tiling-topic-file-io-tileSize.conf").toURI.getPath
@@ -109,7 +105,7 @@ class XYTopicsJobTest extends FunSpec {
           val expected = Set(
             (0, 0, 0),
             (1, 0, 1), (1, 0, 0), (1, 1, 0), (1, 1, 1),
-            (2, 0, 3), (2, 0, 0), (2, 1, 0), (2, 1, 3), (2, 2, 0), (2, 2, 3), (2, 3, 0), (2, 3, 3))
+            (2, 0, 0), (2, 2, 0), (2, 1, 1), (2, 3, 1), (2, 0, 2), (2, 2, 2), (2, 1, 3), (2, 3, 3), (2, 0, 3))
 
           assertResult((Set(), Set()))((expected diff files, files diff expected))
 

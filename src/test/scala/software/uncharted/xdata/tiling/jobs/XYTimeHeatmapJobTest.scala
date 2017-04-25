@@ -134,14 +134,14 @@ class XYTimeHeatmapJobTest extends FunSpec {
         }
       }
 
-      it("should use default projection when no projection is specified", FileIOTest) {
+      it("should use specified projection", FileIOTest) {
         // When test are run from another project that includes this project, the current working directory is set such
         // that the data files referenced in tiling-file-io.conf can't be found.  We reset the CWD to the
         // xdata-salt-tiling directory, and reset it afterwards, to get around this problem.
         val oldDir = System.getProperty("user.dir")
         try {
           // run the job
-          val path = classOf[XYTimeHeatmapJobTest].getResource("/XYTimeHeatmapJobTest/tiling-time-file-io-defaultProjection.conf").toURI.getPath
+          val path = classOf[XYTimeHeatmapJobTest].getResource("/XYTimeHeatmapJobTest/tiling-time-file-io-cartesian.conf").toURI.getPath
           // Make sure to run the test from the correct directory
           val newDir = path.substring(0, path.indexOf("xdata-salt-tiling") + 18)
           System.setProperty("user.dir", newDir)

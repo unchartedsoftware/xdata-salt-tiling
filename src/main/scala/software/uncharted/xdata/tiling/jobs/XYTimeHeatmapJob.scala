@@ -32,13 +32,11 @@ import com.typesafe.config.Config
 import org.apache.spark.sql.{Column, SparkSession}
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.xdata.io.serializeBinArray
-import software.uncharted.sparkpipe.ops.xdata.salt.{CartesianTimeHeatmap, MercatorTimeHeatmap}
-import software.uncharted.xdata.tiling.config.{CartesianProjectionConfig, MercatorProjectionConfig, TilingConfig, XYTimeHeatmapConfig}
-import software.uncharted.xdata.tiling.jobs.JobUtil.{dataframeFromSparkCsv, createMetadataOutputOperation}
+import software.uncharted.sparkpipe.ops.xdata.salt.{HeatmapOp, TimeHeatmapOp}
+import software.uncharted.xdata.tiling.config.{TilingConfig, XYTimeHeatmapConfig}
+import software.uncharted.xdata.tiling.jobs.JobUtil.{createMetadataOutputOperation, dataframeFromSparkCsv}
 
-// scalastyle:off method.length
 object XYTimeHeatmapJob extends AbstractJob {
-  // scalastyle:off cyclomatic.complexity
 
   def execute(sparkSession: SparkSession, config: Config): Unit = {
     val schema = parseSchema(config)
@@ -46,45 +44,31 @@ object XYTimeHeatmapJob extends AbstractJob {
     val outputOperation = parseOutputOperation(config)
 
     // Parse geo heatmap parameters out of supplied config
-    val heatmapConfig = XYTimeHeatmapConfig.parse(config).getOrElse {
-      logger.error("Invalid heatmap op config")
+    // Parse xyTopic parameters out of supplied config
+    val heatmapConfig = XYTimeHeatmapConfig.parse(config).recover { case err: Exception =>
+      logger.error(s"Invalid '${XYTimeHeatmapConfig.rootKey}' config", err)
       sys.exit(-1)
-    }
+    }.get
 
-    val xyBoundsFound = heatmapConfig.projection.xyBounds match {
-      case ara: Some[(Double, Double, Double, Double)] => true
-      case None => false
-      case _ => logger.error("Invalid XYbounds"); sys.exit(-1)
-    }
+    val bins = tilingConfig.bins.getOrElse(HeatmapOp.DefaultTileSize)
+
+    val projection = heatmapConfig.projection.createProjection(tilingConfig.levels)
 
     // create the heatmap operation based on the projection
-    val heatmapOperation = heatmapConfig.projection match {
-      case _: MercatorProjectionConfig => MercatorTimeHeatmap(
-        heatmapConfig.yCol,
-        heatmapConfig.xCol,
-        heatmapConfig.timeCol,
-        heatmapConfig.valueCol,
-        if (xyBoundsFound) heatmapConfig.projection.xyBounds else None,
-        heatmapConfig.timeRange,
-        tilingConfig.levels,
-        tilingConfig.bins.getOrElse(MercatorTimeHeatmap.defaultTileSize))(_)
-      case _: CartesianProjectionConfig => CartesianTimeHeatmap(
-        heatmapConfig.xCol,
-        heatmapConfig.yCol,
-        heatmapConfig.timeCol,
-        heatmapConfig.valueCol,
-        if (xyBoundsFound) heatmapConfig.projection.xyBounds else None,
-        heatmapConfig.timeRange,
-        tilingConfig.levels,
-        tilingConfig.bins.getOrElse(CartesianTimeHeatmap.defaultTileSize))(_)
-      case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
-    }
+    val heatmapOperation = TimeHeatmapOp(projection,
+                                                heatmapConfig.xCol,
+                                                heatmapConfig.yCol,
+                                                heatmapConfig.timeCol,
+                                                heatmapConfig.valueCol,
+                                                heatmapConfig.timeRange,
+                                                tilingConfig.levels,
+                                                bins)(_)
 
-    val seqCols = heatmapConfig.valueCol match {
-      case None => Seq(heatmapConfig.xCol, heatmapConfig.yCol, heatmapConfig.timeCol)
-      case _ => Seq(heatmapConfig.xCol, heatmapConfig.yCol, heatmapConfig.timeCol, heatmapConfig.valueCol.getOrElse(throw new Exception("Value column is not set")))
-    }
-    val selectCols = seqCols.map(new Column(_))
+    // list of columns we want to filter down to for the computation
+    val selectCols = Seq(Some(heatmapConfig.xCol),
+                         Some(heatmapConfig.yCol),
+                         Some(heatmapConfig.timeCol),
+                         heatmapConfig.valueCol).flatten.map(new Column(_))
 
     // Pipe the dataframe
     Pipe(dataframeFromSparkCsv(config, tilingConfig.source, schema, sparkSession))
@@ -103,7 +87,7 @@ object XYTimeHeatmapJob extends AbstractJob {
     import net.liftweb.json.JsonAST._ // scalastyle:ignore
     import net.liftweb.json.JsonDSL._ // scalastyle:ignore
 
-    val binCount = tilingConfig.bins.getOrElse(MercatorTimeHeatmap.defaultTileSize)
+    val binCount = tilingConfig.bins
     val levelMetadata =
       ("bins" -> binCount) ~
       ("range" ->

@@ -32,17 +32,17 @@ import java.io.File
 import java.nio.file.{Files, Paths}
 
 import org.apache.commons.io.FileUtils
-import org.apache.hadoop.hbase.client._ // scalastyle:ignore
+import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.HBaseConfiguration
 import org.apache.hadoop.hbase.TableName
 import net.liftweb.json.JsonAST.JValue
 import net.liftweb.json.{JsonDSL, parse}
-import software.uncharted.salt.xdata.projection.MercatorTimeProjection
 import software.uncharted.xdata.spark.SparkFunSpec
 import software.uncharted.salt.core.util.SparseArray
 import software.uncharted.salt.core.projection.Projection
 import software.uncharted.salt.core.projection.numeric.MercatorProjection
 import software.uncharted.salt.core.generation.output.SeriesData
+import software.uncharted.salt.xdata.projection.XYTimeProjection
 import software.uncharted.sparkpipe.ops.xdata.io
 
 // scalastyle:off magic.number
@@ -63,6 +63,8 @@ class PackageTest extends SparkFunSpec with JsonDSL {
   lazy val hBaseClientKeyValMaxSize = sys.env.getOrElse("HBASE_CLIENT_KEYVALUE_MAXSIZE", "0")
 
   private val configFile = Seq(classOf[PackageTest].getResource("/hbase-site.xml").toURI.getPath)
+
+  val timeProjection = new XYTimeProjection(Long.MinValue, Long.MaxValue, 1, new MercatorProjection(Seq(0)))
 
   def genHeatmapArray(in: Double*): SparseArray[Double] = {
     SparseArray(in.length, 0.0)(in.zipWithIndex.map(_.swap):_*)
@@ -231,10 +233,11 @@ class PackageTest extends SparkFunSpec with JsonDSL {
     val arr1 = genHeatmapArray(4.0, 5.0, 6.0, 7.0)
 
     it("should create an RDD of bin coordinate / byte array tuples from series data") {
+
       val series = sc.parallelize(
         Seq(
-          new SeriesData(new MercatorTimeProjection(Seq(0)), (3, 1, 1), (1, 2, 3), arr0, Some(0.0, 1.0)),
-          new SeriesData(new MercatorTimeProjection(Seq(0)), (3, 1, 1), (4, 5, 6), arr1, Some(0.0, 1.0))
+          new SeriesData(timeProjection, (3, 1, 1), (1, 2, 3), arr0, Some(0.0, 1.0)),
+          new SeriesData(timeProjection, (3, 1, 1), (4, 5, 6), arr1, Some(0.0, 1.0))
         ))
       val result = io.serializeBinArray(series).collect()
       assertResult(2)(result.length)
@@ -273,7 +276,7 @@ class PackageTest extends SparkFunSpec with JsonDSL {
     it("should ignore tiles with no updated bins") {
       val series = sc.parallelize(
         Seq(new SeriesData(
-          new MercatorTimeProjection(Seq(0)), (3, 1, 1), (1, 2, 3), genHeatmapArray(0.0, 0.0, 0.0, 0.0), Some(0.0, 1.0))))
+          timeProjection, (3, 1, 1), (1, 2, 3), genHeatmapArray(0.0, 0.0, 0.0, 0.0), Some(0.0, 1.0))))
       val result = io.serializeBinArray(series).collect()
       assertResult(0)(result.length)
     }
@@ -309,14 +312,15 @@ class PackageTest extends SparkFunSpec with JsonDSL {
     parse(new String(from(index)._2.toArray))
 
   describe("#serializeElementScore") {
+
     it("should create an RDD of JSON strings serialized to bytes from series data ") {
       val arr0 = genTopicArray(List("aa" -> 1, "bb" -> 2))
       val arr1 = genTopicArray(List("cc" -> 3, "dd" -> 4))
 
       val series = sc.parallelize(
         Seq(
-          new SeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (1, 2, 3), arr0, None),
-          new SeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (4, 5, 6), arr1, None)
+          new SeriesData(timeProjection, (1, 1, 1), (1, 2, 3), arr0, None),
+          new SeriesData(timeProjection, (1, 1, 1), (4, 5, 6), arr1, None)
 
         ))
       val result = io.serializeElementScore(series).collect()
@@ -337,8 +341,8 @@ class PackageTest extends SparkFunSpec with JsonDSL {
 
       val series = sc.parallelize(
         Seq(
-          new SeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (1, 2, 3), arr0, None),
-          new SeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (4, 5, 6), arr1, None)
+          new SeriesData(timeProjection, (1, 1, 1), (1, 2, 3), arr0, None),
+          new SeriesData(timeProjection, (1, 1, 1), (4, 5, 6), arr1, None)
         ))
 
       val expected = series.filter(t => t.bins.density() > 0)
@@ -379,8 +383,8 @@ class PackageTest extends SparkFunSpec with JsonDSL {
 
     it("should ignore tiles with no updated bins ") {
       val series = sc.parallelize(
-        Seq(new SeriesData[(Int, Int, Int), (Int, Int, Int), List[(String, Int)], Nothing](new MercatorTimeProjection(
-          Seq(0)), (1, 1, 1), (1, 2, 3), genTopicArray(List()), None)))
+        Seq(new SeriesData[(Int, Int, Int), (Int, Int, Int), List[(String, Int)], Nothing]
+        (timeProjection, (1, 1, 1), (1, 2, 3), genTopicArray(List()), None)))
       val result = io.serializeElementScore(series).collect()
       assertResult(0)(result.length)
     }
@@ -393,8 +397,8 @@ class PackageTest extends SparkFunSpec with JsonDSL {
 
       val series = sc.parallelize(
         Seq(
-          new SeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (1, 2, 3), arr0, None),
-          new SeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (4, 5, 6), arr1, None)
+          new SeriesData(timeProjection, (1, 1, 1), (1, 2, 3), arr0, None),
+          new SeriesData(timeProjection, (1, 1, 1), (4, 5, 6), arr1, None)
         ))
 
       val result = io.serializeElementDoubleScore(series).collect()
@@ -415,8 +419,8 @@ class PackageTest extends SparkFunSpec with JsonDSL {
 
       val series = sc.parallelize(
         Seq(
-          new SeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (1, 2, 3), arr0, None),
-          new SeriesData(new MercatorTimeProjection(Seq(0)), (1, 1, 1), (4, 5, 6), arr1, None)
+          new SeriesData(timeProjection, (1, 1, 1), (1, 2, 3), arr0, None),
+          new SeriesData(timeProjection, (1, 1, 1), (4, 5, 6), arr1, None)
         ))
 
       val expected = series.filter(t => t.bins.density() > 0)
@@ -458,8 +462,8 @@ class PackageTest extends SparkFunSpec with JsonDSL {
 
     it("should ignore tiles with no updated bins ") {
       val series = sc.parallelize(
-        Seq(new SeriesData[(Int, Int, Int), (Int, Int, Int), List[(String, Double)], Nothing](new MercatorTimeProjection(
-          Seq(0)), (1, 1, 1), (1, 2, 3), genTopicArray(List()), None)))
+        Seq(new SeriesData[(Int, Int, Int), (Int, Int, Int), List[(String, Double)], Nothing]
+          (timeProjection, (1, 1, 1), (1, 2, 3), genTopicArray(List()), None)))
       val result = io.serializeElementDoubleScore(series).collect()
       assertResult(0)(result.length)
     }

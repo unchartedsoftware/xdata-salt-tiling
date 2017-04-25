@@ -42,7 +42,7 @@ case class XYTimeHeatmapConfig(xCol: String,
                                projection: ProjectionConfig)
 object XYTimeHeatmapConfig extends ConfigParser {
 
-  private val xyTimeHeatmapKey = "xyTimeHeatmap"
+  val rootKey = "xyTimeHeatmap"
   private val xColumnKey = "xColumn"
   private val yColumnKey = "yColumn"
   private val timeColumnKey = "timeColumn"
@@ -53,7 +53,7 @@ object XYTimeHeatmapConfig extends ConfigParser {
 
   def parse(config: Config): Try[XYTimeHeatmapConfig] = {
     for (
-      heatmapConfig <- Try(config.getConfig(xyTimeHeatmapKey));
+      heatmapConfig <- Try(config.getConfig(rootKey));
       projection <- ProjectionConfig.parse(heatmapConfig)
     ) yield {
       XYTimeHeatmapConfig(

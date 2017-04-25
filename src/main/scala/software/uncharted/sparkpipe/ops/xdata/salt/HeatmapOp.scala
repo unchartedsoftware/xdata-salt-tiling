@@ -29,36 +29,39 @@
 package software.uncharted.sparkpipe.ops.xdata.salt
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, Row}
-import software.uncharted.salt.core.analytic.collection.TopElementsAggregator
+import org.apache.spark.sql.{DataFrame, functions}
+import software.uncharted.salt.core.analytic.numeric.{MinMaxAggregator, SumAggregator}
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.generation.request.TileLevelRequest
-import software.uncharted.sparkpipe.ops.xdata.text.util.RangeDescription
+import software.uncharted.salt.core.projection.numeric.NumericProjection
 
-object CartesianTimeTopics extends CartesianTimeOp {
+object HeatmapOp extends ZXYOp {
+
+  val DefaultTileSize = 256
 
   def apply(// scalastyle:ignore
             xCol: String,
             yCol: String,
-            rangeCol: String,
-            textCol: String,
-            latLonBounds: Option[(Double, Double, Double, Double)],
-            timeRange: RangeDescription[Long],
-            topicLimit: Int,
+            valueCol: Option[String],
+            projection: NumericProjection[(Double, Double), (Int, Int, Int), (Int, Int)],
             zoomLevels: Seq[Int],
-            tileSize: Int = 1)
-           (input: DataFrame):
-  RDD[SeriesData[(Int, Int, Int), (Int, Int, Int), List[(String, Int)], Nothing]] = {
-
-    // Extracts value data from row
-    val valueExtractor: (Row) => Option[Seq[String]] = (r: Row) => {
-      val rowIndex = r.schema.fieldIndex(textCol)
-      if (!r.isNullAt(rowIndex) && r.getSeq(rowIndex).nonEmpty) Some(r.getSeq(rowIndex)) else None
-    }
-
-    val aggregator = new TopElementsAggregator[String](topicLimit)
-
+            tileSize: Int = DefaultTileSize
+           )(input: DataFrame): RDD[SeriesData[(Int, Int, Int), (Int, Int), Double, (Double, Double)]] = {
     val request = new TileLevelRequest(zoomLevels, (tc: (Int, Int, Int)) => tc._1)
-    super.apply(xCol, yCol, rangeCol, latLonBounds, timeRange, valueExtractor, aggregator, None, zoomLevels, tileSize)(request)(input)
+
+    // if there is no value column specified update the input data frame with a new
+    // column of ones
+    val updated = valueCol.map(v => (v, input))
+      .getOrElse(("__count__", input.withColumn("__count__", functions.lit(1.0))))
+
+    super.apply(
+      projection,
+      tileSize,
+      xCol,
+      yCol,
+      updated._1,
+      SumAggregator,
+      Some(MinMaxAggregator)
+    )(request)(updated._2)
   }
 }
