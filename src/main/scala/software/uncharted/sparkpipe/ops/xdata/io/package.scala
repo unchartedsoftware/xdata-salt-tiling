@@ -58,7 +58,8 @@ package object io extends Logging {
     * @return input data unchanged
     */
   def writeToFile(baseFilePath: String, layerName: String, extension: String)(input: RDD[((Int, Int, Int), Seq[Byte])]): RDD[((Int, Int, Int), Seq[Byte])] = {
-    if (input.context.getConf.get("spark.master") != "local") {
+    // test for master set to variants of local master: local, local[4], local[*]
+    if (!input.context.getConf.get("spark.master").matches("""local(\[(\d+|\*)\])?""")) {
       throw new Exception("writeToFile() not permitted on non-local Spark instance")
     }
     val tileIndexTranslator = (index: (Int, Int, Int)) => {
