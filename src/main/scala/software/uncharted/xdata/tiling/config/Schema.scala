@@ -63,7 +63,8 @@ object Schema {
       // Create a contiguous set of fields with stand-in data for unmapped columns
       val fieldMap = sortedFields.map(s => s.index -> s)
       val sortedMap = SortedMap(fieldMap:_*)
-      val contiguousFields = for (i <- 0 to rowSize.getOrElse(sortedMap.lastKey)) yield {
+      //val contiguousFields = for (i <- 0 until rowSize.getOrElse(sortedMap.lastKey + 1)) yield {
+      val contiguousFields = for (i <- 0 until rowSize.getOrElse(sortedMap.lastKey + 1)) yield {
         sortedMap.getOrElse(i, FieldData(s"__unspecified_${i}__", "string", i))
       }
 
