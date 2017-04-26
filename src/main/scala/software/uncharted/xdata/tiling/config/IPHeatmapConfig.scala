@@ -35,11 +35,13 @@ import scala.util.Try
 /**
   * A config object representing information specific to IP tiling jobs
   * @param ipCol The column in which an IP address is to be found
-  * @param valueCol The column in which the value to be used is found
+  * @param valueCol Optional column container containing a count value to be used.  If unset,
+  *                 count value defaults to 1.
   */
-case class IPHeatmapConfig (ipCol: String, valueCol: String)
+case class IPHeatmapConfig (ipCol: String, valueCol: Option[String])
+
 object IPHeatmapConfig extends ConfigParser {
-  val rootKey = "ipTiling"
+  val rootKey = "ipHeatmap"
   private val ipColumnKey = "ipColumn"
   private val valueColumnKey = "valueColumn"
 
@@ -48,7 +50,7 @@ object IPHeatmapConfig extends ConfigParser {
       val ipConfig = config.getConfig(rootKey)
       IPHeatmapConfig(
         ipConfig.getString(ipColumnKey),
-        ipConfig.getString(valueColumnKey)
+        getStringOption(ipConfig, valueColumnKey)
       )
     }
   }

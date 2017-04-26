@@ -71,7 +71,7 @@ object IPHeatmapJob extends AbstractJob {
       tilingConfig.levels,
       tilingConfig.bins.getOrElse(IPHeatmapOp.DefaultTileSize))(_)
 
-    val selectCols = Seq(ipConfig.ipCol, ipConfig.valueCol).map(new Column(_))
+    val selectCols = Seq(Some(ipConfig.ipCol), ipConfig.valueCol).flatten.map(new Column(_))
 
     // Pipe the dataframe
     Pipe(df)

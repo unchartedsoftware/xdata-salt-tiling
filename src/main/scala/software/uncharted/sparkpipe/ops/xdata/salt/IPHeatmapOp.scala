@@ -46,7 +46,7 @@ object IPHeatmapOp {
   val StringType = "string"
 
   def apply(ipCol: String,
-            vCol: String,
+            vCol: Option[String],
             levels: Seq[Int],
             tileSize: Int = DefaultTileSize)
            (input: DataFrame):
@@ -66,12 +66,14 @@ object IPHeatmapOp {
     }
 
     val vExtractor = (r: Row) => {
-      val rowIndex = r.schema.fieldIndex(vCol)
-      if (!r.isNullAt(rowIndex)) {
-        Some(r.getDouble(rowIndex))
-      } else {
-        None
-      }
+      vCol.map { v =>
+        val rowIndex = r.schema.fieldIndex(v)
+        if (!r.isNullAt(rowIndex)) {
+          Some(r.getDouble(rowIndex))
+        } else {
+          None
+        }
+      }.getOrElse(Some(1.0))
     }
 
     // create a series for our heatmap
