@@ -112,7 +112,7 @@ class SimpleLineProjection(zoomLevels: Seq[Int],
   * @param leaderLineLength The number of bins to keep near each end of the line
   * @param minLengthOpt     The minimum length of line (in bins) to project
   * @param maxLengthOpt     The maximum length of line (in bins) to project
-  * @param tms              if true, the Y axis for tile coordinates only is flipped     *
+  * @param tms              if true, the Y axis for tile coordinates only is flipped
   */
 class SimpleLeaderLineProjection(zoomLevels: Seq[Int],
                                  min: (Double, Double),
@@ -224,8 +224,6 @@ class SimpleLeaderLineProjection(zoomLevels: Seq[Int],
     (x, (index - x) / maxX)
   }
 }
-
-
 
 
 

@@ -229,30 +229,61 @@ class OneStageLineProjectionTestSuite extends FunSuite {
   test("Test arc leader lines projection - no gap") {
     import Line.{distance, intPointToDoublePoint}
 
-    val projection = new SimpleLeaderArcProjection(Seq(4), (0.0, 0.0), (64.0, 64.0), 8)
-    val pointsOpt = projection.project(Some((24.0, 24.0, 36.0, 33.0)), (3, 3))
+    val levels = 4
+    val minBounds = (0.0, 0.0)
+    val maxBounds = (64.0, 64.0)
+    val leaderLength = 8
+
+    val startCoord = (24.0, 24.0)
+    val endCoord = (36.0, 33.0)
+    val maxBin = (3, 3)
+
+    val projection = new SimpleLeaderArcProjection(Seq(levels), minBounds, maxBounds, leaderLength) //tms is default to false
+    val pointsOpt = projection.project(Some((startCoord._1, startCoord._2, endCoord._1, endCoord._2)), maxBin)
+
     // All are in universal bin coordinates, so Y axis is reversed from these calculations.
     // Also, clockwise becomes counterclockwise because of the y axis reversal
+
     // Points are (24, 24) and (36, 33), creating equilateral triangle arc
-    // length is sqrt(12^2 + 9^2) = 15
-    // center should be (30 - 0.6 * (7.5 * math.sqrt(3)), 28.5 + 0.8 * (7.5 * math.sqrt(3)))
-    val start = (24, 64 - 24)
-    val end = (36, 64 - 33)
-    val center = (30.0 - 0.6 * 7.5 * math.sqrt(3), 64.0 - (28.5 + 0.8 * 7.5 * math.sqrt(3)))
-    println(s"Start: $start")
-    println(s"End: $end")
-    println(s"Center: $center")
+    // length of one side is sqrt(12^2 + 9^2) = 15
+    val length = 15.0
+
+    // converting startCoord and endCoord to be on flipped y axis
+    val start = (24.0, maxBounds._2 - 24)
+    val end = (36.0, maxBounds._2 - 33)
+
+    //old calc of third point of triangle (called val center)
+    //not using (start, end) which already corrected for y reversal.
+    //x does not need to be shifted, since x flipping does not occur
+    //val center = (midPtCoord._1 - 0.6 * medianLength, 64 - (midPtCoord._2 + 0.8 * medianLength))
+
+    //TODO: calculation of third point of equilateral triangle (previously called val center)
+    val midPtCoord = (30.0, 28.5) //30 is halfway point between 24 and 36 and same for 28.5 being halfway point for y coordinate
+    val medianLength = 7.5 * math.sqrt(3) //tan(60 deg) is sqrt(3)
+
+    val delta_y = 33- 24 //9, the difference between start and end y-coordinates
+    val delta_x = 36 - 24 //12, the difference between start and end x-coordinates
+
+    //these calculations are not correct yet
+    val angle = 30.toRadians +  math.atan2(delta_y, delta_x) //opposite to angle is median, adjacent to angle is half of line drawn from startCoord to endCoord
+    val x3 = midPtCoord._1 - medianLength * math.cos(angle)
+    val y3 = midPtCoord._2 + medianLength * math.sin(angle)
+
+    val thirdPoint = (x3, y3)
+
+    println(distance(thirdPoint, startCoord)) //must equal 15
+    println(distance(thirdPoint, endCoord)) //must equal 15
 
     assert(pointsOpt.isDefined)
     val points = pointsOpt.get
     points.foreach{point =>
       val (tile, bin) = point
-      val uBin = (tile._2 * 4 + bin._1, tile._3 * 4 + bin._2)
+      val uBin = (tile._2 * 4 + bin._1, tile._3 * 4 + bin._2) //returns same result as tileBinIndexToUniversalBinIndex
       println(point+"\t"+uBin)
-      distance(center, uBin) should be (15.0 +- math.sqrt(0.5))
+      distance(thirdPoint, uBin) should be (15.0 +- math.sqrt(0.5))
       assert(distance(start, uBin) < 9.0 || distance(end, uBin) < 9.0)
       assert(start._1 <= uBin._1 && uBin._1 <= end._1)
-      assert(start._2 >= uBin._2 && uBin._2 >= end._2)
+      assert(start._2 >= uBin._2 && uBin._2 >= end._2) //comparison operators switched since flipped y aixs
     }
   }
   test("Test arc leader lines projection - with gap") {
@@ -310,13 +341,8 @@ class OneStageLineProjectionTestSuite extends FunSuite {
     }
   }
   test("Test when minLength is greater than chordLength") {
-
     val projection = new SimpleLeaderArcProjection(Seq(4), (0.0, 0.0), (64.0, 64.0), 8, minLengthOpt = Some(100))
     val pointsOpt = projection.project(Some((34.0, 17.0, 10.0, 7.0)), (3, 3))
-
-    val start = (34, 64 - 17)
-    val end = (10, 64 - 7)
-    val center = (22.0 + 5.0 * math.sqrt(3.0), 64.0 - (12.0 - 12.0 * math.sqrt(3.0)))
 
     assert(pointsOpt.isEmpty)
   }
@@ -362,20 +388,20 @@ class OneStageLineProjectionTestSuite extends FunSuite {
     val points = pointsOpt.get
     val expected = Seq(
       ((4,6,10),(0,0)),
-      ((4,6,10),(1,0)),
-      ((4,6,10),(2,0)),
-      ((4,6,10),(3,0)),
-      ((4,7,10),(0,0)),
-      ((4,7,10),(1,0)),
-      ((4,7,9),(2,3)),
-      ((4,7,9),(3,3)),
-      ((4,8,9),(0,2)),
-      ((4,8,9),(1,1)),
-      ((4,8,9),(2,0)),
-      ((4,8,8),(2,3)),
-      ((4,8,8),(3,2)),
-      ((4,8,8),(3,1)),
-      ((4,9,8),(0,0)),
+      ((4,6,9),(0,3)),
+      ((4,6,9),(0,2)),
+      ((4,6,9),(1,1)),
+      ((4,6,9),(1,0)),
+      ((4,6,8),(2,3)),
+      ((4,6,8),(3,2)),
+      ((4,7,8),(0,1)),
+      ((4,7,8),(1,0)),
+      ((4,7,8),(2,0)),
+      ((4,7,7),(3,3)),
+      ((4,8,7),(0,3)),
+      ((4,8,7),(1,3)),
+      ((4,8,7),(2,3)),
+      ((4,8,7),(3,3)),
       ((4,9,7),(0,3))
     )
     assert(points == expected)
