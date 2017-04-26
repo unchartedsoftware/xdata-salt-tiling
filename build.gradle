@@ -157,8 +157,8 @@ distributions {
     baseName = 'xdata-salt-tiling'
     contents {
       // Copy the run scripts over
-      into ("scripts"){
-        from("src/main/scripts")
+      into ("examples"){
+        from("src/main/examples")
         fileMode 0755
       }
 
