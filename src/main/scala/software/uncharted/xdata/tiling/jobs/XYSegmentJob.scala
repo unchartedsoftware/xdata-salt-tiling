@@ -86,7 +86,7 @@ object XYSegmentJob extends AbstractJob {
         segmentConfig.projectionConfig.xyBounds,
         tilingConfig.levels,
         tilingConfig.bins.getOrElse(CartesianSegmentOp.DefaultTileSize))(_)
-      case _ => logger.error("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
+      case _ => logger.error("Unknown projection ${segmentConfig.projectionConfig}"); sys.exit(-1)
     }
 
     val seqCols = segmentConfig.valueCol match {
