@@ -32,8 +32,9 @@ import org.apache.spark.sql.DataFrame
 import software.uncharted.salt.core.projection.numeric.CartesianProjection
 import software.uncharted.salt.core.util.SparseArray
 import software.uncharted.salt.xdata.analytic.WordCounter
-import software.uncharted.sparkpipe.ops.xdata.text.analytics.{DictionaryConfig, LogIDF, RawTF, TFIDFConfig}
+import software.uncharted.sparkpipe.ops.xdata.text.analytics.{DictionaryConfig, LogIDF, RawTF}
 import software.uncharted.xdata.spark.SparkFunSpec
+import software.uncharted.xdata.tiling.config.TFIDFConfig
 
 import scala.collection.mutable.{Map => MutableMap}
 

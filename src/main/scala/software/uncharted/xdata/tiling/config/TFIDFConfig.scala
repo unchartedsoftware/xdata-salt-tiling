@@ -30,12 +30,21 @@ package software.uncharted.xdata.tiling.config
 
 import com.typesafe.config.Config
 import software.uncharted.sparkpipe.ops.xdata.text.analytics
+import software.uncharted.sparkpipe.ops.xdata.text.analytics.{DictionaryConfig, IDFType, TFType}
 
 import scala.util.Try
 
 
-
-
+/**
+  * Configuration specifying how TF*IDF is to be performed
+  *
+  * @param tf The algorithm to perform the term-frequency calculation
+  * @param idf The algorithm to perform the inverse-document-frequency calculation
+  */
+case class TFIDFConfig(tf: TFType,
+                       idf: IDFType,
+                       dictionaryConfig: DictionaryConfig,
+                       wordsToKeep: Int)
 
 object TFIDFConfigParser extends ConfigParser {
   private val SECTION_KEY = "tf-idf"
@@ -106,7 +115,7 @@ object TFIDFConfigParser extends ConfigParser {
   }
 
 
-  def parse(config: Config): Try[analytics.TFIDFConfig] = {
+  def parse(config: Config): Try[TFIDFConfig] = {
     tfConfig(config).map { tfConf =>
       val section = config.getConfig(SECTION_KEY)
 
@@ -114,7 +123,7 @@ object TFIDFConfigParser extends ConfigParser {
       val dictConf = DictionaryConfigParser.parse(section)
       val wordsToKeep = section.getInt(WORDS_TO_KEEP)
 
-      analytics.TFIDFConfig(tfConf, idfConf, dictConf, wordsToKeep)
+      TFIDFConfig(tfConf, idfConf, dictConf, wordsToKeep)
     }
   }
 }
