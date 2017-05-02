@@ -213,15 +213,22 @@ class OneStageLineProjectionTestSuite extends FunSuite {
   }
 
   test("Test leader line fading spreader function") {
-    val spreader = new FadingSpreadingFunction(4, (3, 3), false)
-    assert(List(4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0) === spreader.spread(Seq(
+    val spreader1 = new FadingSpreadingFunction(4, (3, 3), false)
+    assert(List(4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0) === spreader1.spread(Seq(
       ((2, 0, 0), (0, 0)), ((2, 0, 0), (1, 0)), ((2, 0, 0), (2, 0)), ((2, 0, 0), (3, 0)),
       ((2, 1, 0), (0, 0)), ((2, 1, 0), (1, 0)), ((2, 1, 0), (2, 0)), ((2, 1, 0), (3, 0))
     ), Some(4.0)).map(_._3.get).toList)
 
-    assert(List(4.0, 3.0, 2.0, 1.0, 1.0, 2.0, 3.0, 4.0) === spreader.spread(Seq(
+    assert(List(4.0, 3.0, 2.0, 1.0, 1.0, 2.0, 3.0, 4.0) === spreader1.spread(Seq(
       ((2, 0, 0), (0, 0)), ((2, 0, 0), (1, 0)), ((2, 0, 0), (2, 0)), ((2, 0, 0), (3, 0)),
       ((2, 1, 0), (1, 0)), ((2, 1, 0), (2, 0)), ((2, 1, 0), (3, 0)), ((2, 2, 0), (0, 0))
+    ), Some(4.0)).map(_._3.get).toList)
+
+
+    val spreader2 = new FadingSpreadingFunction(5, (3, 3), false)
+    assert(List(4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0) === spreader2.spread(Seq(
+      ((2, 0, 0), (0, 0)), ((2, 0, 0), (1, 0)), ((2, 0, 0), (2, 0)), ((2, 0, 0), (3, 0)),
+      ((2, 1, 0), (0, 0)), ((2, 1, 0), (1, 0)), ((2, 1, 0), (2, 0)), ((2, 1, 0), (3, 0))
     ), Some(4.0)).map(_._3.get).toList)
   }
 
@@ -245,11 +252,11 @@ class OneStageLineProjectionTestSuite extends FunSuite {
 
     assert(pointsOpt.isDefined)
     val points = pointsOpt.get
-    points.foreach{point =>
+    points.foreach { point =>
       val (tile, bin) = point
       val uBin = (tile._2 * 4 + bin._1, tile._3 * 4 + bin._2)
-      println(point+"\t"+uBin)
-      distance(center, uBin) should be (15.0 +- math.sqrt(0.5))
+      println(point + "\t" + uBin)
+      distance(center, uBin) should be(15.0 +- math.sqrt(0.5))
       assert(distance(start, uBin) < 9.0 || distance(end, uBin) < 9.0)
       assert(start._1 <= uBin._1 && uBin._1 <= end._1)
       assert(start._2 >= uBin._2 && uBin._2 >= end._2)
@@ -271,10 +278,10 @@ class OneStageLineProjectionTestSuite extends FunSuite {
 
     assert(pointsOpt.isDefined)
     val points = pointsOpt.get
-    points.foreach{point =>
+    points.foreach { point =>
       val (tile, bin) = point
       val uBin = (tile._2 * 4 + bin._1, tile._3 * 4 + bin._2)
-      distance(center, uBin) should be (26.0 +- math.sqrt(0.5))
+      distance(center, uBin) should be(26.0 +- math.sqrt(0.5))
       assert(distance(start, uBin) < 9.0 || distance(end, uBin) < 9.0)
       assert(end._1 <= uBin._1 && uBin._1 <= start._1)
       assert(uBin._2 >= start._2)
@@ -300,10 +307,10 @@ class OneStageLineProjectionTestSuite extends FunSuite {
     assert(pointsOpt.isDefined)
 
     val points = pointsOpt.get
-    points.foreach{point =>
+    points.foreach { point =>
       val (tile, bin) = point
       val uBin = (tile._2 * 4 + bin._1, tile._3 * 4 + bin._2)
-      distance(center, uBin) should be (26.0 +- math.sqrt(0.5))
+      distance(center, uBin) should be(26.0 +- math.sqrt(0.5))
       assert(distance(start, uBin) < 9.0 || distance(end, uBin) < 9.0)
       assert(end._1 <= uBin._1 && uBin._1 <= start._1)
       assert(uBin._2 >= start._2)
@@ -334,6 +341,26 @@ class OneStageLineProjectionTestSuite extends FunSuite {
     assertResult((1, 2))(binCoord)
   }
 
+  //MercatorLineProjection
+  test("Test giving empty coords to project method of MercatorLineProjection") {
+    val projection = new MercatorLineProjection(Seq(4))
+
+    val result = projection.project(None, (3, 3))
+    assertResult(None)(result)
+  }
+  test("Test binTo1D and binFrom1D functions in MercatorLineProjection") {
+    val maxBin = (3, 3)
+    val projection = new MercatorLineProjection(Seq(4))
+    val result = projection.project(None, maxBin)
+
+  }
+  test("Test out of bounds coordinates for project method of MercatorLineProjection") {
+    val maxBin = (3, 3)
+    val projection = new MercatorLineProjection(Seq(4), (10, 10))
+    val result = projection.project(Some((50, 50, 1, 1)), maxBin)
+    assertResult(None)(result)
+  }
+
   //SimpleArcProjection tests
   test("Test giving empty coords to project method of SimpleArcProjection") {
     val maxBin = (3, 3)
@@ -361,25 +388,25 @@ class OneStageLineProjectionTestSuite extends FunSuite {
 
     val points = pointsOpt.get
     val expected = Seq(
-      ((4,6,10),(0,0)),
-      ((4,6,10),(1,0)),
-      ((4,6,10),(2,0)),
-      ((4,6,10),(3,0)),
-      ((4,7,10),(0,0)),
-      ((4,7,10),(1,0)),
-      ((4,7,9),(2,3)),
-      ((4,7,9),(3,3)),
-      ((4,8,9),(0,2)),
-      ((4,8,9),(1,1)),
-      ((4,8,9),(2,0)),
-      ((4,8,8),(2,3)),
-      ((4,8,8),(3,2)),
-      ((4,8,8),(3,1)),
-      ((4,9,8),(0,0)),
-      ((4,9,7),(0,3))
+      ((4, 6, 10), (0, 0)),
+      ((4, 6, 10), (1, 0)),
+      ((4, 6, 10), (2, 0)),
+      ((4, 6, 10), (3, 0)),
+      ((4, 7, 10), (0, 0)),
+      ((4, 7, 10), (1, 0)),
+      ((4, 7, 9), (2, 3)),
+      ((4, 7, 9), (3, 3)),
+      ((4, 8, 9), (0, 2)),
+      ((4, 8, 9), (1, 1)),
+      ((4, 8, 9), (2, 0)),
+      ((4, 8, 8), (2, 3)),
+      ((4, 8, 8), (3, 2)),
+      ((4, 8, 8), (3, 1)),
+      ((4, 9, 8), (0, 0)),
+      ((4, 9, 7), (0, 3))
     )
     assert(points == expected)
 
   }
-
 }
+
