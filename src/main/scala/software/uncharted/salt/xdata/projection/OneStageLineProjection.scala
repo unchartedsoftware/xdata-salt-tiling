@@ -112,7 +112,7 @@ class SimpleLineProjection(zoomLevels: Seq[Int],
   * @param leaderLineLength The number of bins to keep near each end of the line
   * @param minLengthOpt     The minimum length of line (in bins) to project
   * @param maxLengthOpt     The maximum length of line (in bins) to project
-  * @param tms              if true, the Y axis for tile coordinates only is flipped     *
+  * @param tms              if true, the Y axis for tile coordinates only is flipped
   */
 class SimpleLeaderLineProjection(zoomLevels: Seq[Int],
                                  min: (Double, Double),
@@ -227,8 +227,6 @@ class SimpleLeaderLineProjection(zoomLevels: Seq[Int],
 
 
 
-
-
 /**
   * A line projection that projects straight from arcs to raster bins in one pass.  All arcs are drawn with the same
   * curvature, and go clockwise from source to destination.
@@ -271,10 +269,10 @@ class SimpleArcProjection(zoomLevels: Seq[Int],
         val endUBin = scaledToUniversalBin(endPoint, level, maxBin)
         val chordLength = Line.distance(startUBin, endUBin)
 
-
         if (minLengthOpt.map(minLength => chordLength >= minLength).getOrElse(true) &&
           maxLengthOpt.map(maxLength => chordLength <= maxLength).getOrElse(true)) {
-          val arcToPoints = new ArcBinner(startUBin, endUBin, arcLength, true)
+          // Universal Bin Coordinates have a flipped Y axis from mathematical standard, therefore we have to flip the arc direction - i.e. clockwise = false, with a flipped Y axis, generates a clockwise arc
+          val arcToPoints = new ArcBinner(startUBin, endUBin, arcLength, clockwise = false)
           Some(arcToPoints.remaining.map(uBin =>
             universalBinIndexToTileIndex(level, uBin, maxBin)
           ).toSeq)
@@ -336,12 +334,12 @@ class SimpleLeaderArcProjection(zoomLevels: Seq[Int],
         val endUBin = scaledToUniversalBin(endPoint, level, maxBin)
         val chordLength = Line.distance(startUBin, endUBin)
 
-
         if (minLengthOpt.map(minLength => chordLength >= minLength).getOrElse(true) &&
           maxLengthOpt.map(maxLength => chordLength <= maxLength).getOrElse(true)) {
           Some {
-            val binner = new ArcBinner(startUBin, endUBin, arcLength, clockwise = true)
-            val center = ArcBinner.getArcCenter(startUBin, endUBin, arcLength, clockwise = true)
+            // Universal Bin Coordinates have a flipped Y axis from mathematical standard, therefore we have to flip the arc direction - i.e. clockwise = false, with a flipped Y axis, generates a clockwise arc
+            val binner =  new ArcBinner(startUBin, endUBin, arcLength, clockwise = false)
+            val center = ArcBinner.getArcCenter(startUBin, endUBin, arcLength, clockwise = false)
             val radius = ArcBinner.getArcRadius(startUBin, endUBin, arcLength)
             val leaderArcLength = ArcBinner.getArcLength(radius, leaderLength)
             if (arcLength <= 2.0 * leaderArcLength) {

@@ -105,6 +105,62 @@ class XYSegmentJobTest extends FunSpec {
         }
       }
 
+      it("should use the LeaderLine arctype", FileIOTest) {
+        val oldDir = System.getProperty("user.dir")
+        try {
+          // run the job
+          val path = classOf[XYSegmentJobTest].getResource("/XYSegmentJobTest/xysegment-leaderLine.conf").toURI.getPath
+          // Make sure to run the test from the correct directory
+          val newDir = path.substring(0, path.indexOf("xdata-salt-tiling") + 18)
+          System.setProperty("user.dir", newDir)
+          XYSegmentJob.main(Array(path))
+
+          val files = JobTestUtils.collectFiles(testOutputDir, suffix)
+          val expected = Set((2,1,2), (2,2,1))
+          assertResult((Set(), Set()))((expected diff files, files diff expected))
+        } finally {
+          System.setProperty("user.dir", oldDir)
+          FileUtils.deleteDirectory(new File(testOutputDir))
+        }
+      }
+
+      it("should use the FullArc arctype", FileIOTest) {
+        val oldDir = System.getProperty("user.dir")
+        try {
+          // run the job
+          val path = classOf[XYSegmentJobTest].getResource("/XYSegmentJobTest/xysegment-fullarc.conf").toURI.getPath
+          // Make sure to run the test from the correct directory
+          val newDir = path.substring(0, path.indexOf("xdata-salt-tiling") + 18)
+          System.setProperty("user.dir", newDir)
+          XYSegmentJob.main(Array(path))
+
+          val files = JobTestUtils.collectFiles(testOutputDir, suffix)
+          val expected = Set((2, 1, 2), (2, 2, 2), (2, 2, 1))
+          assertResult((Set(), Set()))((expected diff files, files diff expected))
+        } finally {
+          System.setProperty("user.dir", oldDir)
+          FileUtils.deleteDirectory(new File(testOutputDir))
+        }
+      }
+
+      it("should use the LeaderArc arctype", FileIOTest) {
+        val oldDir = System.getProperty("user.dir")
+        try {
+          // run the job
+          val path = classOf[XYSegmentJobTest].getResource("/XYSegmentJobTest/xysegment-leaderarc.conf").toURI.getPath
+          // Make sure to run the test from the correct directory
+          val newDir = path.substring(0, path.indexOf("xdata-salt-tiling") + 18)
+          System.setProperty("user.dir", newDir)
+          XYSegmentJob.main(Array(path))
+
+          val files = JobTestUtils.collectFiles(testOutputDir, suffix)
+          val expected = Set((2, 1, 2), (2, 2, 2), (2, 2, 1))
+          assertResult((Set(), Set()))((expected diff files, files diff expected))
+        } finally {
+          System.setProperty("user.dir", oldDir)
+          FileUtils.deleteDirectory(new File(testOutputDir))
+        }
+      }
     }
   }
 }
