@@ -28,32 +28,91 @@
 package software.uncharted.sparkpipe.ops.xdata.salt
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{Column, DataFrame, Row}
+import org.apache.spark.sql.{DataFrame, Row}
 import software.uncharted.salt.core.analytic.numeric.{MinMaxAggregator, SumAggregator}
 import software.uncharted.salt.core.generation.{Series, TileGenerator}
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.generation.request.TileLevelRequest
-import software.uncharted.salt.core.projection.Projection
+import software.uncharted.salt.xdata.projection._
 import software.uncharted.sparkpipe.ops.core.dataframe
 import software.uncharted.sparkpipe.Pipe
+import software.uncharted.xdata.tiling.config.{CartesianProjectionConfig, MercatorProjectionConfig, ProjectionConfig}
 
 /**
   * An operation which generates tile layers of line segments, located from pairs of IP addresses, from a DataFrame,
   * using Salt
   */
+// scalastyle:off method.length
+// scalastyle:off cyclomatic.complexity
 object IPSegmentOp {
   val DefaultTileSize = 256
   val StringType = "string"
+  val leaderLineLength = 1024
 
-  // scalastyle:off method.length
-  def apply(projection: Projection[(String, String), (Int, Int, Int), (Int, Int)],
-                           ipFromCol: String,
-                           ipToCol: String,
-                           vCol: String,
-                           levels: Seq[Int],
-                           tileSize: Int = DefaultTileSize)
-                          (input: DataFrame):
+  /**
+    * Segment operation using the projection specified by projectionType with endpoints being IP addresses
+    *
+    * @param projectionType Type of Projection to use
+    * @param arcType        The type of line projection specified by the ArcType enum
+    * @param xyBounds       The min/max x and y bounds (minX, minY, maxX, maxY)
+    * @param minSegLen      The minimum length of line (in bins) to project
+    * @param maxSegLen      The maximum length of line (in bins) to project
+    * @param ipFromCol      start IP address
+    * @param ipToCol        end IP address
+    * @param vCol           The name of the column which holds the value for a given row
+    * @param zoomLevels     The zoom levels onto which to project
+    * @param tileSize       The size of a tile in bins
+    * @param input          The input data
+    * @return An RDD of tiles
+    */
+  // scalastyle:off parameter.number
+  def apply(projectionType: ProjectionConfig,
+            arcType: ArcTypes.Value,
+            xyBounds: Option[(Double, Double, Double, Double)],
+            minSegLen: Option[Int],
+            maxSegLen: Option[Int],
+            ipFromCol: String,
+            ipToCol: String,
+            vCol: String,
+            zoomLevels: Seq[Int],
+            tileSize: Int = DefaultTileSize,
+            tms: Boolean = true)(input: DataFrame):
   RDD[SeriesData[(Int, Int, Int), (Int, Int), Double, (Double, Double)]] = {
+
+
+    val projection = projectionType match {
+      case _: MercatorProjectionConfig => new IPSegmentProjection(
+        zoomLevels,
+        new MercatorLineProjection(
+          zoomLevels,
+          if (xyBounds.isDefined) (xyBounds.get._1, xyBounds.get._2) else MercatorLineProjection.mercatorMin,
+          if (xyBounds.isDefined) (xyBounds.get._3, xyBounds.get._4) else MercatorLineProjection.mercatorMax,
+          minSegLen, maxSegLen)
+      )
+      case _: CartesianProjectionConfig => {
+        val minBounds = if (xyBounds.isDefined) (xyBounds.get._1, xyBounds.get._2) else (0.0, 0.0)
+        val maxBounds = if (xyBounds.isDefined) (xyBounds.get._3, xyBounds.get._4) else (1.0, 1.0)
+
+        new IPSegmentProjection(
+          zoomLevels,
+          arcType match {
+            case ArcTypes.FullLine =>
+              new SimpleLineProjection(zoomLevels, minBounds, maxBounds,
+                minLengthOpt = minSegLen, maxLengthOpt = maxSegLen, tms = tms)
+            case ArcTypes.LeaderLine =>
+              new SimpleLeaderLineProjection(zoomLevels, minBounds, maxBounds, leaderLineLength,
+                minLengthOpt = minSegLen, maxLengthOpt = maxSegLen, tms = tms)
+            case ArcTypes.FullArc =>
+              new SimpleArcProjection(zoomLevels, minBounds, maxBounds,
+                minLengthOpt = minSegLen, maxLengthOpt = maxSegLen, tms = tms)
+            case ArcTypes.LeaderArc =>
+              new SimpleLeaderArcProjection(zoomLevels, minBounds, maxBounds, leaderLineLength,
+                minLengthOpt = minSegLen, maxLengthOpt = maxSegLen, tms = tms)
+          }
+        )
+      }
+      case _ => throw new Exception("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
+    }
 
     // Use the pipeline to convert x/y cols to doubles, and select them along with v col first
     val frame = Pipe(input).to(dataframe.castColumns(Map(ipFromCol -> StringType, ipToCol -> StringType))).run()
@@ -88,7 +147,7 @@ object IPSegmentOp {
       Some(MinMaxAggregator)
     )
 
-    val request = new TileLevelRequest(levels, (tc: (Int, Int, Int)) => tc._1)
+    val request = new TileLevelRequest(zoomLevels, (tc: (Int, Int, Int)) => tc._1)
 
     val sc = frame.sqlContext.sparkContext
     val generator = TileGenerator(sc)

@@ -38,7 +38,6 @@ import software.uncharted.salt.xdata.projection.{SimpleArcProjection, SimpleLead
 
 import scala.util.Try
 
-
 object CartesianSegmentOp {
 
   val DefaultTileSize = 256

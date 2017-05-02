@@ -32,14 +32,16 @@ import com.typesafe.config.Config
 import org.apache.spark.sql.{Column, SparkSession}
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.xdata.io.serializeBinArray
-import software.uncharted.sparkpipe.ops.xdata.salt.IPHeatmapOp
-import software.uncharted.xdata.tiling.config.IPHeatmapConfig
+import software.uncharted.sparkpipe.ops.xdata.salt.IPSegmentOp
+import software.uncharted.xdata.tiling.config.IPSegmentConfig
 import software.uncharted.xdata.tiling.jobs.JobUtil.dataframeFromSparkCsv
 
 /**
-  * A basic job to do standard IP tiling
+  * A basic job to do standard IP tiling of line segments, located from pairs of IP addresses, from a DataFrame
   */
-object IPHeatmapJob extends AbstractJob {
+// scalastyle:off method.length
+// scalastyle:off cyclomatic.complexity
+object IPSegmentJob extends AbstractJob {
   /**
     * This function actually executes the task the job describes
     *
@@ -47,28 +49,31 @@ object IPHeatmapJob extends AbstractJob {
     * @param config The job configuration
     */
   override def execute(sparkSession: SparkSession, config: Config): Unit = {
-    config.resolve
-
     val schema = parseSchema(config)
     val tilingConfig = parseTilingParameters(config)
     val outputOperation = parseOutputOperation(config)
 
     // Parse IP tiling parameters out of supplied config
-    val ipConfig = IPHeatmapConfig.parse(config).recover { case err: Exception =>
-      logger.error(s"Invalid '${IPHeatmapConfig.rootKey}' config", err)
+    val ipConfig = IPSegmentConfig.parse(config).recover { case err: Exception =>
+      logger.error(s"Invalid '${IPSegmentConfig.rootKey}' config", err)
       sys.exit(-1)
     }.get
 
+    val tilingOp = IPSegmentOp(ipConfig.projectionConfig,
+                               ipConfig.arcType,
+                               ipConfig.projectionConfig.xyBounds,
+                               ipConfig.minSegLen,
+                               ipConfig.maxSegLen,
+                               ipConfig.ipFromCol,
+                               ipConfig.ipToCol,
+                               ipConfig.valueCol.get,
+                               tilingConfig.levels)(_)
+
+    val seqCols = Seq(ipConfig.ipFromCol, ipConfig.ipToCol, ipConfig.valueCol.get)
+    val selectCols = seqCols.map(new Column(_))
+
     // Create the dataframe from the input config
     val df = dataframeFromSparkCsv(config, tilingConfig.source, schema, sparkSession)
-
-    val tilingOp = IPHeatmapOp(
-      ipConfig.ipCol,
-      ipConfig.valueCol,
-      tilingConfig.levels,
-      tilingConfig.bins.getOrElse(IPHeatmapOp.DefaultTileSize))(_)
-
-    val selectCols = Seq(Some(ipConfig.ipCol), ipConfig.valueCol).flatten.map(new Column(_))
 
     // Pipe the dataframe
     Pipe(df)
@@ -80,3 +85,6 @@ object IPHeatmapJob extends AbstractJob {
       .run()
   }
 }
+
+// scalastyle:on method.length
+// scalastyle:on cyclomatic.complexity
