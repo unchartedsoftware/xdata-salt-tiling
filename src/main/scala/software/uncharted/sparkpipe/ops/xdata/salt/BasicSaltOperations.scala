@@ -31,12 +31,9 @@ package software.uncharted.sparkpipe.ops.xdata.salt
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.functions.{max, min}
-import software.uncharted.salt.core.analytic.Aggregator
-import software.uncharted.salt.core.analytic.numeric.CountAggregator
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.generation.request.{TileLevelRequest, TileRequest}
 import software.uncharted.salt.core.generation.{Series, TileGenerator}
-import software.uncharted.salt.core.projection.numeric.CartesianProjection
 
 import scala.reflect.ClassTag
 

@@ -37,7 +37,9 @@ import software.uncharted.xdata.tiling.config.XYHeatmapConfig
 import software.uncharted.xdata.tiling.jobs.JobUtil.{createMetadataOutputOperation, dataframeFromSparkCsv}
 
 /**
-  * Simple job to do ordinary 2-d tiling
+  * A basic job to do standard x,y coordinate based heatmap tiling.  Loads data from
+  * HDFS, creates heatmap tiles using the IP projection, and writes the results out to the
+  * configured destination.
   */
 object XYHeatmapJob extends AbstractJob {
   /**

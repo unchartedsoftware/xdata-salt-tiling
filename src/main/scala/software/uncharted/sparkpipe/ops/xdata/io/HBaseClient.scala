@@ -43,51 +43,63 @@ import org.apache.hadoop.hbase.{HBaseConfiguration, HColumnDescriptor, HTableDes
 import org.apache.hadoop.mapred.JobConf
 import org.apache.spark.rdd.RDD
 
-object HBaseConnector {
-  def apply(configFile: Seq[String]) : HBaseConnector = {
-    new HBaseConnector(configFile)
+/**
+  * Provides a factory function for creating HBaseClient objects.
+  */
+object HBaseClient {
+  def apply(configFile: Seq[String]) : HBaseClient = {
+    new HBaseClient(configFile)
   }
 }
 
-class HBaseConnector(configFiles: Seq[String]) extends Logging {
+/**
+  * Client that connects to an HBase instance and provides methods for writing tile data
+  * to a table.
+  *
+  * @param configFiles HBase configuration file paths.
+  */
+class HBaseClient(configFiles: Seq[String]) extends Logging {
   private val hbaseConfiguration = HBaseConfiguration.create()
-  configFiles.foreach{configFile =>
-  hbaseConfiguration.addResource(new Path(new URI(configFile)))
-  }
+  configFiles.foreach(configFile => hbaseConfiguration.addResource(new Path(new URI(configFile))))
   private val connection = getConnection(hbaseConfiguration)
   private val admin = connection.getAdmin
 
   private val colFamilyData = "tileData"
   private val colFamilyMetaData = "tileMetaData"
+
   /**
    *Write Tile Data into a Table
    *
    *RDD Layer Data is stored in their own table with tile info stored in a column and tile name as the rowID
-   * @param tableName name of the table to be written to
+    *
+    * @param tableName name of the table to be written to
    * @param qualifierName qualifier column to be written to, if passed in
    * @param listOfRowInfo RDD tuple of String and a Sequence of Bytes; Row ID and data to be stored in table
    */
-  def writeTileData(tableName: String, qualifierName: String = "")(listOfRowInfo: RDD[(String, Seq[Byte])]): Boolean = {
+  def writeTileData(tableName: String, qualifierName: Option[String] = None)(listOfRowInfo: RDD[(String, Seq[Byte])]): Boolean = {
     writeRows(tableName = tableName, colFamilyName = colFamilyData, qualifierName = qualifierName)(listOfRowInfo)
   }
+
   /**
    *Write Meta Data into a Table
    *
    *RDD Layer Data is stored in their own table with tile info stored in a column and tile name as the rowID
-   * @param tableName name of the table to be written to
+    *
+    * @param tableName name of the table to be written to
    * @param qualifierName qualifier column to be written to, if passed in
    * @param rowID row ID where data is to be inserted into
    * @param data data to be inserted
    */
-  def writeMetaData(tableName: String, qualifierName: String = "", rowID: String, data: Seq[Byte]): Boolean = {
+  def writeMetaData(tableName: String, qualifierName: Option[String] = None, rowID: String, data: Seq[Byte]): Boolean = {
     writeRow(tableName = tableName, colName = colFamilyMetaData, qualifierName = qualifierName, rowID = rowID, data = data)
   }
 
-  private def writeRows(tableName: String, colFamilyName: String, qualifierName: String)(listOfRowInfo: RDD[(String, Seq[Byte])]): Boolean = {
+  private def writeRows(tableName: String, colFamilyName: String, qualifierName: Option[String])(listOfRowInfo: RDD[(String, Seq[Byte])]): Boolean = {
     createTableIfNecessary(tableName)
     try {
       val putList = listOfRowInfo.map { rowInfo =>
-        (new ImmutableBytesWritable, new Put(rowInfo._1.getBytes).addColumn(colFamilyName.getBytes, qualifierName.getBytes, rowInfo._2.toArray))
+        (new ImmutableBytesWritable, new Put(rowInfo._1.getBytes).addColumn(colFamilyName.getBytes,
+          qualifierName.getOrElse("").getBytes, rowInfo._2.toArray))
       }
       val jobConfig = new JobConf(hbaseConfiguration, this.getClass)
       jobConfig.setOutputFormat(classOf[TableOutputFormat])
@@ -99,11 +111,11 @@ class HBaseConnector(configFiles: Seq[String]) extends Logging {
     }
   }
 
-  private def writeRow(tableName: String, colName: String, qualifierName: String, rowID: String, data: Seq[Byte]): Boolean = {
+  private def writeRow(tableName: String, colName: String, qualifierName: Option[String], rowID: String, data: Seq[Byte]): Boolean = {
     try {
       createTableIfNecessary(tableName)
       val table = connection.getTable(TableName.valueOf(tableName))
-      table.put(new Put(rowID.getBytes).addColumn(colName.getBytes, qualifierName.getBytes, data.toArray))
+      table.put(new Put(rowID.getBytes).addColumn(colName.getBytes, qualifierName.getOrElse("").getBytes, data.toArray))
       table.close
       true
     } catch {

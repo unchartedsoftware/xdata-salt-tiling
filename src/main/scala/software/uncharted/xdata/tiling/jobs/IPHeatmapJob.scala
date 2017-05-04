@@ -37,7 +37,8 @@ import software.uncharted.xdata.tiling.config.IPHeatmapConfig
 import software.uncharted.xdata.tiling.jobs.JobUtil.dataframeFromSparkCsv
 
 /**
-  * A basic job to do standard IP tiling
+  * A basic job to do standard IP tiling.  Load data from HDFS, creates heatmap tiles
+  * using the IP projection, and writes the results out to configured destination.
   */
 object IPHeatmapJob extends AbstractJob {
   /**
@@ -55,7 +56,7 @@ object IPHeatmapJob extends AbstractJob {
 
     // Parse IP tiling parameters out of supplied config
     val ipConfig = IPHeatmapConfig.parse(config).recover { case err: Exception =>
-      logger.error(s"Invalid '${IPHeatmapConfig.rootKey}' config", err)
+      logger.error(s"Invalid '${IPHeatmapConfig.RootKey}' config", err)
       sys.exit(-1)
     }.get
 

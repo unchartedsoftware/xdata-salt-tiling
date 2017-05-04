@@ -41,7 +41,8 @@ import scala.util.{Failure, Success}
 
 /**
   * A job that takes tsv data, breaks out a document from each entry as a word bag, tiles the documents into
-  * tile-based word bags, and runs Latent Dirichlet Allocation on those tile word bags
+  * tile-based word bags, and runs Latent Dirichlet Allocation on those tile word bags to produce a set of
+  * topic tiles.
   */
 object XYTileLDAJob extends AbstractJob {
   // Parse tile topic parameters out of supplied config

@@ -203,11 +203,21 @@ class GaussianBlurSpreadingFunction3D(radius: Int, sigma: Double, maxBins: Bin2D
   private def calcBinCoordInBottomTile(kernelBinCoord: Bin3DCoord) = (kernelBinCoord._1, kernelBinCoord._2 - maxBins._2 - 1, kernelBinCoord._3)
 }
 
+/**
+  * Helper functions for working with gaussian kernels.
+  */
 object GaussianBlurSpreadingFunction {
   type TileCoord = (Int, Int, Int)
   type Bin2DCoord = (Int, Int)
   type Bin3DCoord = (Int, Int, Int)
 
+  /**
+    * Creates a 2D gaussian kernel.
+    *
+    * @param radius The kernel radius in bins.
+    * @param sigma  The standard deviation of the kernel.
+    * @return
+    */
   def makeGaussianKernel(radius: Int, sigma: Double): Array[Array[Double]] = {
     val kernelDimension = calcKernelDimension(radius)
     val kernel = Array.ofDim[Double](kernelDimension, kernelDimension)

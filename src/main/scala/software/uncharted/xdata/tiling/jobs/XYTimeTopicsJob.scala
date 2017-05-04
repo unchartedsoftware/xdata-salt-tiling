@@ -38,6 +38,12 @@ import software.uncharted.sparkpipe.ops.xdata.io.serializeElementScore
 import software.uncharted.sparkpipe.ops.xdata.salt.TimeTopicsOp
 import software.uncharted.xdata.tiling.config.{TilingConfig, XYTimeTopicsConfig}
 
+/**
+  * A job to do x,y coordinate based topic tiling over time.  Topic tiling consists of computing word frequencies for
+  * all documents in a tile in each configured time bucket, and selecting the N-most frequent terms from that bucket to
+  * include in the tile.  The job loads data from HDFS, creates the time-based heatmap tiles, and writes the results
+  * out to the configured destination.
+  */
 object XYTimeTopicsJob extends AbstractJob {
   def execute(session: SparkSession, config: Config): Unit = {
     val schema = parseSchema(config)
@@ -51,15 +57,8 @@ object XYTimeTopicsJob extends AbstractJob {
     }.get
 
     val projection = topicsConfig.projection.createProjection(tilingConfig.levels)
-    val topicsOp = TimeTopicsOp(projection,
-                                       topicsConfig.xCol,
-                                       topicsConfig.yCol,
-                                       topicsConfig.timeCol,
-                                       topicsConfig.textCol,
-                                       topicsConfig.timeRange,
-                                       topicsConfig.topicLimit,
-                                       tilingConfig.levels,
-                                       tilingConfig.bins.getOrElse(1))(_)
+    val topicsOp = TimeTopicsOp(topicsConfig.xCol, topicsConfig.yCol, topicsConfig.timeCol, topicsConfig.textCol,
+      projection, topicsConfig.timeRange, topicsConfig.topicLimit, tilingConfig.levels, tilingConfig.bins.getOrElse(1))(_)
 
     // Create the spark context from the supplied config
     // Create the dataframe from the input config

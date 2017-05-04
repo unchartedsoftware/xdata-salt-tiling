@@ -43,9 +43,28 @@ import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.castColumns
 import software.uncharted.sparkpipe.ops.xdata.text.util.RangeDescription
 
+/**
+  * A superclass for operations which generate X,Y,Time tile layers from a DataFrame, using Salt.
+  */
 trait XYTimeOp {
   // scalastyle:off method.length
   // scalastyle:off parameter.number
+  /**
+    * Baseline time tiling operation.
+    *
+    * @param projection     an XYTimeProjection, which maps double x/y/timestamp data-space coordinates
+    *                       into z/x/y tile coordinates
+    * @param tileSize       the size of one side of a tile, in bins (i.e. 256 for a 256x256 tile)
+    * @param xCol           the name of the x column
+    * @param yCol           the name of the y column
+    * @param rangeCol       the name of the timestamp based range column
+    * @param valueCol           the name of the value column (the value for aggregation)*
+    * @param binAggregator  an Aggregator which aggregates values from the ValueExtractor
+    * @param tileAggregator an optional Aggregator which aggregates bin values
+    * @param request        a tiling request description
+    * @param input          the input dataframe
+    * @return               an RDD of tile data
+    */
   def apply[T, U, V, W, X](projection: XYTimeProjection,
                            tileSize: Int,
                            xCol: String,

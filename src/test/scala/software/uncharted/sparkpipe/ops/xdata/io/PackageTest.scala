@@ -161,7 +161,7 @@ class PackageTest extends SparkFunSpec with JsonDSL {
         ((2, 2, 2), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7)),
         ((2, 2, 3), Seq[Byte](0, 1, 2, 3, 4, 5, 6, 7))
       ))
-      val testQualifier = "tileDataQuali"
+      val testQualifier = Some("tileDataQuali")
 
       io.writeToHBase(configFile, testLayer, testQualifier)(data).collect()
 
@@ -187,7 +187,7 @@ class PackageTest extends SparkFunSpec with JsonDSL {
       ))
 
       val testCol = "tileData"
-      val testQualifier = "tileDataQuali"
+      val testQualifier = Some("tileDataQuali")
       io.writeToHBase(configFile, testLayer, testQualifier)(data)
       val config = HBaseConfiguration.create()
       config.set("hbase.zookeeper.quorum", zookeeperQuorum)
@@ -207,7 +207,7 @@ class PackageTest extends SparkFunSpec with JsonDSL {
 
   describe("#writeBytesToHBase") {
     val testFile = "metadata.json"
-    val testQualifier = "tileQualifier"
+    val testQualifier = Some("tileQualifier")
     it("should write the byte data to the HBaseTable without changing it", HBaseTest) {
       io.writeBytesToHBase(configFile, testLayer, testQualifier)(testFile, Seq(0, 1, 2, 3, 4, 5))
 

@@ -29,25 +29,47 @@
 package software.uncharted.sparkpipe.ops.xdata.salt
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, Row, functions}
+import org.apache.spark.sql.{DataFrame, functions}
 import software.uncharted.salt.core.analytic.numeric.{MinMaxAggregator, SumAggregator}
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.generation.request.TileLevelRequest
 import software.uncharted.salt.core.projection.numeric.NumericProjection
 import software.uncharted.salt.xdata.projection.XYTimeProjection
-import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.xdata.text.util.RangeDescription
 
+/**
+  * Factory function for create time heatmap operations.
+  */
 object TimeHeatmapOp extends XYTimeOp {
 
   val DefaultTileSize = 256
 
-  def apply(// scalastyle:ignore
-            baseProjection: NumericProjection[(Double, Double), (Int, Int, Int), (Int, Int)],
-            xCol: String,
+  /**
+    * Uses Salt to generate heatmap tiles with an additional time dimension from an input Dataframe.
+    * The resulting tiles will contain an array of counts for each bin, such that the first value
+    * of the array is the count in the first time bucket, and the last value in the array is the count for
+    * the last time bucket.  This effectively produces a tile of heatmaps over time.
+    *
+    * @param xCol The name of the dataframe column storing the x values.
+    * @param yCol The name of the dataframe column storing the y values.
+    * @param rangeCol The name of the dataframe column storing the timetamp values.
+    * @param valueCol The optional name of the column using the values to sum.  If no value
+    *                 is specified the value will default to 1 for each row.
+    * @param baseProjection The projection to transform the X,Y portion of the data coordinates to
+    *                       (tile, bin) coordinates.
+    * @param timeRange A time range expressed as min and max unix timestamp values, divided up into
+    *                  equally sized time buckets.
+    * @param zoomLevels The zoom levels to generate tile data for.
+    * @param tileSize The size of the produced tiles in bins.
+    * @param input A dataframe containing the data to tile.
+    * @return The produced tiles as an RDD of SeriesData.
+    */
+  // scalastyle:off parameter.number
+  def apply(xCol: String,
             yCol: String,
             rangeCol: String,
             valueCol: Option[String],
+            baseProjection: NumericProjection[(Double, Double), (Int, Int, Int), (Int, Int)],
             timeRange: RangeDescription[Long],
             zoomLevels: Seq[Int],
             tileSize: Int = DefaultTileSize)

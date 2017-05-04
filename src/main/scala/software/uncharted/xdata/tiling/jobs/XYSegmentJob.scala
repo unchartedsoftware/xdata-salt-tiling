@@ -57,34 +57,19 @@ object XYSegmentJob extends AbstractJob {
 
     // Parse geo heatmap parameters out of supplied config
     val segmentConfig = XYSegmentConfig.parse(config).recover { case err: Exception =>
-      logger.error(s"Invalid '${XYSegmentConfig.rootKey}' config", err)
+      logger.error(s"Invalid '${XYSegmentConfig.RootKey}' config", err)
       sys.exit(-1)
     }.get
 
     // create the segment operation based on the projection
     val segmentOperation = segmentConfig.projectionConfig match {
-      case _: MercatorProjectionConfig => MercatorSegmentOp(
-        segmentConfig.minSegLen,
-        segmentConfig.maxSegLen,
-        segmentConfig.x1Col,
-        segmentConfig.y1Col,
-        segmentConfig.x2Col,
-        segmentConfig.y2Col,
-        segmentConfig.valueCol,
-        segmentConfig.projectionConfig.xyBounds,
-        tilingConfig.levels,
+      case _: MercatorProjectionConfig => MercatorSegmentOp(segmentConfig.x1Col, segmentConfig.y1Col,
+        segmentConfig.x2Col, segmentConfig.y2Col, segmentConfig.valueCol, segmentConfig.projectionConfig.xyBounds,
+        segmentConfig.minSegLen, segmentConfig.maxSegLen, tilingConfig.levels,
         tilingConfig.bins.getOrElse(MercatorSegmentOp.DefaultTileSize))(_)
-      case _: CartesianProjectionConfig => CartesianSegmentOp(
-        segmentConfig.arcType,
-        segmentConfig.minSegLen,
-        segmentConfig.maxSegLen,
-        segmentConfig.x1Col,
-        segmentConfig.y1Col,
-        segmentConfig.x2Col,
-        segmentConfig.y2Col,
-        segmentConfig.valueCol,
-        segmentConfig.projectionConfig.xyBounds,
-        tilingConfig.levels,
+      case _: CartesianProjectionConfig => CartesianSegmentOp(segmentConfig.x1Col, segmentConfig.y1Col,
+        segmentConfig.x2Col, segmentConfig.y2Col, segmentConfig.valueCol, segmentConfig.projectionConfig.xyBounds,
+        segmentConfig.arcType, segmentConfig.minSegLen, segmentConfig.maxSegLen, tilingConfig.levels,
         tilingConfig.bins.getOrElse(CartesianSegmentOp.DefaultTileSize))(_)
       case _ => logger.error("Unknown projection ${segmentConfig.projectionConfig}"); sys.exit(-1)
     }

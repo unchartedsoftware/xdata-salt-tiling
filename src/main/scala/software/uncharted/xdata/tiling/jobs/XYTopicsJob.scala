@@ -38,7 +38,11 @@ import software.uncharted.sparkpipe.ops.xdata.salt.TopicsOp
 import software.uncharted.xdata.tiling.config.{MercatorProjectionConfig, TilingConfig, XYTopicsConfig}
 import software.uncharted.xdata.tiling.jobs.{JobUtil => util}
 
-
+/**
+  * A job to do x,y coordinate based topic tiling.  Topic tiling consists of computing word frequencies for
+  * all documents in a tile, and selecting the N-most frequent term to include in the tile.  The job loads data from
+  * HDFS, creates the time-based heatmap tiles, and writes the results out to the configured destination.
+  */
 object XYTopicsJob extends AbstractJob {
 
   def execute(sparkSession: SparkSession, config: Config): Unit = {

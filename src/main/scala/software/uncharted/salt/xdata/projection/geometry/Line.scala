@@ -63,6 +63,7 @@ case class Line (A: Double, B: Double, C: Double) {
   // scalastyle:off method.name
   /**
     * Finds whether two lines are approximately equal to each other based on epsilon value (tolerance value)
+    *
     * @param epsilon Tolerance value
     * @param that Line we are comparing to
     * @return Boolean that states whether the two lines are approximately equal or not
@@ -140,6 +141,9 @@ case class Line (A: Double, B: Double, C: Double) {
   def distanceTo (circle: Circle): Double = circle.distanceTo(this)
 }
 
+/**
+  * Provides helper functions, a factory and implicit conversions for the Line type.
+  */
 object Line {
   /** Create a line object from two points of the line. */
   def apply (pt0: (Double, Double), pt1: (Double, Double)): Line = {
@@ -154,9 +158,14 @@ object Line {
 
   implicit def intPointToDoublePoint (pt: (Int, Int)): (Double, Double) = (pt._1.toDouble, pt._2.toDouble)
 
+  /** Computes the distance between two points. */
   def distance (pt0: (Double, Double), pt1: (Double, Double)): Double =
     math.sqrt(distanceSquared(pt0, pt1))
 
+  /**
+    * Computes the squared distance between two points.  Useful for situations such
+    * as length copmarisons since the expensive sqroot can be skipped.
+    */
   def distanceSquared (pt0: (Double, Double), pt1: (Double, Double)): Double = {
     val (x0, y0) = pt0
     val (x1, y1) = pt1
@@ -165,6 +174,10 @@ object Line {
     dx * dx + dy * dy
   }
 
+  /**
+    * Computes the squared distance between two integral points.  Useful for situations such
+    * as length copmarisons since the expensive sqroot can be skipped.
+    */
   def distanceSquared (pt0: (Int, Int), pt1: (Int, Int)): Int = {
     val (x0, y0) = pt0
     val (x1, y1) = pt1

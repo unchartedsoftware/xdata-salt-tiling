@@ -31,7 +31,11 @@ package software.uncharted.salt.xdata.projection
 import software.uncharted.salt.core.projection.Projection
 
 
-
+/**
+  * Provides methods for converting between (tile, bin) coordinates and (universal bin) coordinates.  Universal
+  * bin coordinates provide a level-wide bin coordinate space, whereas (tile, bin) coordinates provide bin
+  * coordinate space within the bounds of a single tile.
+  */
 trait CartesianBinning {
   /**
     * Specify whether the Y axis is flipped for tile coordinates
@@ -125,7 +129,9 @@ trait CartesianBinning {
   *
   * @param min The minimum coordinates of the data space
   * @param max The maximum coordinates of the data space
-  * @param _tms
+  * @param tms <code>true<code> if TMS coordinates should be used, <code>false<code> otherwise.
+  *            Generally, the upper left corner is taken as (0, 0).  If TMS is specified, then the tile Y coordinate is
+  *            flipped (i.e., lower left is (0, 0)), but the bin coordinates (both tile-bin and universal-bin) are not.
   * @tparam DC the abstract type representing a data-space coordinate
   * @tparam BC the abstract type representing a bin coordinate. Must feature a zero-arg
   *            constructor and should be something that can be represented in 1 dimension.

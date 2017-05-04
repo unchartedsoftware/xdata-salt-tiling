@@ -38,6 +38,11 @@ import software.uncharted.xdata.tiling.jobs.JobUtil.dataframeFromSparkCsv
 
 import scala.util.{Failure, Success}
 
+/**
+  * A tiling job that loads data from CSV, creates a set of term frequency tiles from a
+  * designated output column, and then uses those frequencies in subsequent setp to compute
+  * TFIDF-based topic tiles.
+  */
 object XYTileTFIDFJob extends AbstractJob {
   // Parse tile topic parameters out of supplied config
   private def parseTileTopicConfig (config: Config) = {
@@ -85,7 +90,7 @@ object XYTileTFIDFJob extends AbstractJob {
     // Process our data
     Pipe(df)
       .to(wordCloudTileOp)
-      .to(TileTextOperations.doTFIDFByTileFast(tfidfConfig))
+      .to(TileTextOperations.tfidfByTileFast(tfidfConfig))
       .to(serializeElementDoubleScore)
       .to(outputOperation)
       .run

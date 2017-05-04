@@ -37,17 +37,22 @@ import software.uncharted.sparkpipe.ops.xdata.text.analytics.{DictionaryConfig, 
 
 import scala.collection.mutable
 
+/**
+  * Factory function for generating tiles with LDA topics.
+  */
 object LDATopicsOp {
-  val tmpDir: String = "/tmp"
 
   /**
-    * Perform LDA on the output of termFrequency, on a tile by tile basis, outputting the top topics in each tile
+    * Uses Salt to perform Latent Dirichlet Allocation (LDA) on a tile by tile basis.  The individual documents
+    * contained in a tile are considered a single document for processing purposes, with the tiles in the layer
+    * making up the document corpus as a whole.  Tile output consists of the top topics generated for that tile.
     *
-    * This assumes a single bin per tile
+    * This operation differs from others in that the input data is a previously produced tile set, rather than
+    * a DataFrame - specifically, the results of a [[software.uncharted.sparkpipe.ops.xdata.salt.TileTextOperations.termFrequencyOp()]].
     *
     * @param dictionaryConfig The dictionary creation configuration
     * @param ldaConfig The configuration for how to run LDA
-    * @param input The input data of tiles of word bags
+    * @param input The input data of tiles of word bags.
     * @tparam X The type of metadata associated with each tile
     * @return A new tile set containing the LDA results on each word bag
     */
@@ -72,8 +77,15 @@ object LDATopicsOp {
   }
 
   /**
-    * Perform LDA on the output of termFrequency, on a tile by tile basis, outputting the top words in each tile,
-    * weighted by topic weight and word-within-topic weight
+    * Uses Salt to perform Latent Dirichlet Allocation (LDA) on a tile by tile basis.  The individual documents
+    * contained in a tile are considered a single document for processing purposes, with the tiles in the layer
+    * making up the document corpus as a whole.  Output consists of the top words in each tile,
+    * weighted by topic weight and word-within-topic weight.
+    *
+    * This operation differs from others in that the input data is a previously produced tile set, rather than
+    * a DataFrame - specifically, the results of a [[software.uncharted.sparkpipe.ops.xdata.salt.TileTextOperations.termFrequencyOp()]].
+    *
+    * Perform LDA on the output of termFrequency,
     *
     * This assumes a single bin per tile
     *

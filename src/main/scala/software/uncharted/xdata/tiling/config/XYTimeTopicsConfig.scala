@@ -49,28 +49,23 @@ case class XYTimeTopicsConfig(xCol: String,
                               projection: ProjectionConfig)
 
 /**
-  * Code for parsing XY Topic configuration settings.  Parameters are:
+  * Provides functions for parsing time-based heatmap tile data out of `com.typesafe.config.Config` objects.
   *
-  * xColumn - name of the column containing X values in the input DataFrame
+  * Valid properties are:
   *
-  * yColumn - name of the column containing Y values in the input DataFrame
-  *
-  * textColumn - the name of the column containing the text values in the input DataFrame
-  *
-  * topicLimit - the maximum number of topics to track per tile
-  *
-  * terms - a file or resource path pointing to a list of terms of interest.  Rows that do not contain at
-  *   least one of the terms from the list will be filtered out of the data set prior to tiling.
-  *
-  * stopwords - a file or resource path point to a list of words to ignore when computing term frequencies
-  *   for a tile
-  *
-  * projection - a string value of 'mercator' or 'cartesian' indicating the projection to apply
-  *
-  * xyBounds - a tuple of doubles indicating the min and max bounds (minX, minY, maxX, maxY).  Rows with X,Y
-  *   values outside of this region will be filtered out of the data set prior to tiling.  Bounds are required
-  *   for cartesian projections, but will be defaulted to (-180, -90, 180, 90) for mercator projections if not
-  *   supplied
+  *   - `xColumn` - name of the column containing X values in the input DataFrame
+  *   - `yColumn` - name of the column containing Y values in the input DataFrame
+  *   - `textColumn` - the name of the column containing the text values in the input DataFrame
+  *   - `topicLimit` - the maximum number of topics to track per tile
+  *   - `terms` - a file or resource path pointing to a list of terms of interest.  Rows that do not contain at
+  *     least one of the terms from the list will be filtered out of the data set prior to tiling.
+  *   - `stopwords` - a file or resource path point to a list of words to ignore when computing term frequencies
+  *     for a tile
+  *   - `projection` - a string value of 'mercator' or 'cartesian' indicating the projection to apply
+  *   - `xyBounds` - a tuple of doubles indicating the min and max bounds (minX, minY, maxX, maxY).  Rows with X,Y
+  *     values outside of this region will be filtered out of the data set prior to tiling.  Bounds are required
+  *     for cartesian projections, but will be defaulted to (-180, -90, 180, 90) for mercator projections if not
+  *     supplied
   */
 object XYTimeTopicsConfig extends ConfigParser{
   val rootKey = "xyTimeTopics"
@@ -85,6 +80,13 @@ object XYTimeTopicsConfig extends ConfigParser{
   private val termPathKey = "terms"
   private val stopWordPathKey = "stopWords"
 
+  /**
+    * Parse general time topic parameters out of a config container and instantiates a `XYTimeTopicsConfig`
+    * object from them.
+    *
+    * @param config The configuration container.
+    * @return A `Try` containing the `XYTimeTopicsConfig` object.
+    */
   def parse(config: Config): Try[XYTimeTopicsConfig] = {
     for (
       topicConfig <- Try(config.getConfig(rootKey));

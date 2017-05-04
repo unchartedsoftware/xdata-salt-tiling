@@ -31,46 +31,66 @@ package software.uncharted.xdata.tiling.config
 import com.typesafe.config.Config
 import software.uncharted.sparkpipe.ops.xdata.text.analytics.DictionaryConfig
 
+/**
+  * Provides functions for parsing word dictionary data out of `com.typesafe.config.Config` objects.
+  *
+  * Valid properties are:
+  *   - `predefined` - This string parameter points to a file containing a list of words
+  *     to use as the dictionary when calculating LDA scores. Not yet implemented for TFIDF. [OPTIONAL]
+  *   - `stopwords` - This string parameter points to a file containing a list of stop-words to ignore
+  *   when calculating LDA scores.  Not yet implemented for TFIDF. [OPTIONAL]
+  *   - `maxDf` - This double parameter causes words in more than the
+  *     given percentage of documents to be ignored, removed from the dictionary, when calculating TF*IDF or LDA scores.  This
+  *     has the effect, essentially, of creating a default stopwords list based on the contents of the documents. [OPTIONAL]
+  *   - `minDf` - This double parameter causes words in fewer than the given percentage of documents to
+  *     be ignored, removed from the dictionary, when calculating TFIDF or LDA scores.  This has the effect of
+  *     ignoring exceedingly rare words, that might appear in only one document. [OPTIONAL]
+  *   - `maxFeatures` - Optional integer parameter defines the maximum number of words to retain in the dictionary.
+  *     High-frequency words will be preffered over low-frequency words, so this parameter should probably be used
+  *     in conjunction with `stopwords` or `maxDf`. [OPTIONAL]
+  *   - `caseSensitivity` Boolean parameter, if true, indicates that the calculation of LDA or TFIDF scores is case-sensitive.
+  *     False means it is case-insensitive.  Default is false.  [OPTIONAL]
+  *
+  *  Example from config file (in [[https://github.com/typesafehub/config#using-hocon-the-json-superset HOCON]] notation):
+  *
+  *  {{{
+  *  dictionary {
+  *    stopwords = ../stopwords.txt
+  *    minDf = 1.0
+  *    maxDf = 80.0
+  *  }
+  *  }}}
+  *
+  */
 object DictionaryConfigParser extends ConfigParser {
-  private val DICTIONARY_SECTION = "dictionary"
-  // Key for the vocabulary parameter.  This optional string parameter points to a file containing a list of words to
-  // use as the dictionary when calculating TF*IDF scores.
-  // Note, however, this functionality is currently unimplemented
-  // If it were implemented, it being present should be incompatible with any other parameter being present.
-  private val DICTIONARY_KEY = "predefined"
-  // Key for the stopwords parameter.  This optional string parameter points to a file containing a list of stop-words
-  // to ignore when calculating TF*IDF scores.
-  // Note, however, this functionality is currently unimplemented
-  private val STOPWORDS_KEY = "stopwords"
-  // Key for the maximum document frequency parameter.  This optional double parameter causes words in more than the
-  // given percentage of documents to be ignored, removed from the dictionary, when calculating TF*IDF scores.  This
-  // has the effect, essentially, of creating a default stopwords list based on the contents of the documents.
-  private val MAX_DF_KEY = "max-df"
-  // Key for the minimum document frequency parameter.  This optional double parameter causes words in fewer than the
-  // given percentage of documents to be ignored, removed from the dictionary, when calculating TF*IDF scores.  This
-  // has the effect of ignoring exceedingly rare words, that might appear in only one document.
-  private val MIN_DF_KEY = "min-df"
-  // Key for the maximum number of words to retain in the dictionary.  This optional integer parameter defines the
-  // maximum number of words to retain in the dictionary.  High-frequency words will be preffered over low-frequency
-  // words, so this parameter should probably be used in conjunction with stopwords or max-df.
-  private val MAX_FEATURES_KEY = "max-features"
-  // Key for the case sensitivity of our calculation.  This boolean parameter, if true, indicates that the calculation
-  // of TF*IDF scores is case-sensitive.  False means it is case-insensitive.  Default is false.
-  private val CASE_SENSITIVITY_KEY = "case-sensitive"
-  private val CASE_SENSITIVITY_DEFAULT = false
+  private val RootKey = "dictionary"
+  private val PredefinedKey = "predefined"
+  private val StopWordsKey = "stopwords"
+  private val MaxDfKey = "maxDf"
+  private val MinDfKey = "minDf"
+  private val MaxFeaturesKey = "maxFeatures"
+  private val CaseSensitivityKey = "caseSensitive"
 
+  private val CaseSensitivityDefault = false
 
+  /**
+    * Parses word dictionary parameters out of a config container and instantiates a `Dictionary`
+    * object from them.
+    *
+    * @param config The configuration container.
+    * @return A `Try` containing the `S3OutputConfig` object.
+    */
   def parse (config: Config): DictionaryConfig = {
-    val section = getConfigOption(config, DICTIONARY_SECTION)
+    val section = getConfigOption(config, RootKey)
 
     val caseSensitive = section.flatMap(s =>
-      getBooleanOption(s, CASE_SENSITIVITY_KEY)
-    ).getOrElse(CASE_SENSITIVITY_DEFAULT)
-    val predefined    = section.flatMap(s => getStringOption(s, DICTIONARY_KEY))
-    val stopwords     = section.flatMap(s => getStringOption(s, STOPWORDS_KEY))
-    val maxDF         = section.flatMap(s => getDoubleOption(s, MAX_DF_KEY))
-    val minDF         = section.flatMap(s => getDoubleOption(s, MIN_DF_KEY))
-    val maxFeatures   = section.flatMap(s => getIntOption(s, MAX_FEATURES_KEY))
+      getBooleanOption(s, CaseSensitivityKey)
+    ).getOrElse(CaseSensitivityDefault)
+    val predefined    = section.flatMap(s => getStringOption(s, PredefinedKey))
+    val stopwords     = section.flatMap(s => getStringOption(s, StopWordsKey))
+    val maxDF         = section.flatMap(s => getDoubleOption(s, MaxDfKey))
+    val minDF         = section.flatMap(s => getDoubleOption(s, MinDfKey))
+    val maxFeatures   = section.flatMap(s => getIntOption(s, MaxFeaturesKey))
 
     DictionaryConfig(caseSensitive, predefined, stopwords, maxDF, minDF, maxFeatures)
   }

@@ -161,11 +161,11 @@ class IPProjectionTests extends FunSuite {
     val maxBin = (3, 3)
 
     val emptyIPv6 = "::"
-    val centreCoords = IPProjection.ipToCartesian(Some(emptyIPv6),maxBin)
+    val centreCoords = IPProjection.ipToCartesian(Some(emptyIPv6))
     assertResult(Some((0.0,0.0)))(centreCoords)
 
     val nonEmptyIPv6 = "FFFF:ffff:FFFF:ffff:FFFF:ffff"
-    val resultCoords = IPProjection.ipToCartesian(Some(nonEmptyIPv6),maxBin).get
+    val resultCoords = IPProjection.ipToCartesian(Some(nonEmptyIPv6)).get
     val df = new DecimalFormat("#.#")
     assert(df.format(resultCoords._1) == "1")
     assert(df.format(resultCoords._2) == "1")

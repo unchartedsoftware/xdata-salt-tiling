@@ -32,15 +32,16 @@ import software.uncharted.salt.core.analytic.Aggregator
 
 import scala.collection.mutable.{Map => MutableMap}
 
-
-
 /**
-  * An aggregator that can track counts of individual words
+  * Helper constants
   */
 object WordCounter {
   val wordSeparators = "('$|^'|'[^a-zA-Z_0-9']+|[^a-zA-Z_0-9']+'|[^a-zA-Z_0-9'])+"
 }
 
+/**
+  * A a Spark aggregator that can track counts of individual words.
+  */
 class WordCounter extends Aggregator[String, MutableMap[String, Int], Map[String, Int]] {
   override def default(): MutableMap[String, Int] = MutableMap[String, Int]()
 

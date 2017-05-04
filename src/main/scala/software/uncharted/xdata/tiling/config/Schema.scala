@@ -35,12 +35,43 @@ import scala.collection.JavaConverters.asScalaSetConverter
 import scala.collection.{SortedMap, immutable}
 import scala.util.Try
 
+/**
+  * Parses the mapping of a CSV file to a spark Dataframe schema out of `com.typesafe.config.Config` object and
+  * produces a corresponding spark [[StructType]] representing the schema.
+  *
+  * Valid properties are:
+  *
+  *   - A set of entries mapping a column name to a `type` and `index` value.
+  *     - `type` - the type to assign to the column data, taken from one of `boolean`, `byte`, `short`,
+  *       `int`, `long`, `float`, `double`, `date`, `string`, and `timestamp`.
+  *     - `index` - the index of the column to assign the name / type info to.
+  *   - `rowSize` - The total number of columns in each row of the input CSV. [OPTIONAL]
+  *
+  *  Example from config file (in [[https://github.com/typesafehub/config#using-hocon-the-json-superset HOCON]] notation):
+  *
+  *  {{{
+  *  csvSchema {
+  *    rowSize = 4
+  *    dest_ip = { type = string, index = 2 }
+  *    from_ip = { type = string, index = 3 }
+  *    timesta
+  *  }
+  *  }}}
+  *
+  */
 object Schema {
 
-  case class FieldData(name: String, ftype: String, index: Int)
+  private case class FieldData(name: String, ftype: String, index: Int)
 
-  case class FieldDataException(message: String) extends Exception(message)
+  private case class FieldDataException(message: String) extends Exception(message)
 
+  /**
+    * Parses general tiling parameters out of a config container and instantiates a `StructType`
+    * object from them.
+    *
+    * @param config The configuration container.
+    * @return A `Try` containing the `StructType` object.
+    */
   def apply(config: Config): Try[StructType] = {
     Try {
       // Extract and sort fields

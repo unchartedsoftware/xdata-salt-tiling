@@ -36,6 +36,12 @@ import software.uncharted.sparkpipe.ops.xdata.salt.{HeatmapOp, TimeHeatmapOp}
 import software.uncharted.xdata.tiling.config.{TilingConfig, XYTimeHeatmapConfig}
 import software.uncharted.xdata.tiling.jobs.JobUtil.{createMetadataOutputOperation, dataframeFromSparkCsv}
 
+/**
+  * A job to do x,y,time coordinate based heatmap tiling.  The base heatmap tiles each store
+  * a count in a given bin, whereas time-based tiles store an array of counts in each bin, with
+  * each element being the counts for a given time bucket.  The job loads data from
+  * HDFS, creates the time-based heatmap tiles, and writes the results out to the configured destination.
+  */
 object XYTimeHeatmapJob extends AbstractJob {
 
   def execute(sparkSession: SparkSession, config: Config): Unit = {
@@ -55,14 +61,8 @@ object XYTimeHeatmapJob extends AbstractJob {
     val projection = heatmapConfig.projection.createProjection(tilingConfig.levels)
 
     // create the heatmap operation based on the projection
-    val heatmapOperation = TimeHeatmapOp(projection,
-                                                heatmapConfig.xCol,
-                                                heatmapConfig.yCol,
-                                                heatmapConfig.timeCol,
-                                                heatmapConfig.valueCol,
-                                                heatmapConfig.timeRange,
-                                                tilingConfig.levels,
-                                                bins)(_)
+    val heatmapOperation = TimeHeatmapOp(heatmapConfig.xCol, heatmapConfig.yCol, heatmapConfig.timeCol,
+      heatmapConfig.valueCol, projection, heatmapConfig.timeRange, tilingConfig.levels, bins)(_)
 
     // list of columns we want to filter down to for the computation
     val selectCols = Seq(Some(heatmapConfig.xCol),

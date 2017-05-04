@@ -35,10 +35,26 @@ import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.generation.request.TileLevelRequest
 import software.uncharted.salt.core.projection.numeric.NumericProjection
 
+/**
+  * Factory to generate heatmap op functions.
+  */
 object HeatmapOp extends ZXYOp {
 
   val DefaultTileSize = 256
 
+  /**
+    * Uses Salt to generate heatmap tiles from an input Dataframe.
+    *
+    * @param xCol The name of the dataframe column storing the x values.
+    * @param yCol The name of the dataframe column storing the y values.
+    * @param valueCol The optional name of the column using the values to sum.  If no value
+    *                 is specified the value will default to 1 for each row.
+    * @param projection The projection to transform from data coordinates to (tile, bin) coordinates.
+    * @param zoomLevels The zoom levels to generate tile data for.
+    * @param tileSize The size of the produced tiles in bins.
+    * @param input A dataframe containing the data to tile.
+    * @return The produced tiles as an RDD of SeriesData.
+    */
   def apply(// scalastyle:ignore
             xCol: String,
             yCol: String,

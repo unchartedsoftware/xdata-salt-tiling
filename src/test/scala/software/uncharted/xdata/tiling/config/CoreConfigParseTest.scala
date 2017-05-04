@@ -134,7 +134,7 @@ class CoreConfigParseTest() extends FunSpec {
           """.stripMargin).resolve()
 
         val result = HBaseOutputConfig.parse(config).get
-        val expected = HBaseOutputConfig(Seq(configFile.toString), "test_layer", "")
+        val expected = HBaseOutputConfig(Seq(configFile.toString), "test_layer", Some(""))
 
         assertResult(expected)(result)
       }

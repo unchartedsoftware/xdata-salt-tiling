@@ -31,6 +31,15 @@ package software.uncharted.salt.xdata.projection
 import software.uncharted.salt.core.projection.Projection
 import software.uncharted.salt.core.projection.numeric.NumericProjection
 
+/**
+  * Projects a data space x,y,timestamp coordinate into the corresponding (tile, bin) coordinate.  Values that lie outside
+  * the defined x,y or timestamp ranges will be ignored.
+  *
+  * @param min The minimum time value to project.
+  * @param max The maximum time value to project.
+  * @param rangeBuckets The number of time buckets between (min, max) to project into.
+  * @param baseProjection The (x,y) coordinate projection to apply.
+  */
 class XYTimeProjection(val min: Long,
                        val max: Long,
                        val rangeBuckets: Int,

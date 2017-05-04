@@ -29,6 +29,13 @@
 package software.uncharted.salt.xdata.projection.geometry
 
 // scalastyle:off null
+
+/**
+  * An exception for flagging cases where a line intersection does not occur.
+  *
+  * @param message The reason the intersection test failed.
+  * @param cause The root exceptoin that triggered the failure.
+  */
 class NoIntersectionException (message: String, cause: Throwable) extends Exception(message, cause) {
   def this() = this(null, null)
 

@@ -37,7 +37,8 @@ import software.uncharted.xdata.tiling.config.IPSegmentConfig
 import software.uncharted.xdata.tiling.jobs.JobUtil.dataframeFromSparkCsv
 
 /**
-  * A basic job to do standard IP tiling of line segments, located from pairs of IP addresses, from a DataFrame
+  * A basic job to do segment based IP tiling.  Loads data from HDFS, creates heatmap tiles with arcs between
+  * the endpoints calculated using the IP projection and writes the results out to configured destination.
   */
 // scalastyle:off method.length
 // scalastyle:off cyclomatic.complexity
@@ -55,19 +56,13 @@ object IPSegmentJob extends AbstractJob {
 
     // Parse IP tiling parameters out of supplied config
     val ipConfig = IPSegmentConfig.parse(config).recover { case err: Exception =>
-      logger.error(s"Invalid '${IPSegmentConfig.rootKey}' config", err)
+      logger.error(s"Invalid '${IPSegmentConfig.RootKey}' config", err)
       sys.exit(-1)
     }.get
 
-    val tilingOp = IPSegmentOp(ipConfig.projectionConfig,
-                               ipConfig.arcType,
-                               ipConfig.projectionConfig.xyBounds,
-                               ipConfig.minSegLen,
-                               ipConfig.maxSegLen,
-                               ipConfig.ipFromCol,
-                               ipConfig.ipToCol,
-                               ipConfig.valueCol.get,
-                               tilingConfig.levels)(_)
+    val tilingOp = IPSegmentOp(ipConfig.ipFromCol,ipConfig.ipToCol, ipConfig.valueCol.get,
+      ipConfig.projectionConfig, ipConfig.arcType, ipConfig.projectionConfig.xyBounds, ipConfig.minSegLen,
+      ipConfig.maxSegLen, tilingConfig.levels)(_)
 
     val seqCols = Seq(ipConfig.ipFromCol, ipConfig.ipToCol, ipConfig.valueCol.get)
     val selectCols = seqCols.map(new Column(_))

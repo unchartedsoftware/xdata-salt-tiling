@@ -34,41 +34,73 @@ import software.uncharted.sparkpipe.ops.xdata.text.analytics.LDAConfig
 import scala.util.Try
 
 
+/**
+  * Provides functions for parsing LDA data out of `com.typesafe.config.Config` objects.
+  *
+  * Valid properties are:
+  *
+  * - `topics` - The number of topics the LDA analysis is instructed to find across the entire corpus
+  * - `wordsPerTopic` - The number of words the LDA analysis should use per topic
+  * - `topicsPerDocument` - The number of topics the LDA analysis should assume per document
+  * - `maximumIterations` - An optional number of maximum iterations to use when performing LDA analysis [OPTIONAL]
+  * - `chkptInterval` - The number of iterations to perform between checkpoints, if checkpoints can be taken. [OPTIONAL]
+  * - `topicSeparator` - A separator to use between topics when outputting LDA results [OPTIONAL] defaults to `\t`
+  * - `wordSeparator` - A separator to use between word/score pairs when outputting LDA results [OPTIONAL] defaults to "|"
+  * - `scoreSeparator` - A separator to use between a word and its score when outputting LDA results [OPTIONAL] defaults to "="
+  *
+  *  Example from config file (in [[https://github.com/typesafehub/config#using-hocon-the-json-superset HOCON]] notation):
+  *
+  *  {{{
+  *  lda {
+  *    topics = 100
+  *    wordsPerTopic = 5
+  *    topicsPerDocument = 5
+  *  }
+  *  }}}
+  *
+  */
 object LDAConfigParser extends ConfigParser {
-  private val LDA_ROOT_KEY = "lda"
-  private val NUM_TOPICS_KEY = "topics"
-  private val WORDS_PER_TOPIC_KEY = "wordsPerTopic"
-  private val TOPICS_PER_DOC_KEY = "topicsPerDocument"
-  private val CHECKPOINT_INTERVAL_KEY = "checkpointInterval"
-  private val MAX_ITERATIONS_KEY = "maximumIterations"
-  private val SEPARATOR_TOPIC_KEY = "outputSeparators"
-  private val TOPIC_SEPARATOR_KEY = "topic"
-  private val WORD_SEPARATOR_KEY = "word"
-  private val SCORE_SEPARATOR_KEY = "score"
+  private val RootKey = "lda"
+  private val NumTopicsKey = "topics"
+  private val WordsPerTopicKey = "wordsPerTopic"
+  private val TopicsPerDocKey = "topicsPerDocument"
+  private val CheckpointIntervalKey = "checkpointInterval"
+  private val MaxIterationsKey = "maximumIterations"
+  private val SeparatorTopicKey = "outputSeparators"
+  private val TopicSeparatorKey = "topic"
+  private val WordSeparatorKey = "word"
+  private val ScoreSeparatorKey = "score"
 
-  val DEFAULT_TOPIC_SEPARATOR = "\t"
-  val DEFAULT_WORD_SEPARATOR = "|"
-  val DEFAULT_SCORE_SEPARATOR = "="
+  val DefaultTopicSeparator = "\t"
+  val DefaultWordSeparator = "|"
+  val DefaultScoreSeparator = "="
 
+  /**
+    * Parse LDA parameters out of a config container and instantiates a `LDAConfig`
+    * object from them.
+    *
+    * @param config The configuration container.
+    * @return A `Try` containing the `LDAConfig` object.
+    */
   def parse (config: Config): Try[LDAConfig] = {
     Try {
-      val topicsNode = config.getConfig(LDA_ROOT_KEY)
-      val separatorsNode = getConfigOption(topicsNode, SEPARATOR_TOPIC_KEY)
+      val topicsNode = config.getConfig(RootKey)
+      val separatorsNode = getConfigOption(topicsNode, SeparatorTopicKey)
       val (topicSeparator, wordSeparator, scoreSeparator) =
         separatorsNode.map(node => (
-          getString(node, TOPIC_SEPARATOR_KEY, DEFAULT_TOPIC_SEPARATOR),
-          getString(node, WORD_SEPARATOR_KEY, DEFAULT_WORD_SEPARATOR),
-          getString(node, SCORE_SEPARATOR_KEY, DEFAULT_SCORE_SEPARATOR)
+          getString(node, TopicSeparatorKey, DefaultTopicSeparator),
+          getString(node, WordSeparatorKey, DefaultWordSeparator),
+          getString(node, ScoreSeparatorKey, DefaultScoreSeparator)
           )).getOrElse(
-          (DEFAULT_TOPIC_SEPARATOR, DEFAULT_WORD_SEPARATOR, DEFAULT_SCORE_SEPARATOR)
+          (DefaultTopicSeparator, DefaultWordSeparator, DefaultScoreSeparator)
         )
 
       LDAConfig(
-        topicsNode.getInt(NUM_TOPICS_KEY),
-        topicsNode.getInt(WORDS_PER_TOPIC_KEY),
-        topicsNode.getInt(TOPICS_PER_DOC_KEY),
-        getIntOption(topicsNode, CHECKPOINT_INTERVAL_KEY),
-        getIntOption(topicsNode, MAX_ITERATIONS_KEY),
+        topicsNode.getInt(NumTopicsKey),
+        topicsNode.getInt(WordsPerTopicKey),
+        topicsNode.getInt(TopicsPerDocKey),
+        getIntOption(topicsNode, CheckpointIntervalKey),
+        getIntOption(topicsNode, MaxIterationsKey),
         topicSeparator, wordSeparator, scoreSeparator
       )
     }

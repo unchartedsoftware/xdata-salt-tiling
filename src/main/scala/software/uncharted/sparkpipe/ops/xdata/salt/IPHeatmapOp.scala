@@ -39,20 +39,34 @@ import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe
 
 /**
-  * An operation which generates tile layers of point locations, located by IP address, from a DataFrame, using Salt
+  * Factory for generating IP heatmap op functions.
   */
 object IPHeatmapOp {
   val DefaultTileSize = 256
   val StringType = "string"
 
+
+  /**
+    * Uses Salt to generate heatmap tiles from an input Dataframe.  Inputs consist of
+    * IPv4 or IPv6 addresses that will be mapped into a cartesian (tile,bin) coordinate
+    * space using a Z space filling curve.
+    *
+    * @param ipCol The name of the dataframe column storing the IPv4 or IPv6 values.
+    * @param valueCol The optional name of the column using the values to sum.  If no value
+    *             is specified the value will default to 1 for each row.
+    * @param zoomLevels The zoom levels to generate tile data for.
+    * @param tileSize The size of the produced tiles in bins.
+    * @param input A dataframe containing the data to tile.
+    * @return The produced tiles as an RDD of SeriesData.
+    */
   def apply(ipCol: String,
-            vCol: Option[String],
-            levels: Seq[Int],
+            valueCol: Option[String],
+            zoomLevels: Seq[Int],
             tileSize: Int = DefaultTileSize)
            (input: DataFrame):
   RDD[SeriesData[(Int, Int, Int), (Int, Int), Double, (Double, Double)]] = {
 
-    val projection = new IPProjection(levels)
+    val projection = new IPProjection(zoomLevels)
 
     val frame = Pipe(input).to(dataframe.castColumns(Map(ipCol -> StringType))).run()
 
@@ -66,7 +80,7 @@ object IPHeatmapOp {
     }
 
     val vExtractor = (r: Row) => {
-      vCol.map { v =>
+      valueCol.map { v =>
         val rowIndex = r.schema.fieldIndex(v)
         if (!r.isNullAt(rowIndex)) {
           Some(r.getDouble(rowIndex))
@@ -86,7 +100,7 @@ object IPHeatmapOp {
       Some(MinMaxAggregator)
     )
 
-    val request = new TileLevelRequest(levels, (tc: (Int, Int, Int)) => tc._1)
+    val request = new TileLevelRequest(zoomLevels, (tc: (Int, Int, Int)) => tc._1)
 
     val sc = frame.sqlContext.sparkContext
     val generator = TileGenerator(sc)

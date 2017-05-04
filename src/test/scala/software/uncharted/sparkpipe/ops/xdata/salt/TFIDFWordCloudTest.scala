@@ -132,7 +132,7 @@ class TFIDFWordCloudTest extends SparkFunSpec {
       val projection = new CartesianProjection(Seq(0, 1, 2), (0.0, 0.0), (8.0, 8.0))
       val termFrequencies = TileTextOperations.termFrequencyOp("x", "y", "text", projection, Seq(0, 1, 2))(data)
 
-      val tfidf = TileTextOperations.doTFIDFByTileFast[Nothing](tfidfConf)(termFrequencies).collect.sortBy { r =>
+      val tfidf = TileTextOperations.tfidfByTileFast[Nothing](tfidfConf)(termFrequencies).collect.sortBy { r =>
         16 * r.coords._1 + 4 * r.coords._2 + r.coords._3
       }.map { r =>
         (r.coords, r.bins(0).toMap)
@@ -184,7 +184,7 @@ class TFIDFWordCloudTest extends SparkFunSpec {
       val projection = new CartesianProjection(Seq(0, 1, 2), (0.0, 0.0), (8.0, 8.0))
       val termFrequencies = TileTextOperations.termFrequencyOp("x", "y", "text", projection, Seq(0, 1, 2))(data)
 
-      val tfidf = TileTextOperations.doTFIDFByTileSlow[Nothing](tfidfConf)(termFrequencies).collect.sortBy { r =>
+      val tfidf = TileTextOperations.tfidfByTileSlow[Nothing](tfidfConf)(termFrequencies).collect.sortBy { r =>
         16 * r.coords._1 + 4 * r.coords._2 + r.coords._3
       }.map { r =>
         (r.coords, r.bins(0).toMap)
@@ -235,13 +235,13 @@ class TFIDFWordCloudTest extends SparkFunSpec {
       val projection = new CartesianProjection(Seq(0, 1, 2), (0.0, 0.0), (8.0, 8.0))
       val termFrequencies = TileTextOperations.termFrequencyOp("x", "y", "text", projection, Seq(0, 1, 2))(data)
 
-      val tfidf = TileTextOperations.doTFIDFByTileFast[Nothing](tfidfConf)(termFrequencies).collect
+      val tfidf = TileTextOperations.tfidfByTileFast[Nothing](tfidfConf)(termFrequencies).collect
     }
     def runNewSlow (data: DataFrame): Unit = {
       val projection = new CartesianProjection(Seq(0, 1, 2), (0.0, 0.0), (8.0, 8.0))
       val termFrequencies = TileTextOperations.termFrequencyOp("x", "y", "text", projection, Seq(0, 1, 2))(data)
 
-      val tfidf = TileTextOperations.doTFIDFByTileSlow[Nothing](tfidfConf)(termFrequencies).collect
+      val tfidf = TileTextOperations.tfidfByTileSlow[Nothing](tfidfConf)(termFrequencies).collect
     }
     def time[T] (f: => T): (T, Long) = {
       val startTime = System.currentTimeMillis()

@@ -82,8 +82,7 @@ class TimeHeatmapOpTest extends SparkFunSpec {
 
   describe("TimeHeatmapTest") {
     it("should create a quadtree of tiles where empty tiles are skipped") {
-      val result = TimeHeatmapOp(baseProjection, xCol, yCol, timeCol, Some(value),
-        RangeDescription.fromCount(0L, 800L, 10), 0 to 2, 10)(genData)
+      val result = TimeHeatmapOp(xCol, yCol, timeCol, Some(value), baseProjection, RangeDescription.fromCount(0L, 800L, 10), 0 to 2, 10)(genData)
         .collect()
         .map(_.coords).
         toSet
@@ -96,22 +95,19 @@ class TimeHeatmapOpTest extends SparkFunSpec {
     }
 
     it("should create time bins from a range and bucket count") {
-      val result = TimeHeatmapOp(baseProjection, xCol, yCol, timeCol, Some(value),
-        RangeDescription.fromCount(0L, 800L, 10), 0 to 2, 10)(genData).collect()
+      val result = TimeHeatmapOp(xCol, yCol, timeCol, Some(value), baseProjection, RangeDescription.fromCount(0L, 800L, 10), 0 to 2, 10)(genData).collect()
       assertResult(10 * 10 * 10)(result(0).bins.length)
     }
 
     it("should sum values that are in the same bin ") {
       val cartesionProjection = new CartesianProjection(Seq(0), (0.0, 0.0), (1.0, 1.0))
-      val result = TimeHeatmapOp(cartesionProjection, xCol, yCol, timeCol, Some(value),
-        RangeDescription.fromCount(0L, 800L, 10), Seq(0), 10)(genData).collect()
+      val result = TimeHeatmapOp(xCol, yCol, timeCol, Some(value), cartesionProjection, RangeDescription.fromCount(0L, 800L, 10), Seq(0), 10)(genData).collect()
       val proj = new XYTimeProjection(0L, 800L, 10, cartesionProjection)
       assertResult(0.2)(result(0).bins(proj.binTo1D((0, 0, 3), (9, 9, 9))))
     }
 
     it("should not aggregate across time buckets") {
-      val result = TimeHeatmapOp(baseProjection, xCol, yCol, timeCol, None,
-        RangeDescription.fromCount(0L, 800L, 10), 0 to 2, 10)(genData).collect()
+      val result = TimeHeatmapOp(xCol, yCol, timeCol, None, baseProjection, RangeDescription.fromCount(0L, 800L, 10), 0 to 2, 10)(genData).collect()
       val proj = new XYTimeProjection(0L, 800L, 10, new CartesianProjection(Seq(0), (0.0, 0.0), (1.0, 1.0)))
 
       val tile = (t: (Int, Int, Int)) => result.find(s => s.coords == t)
@@ -123,8 +119,7 @@ class TimeHeatmapOpTest extends SparkFunSpec {
 
     it("should use a value of 1.0 for each bin when no value column is specified") {
       val proj = new XYTimeProjection(0L, 800L, 10, new CartesianProjection(Seq(0), (0.0, 0.0), (1.0, 1.0)))
-      val result = TimeHeatmapOp(baseProjection, xCol, yCol, timeCol, None,
-        RangeDescription.fromCount(0L, 800L, 10), Seq(0), 10)(genData).collect()
+      val result = TimeHeatmapOp(xCol, yCol, timeCol, None, baseProjection, RangeDescription.fromCount(0L, 800L, 10), Seq(0), 10)(genData).collect()
       assertResult(2)(result(0).bins(proj.binTo1D((0, 0, 3), (9, 9, 9))))
     }
   }

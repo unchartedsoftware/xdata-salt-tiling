@@ -61,19 +61,21 @@ object CartesianSegmentOp {
     * @return An RDD of tiles
     */
   // scalastyle:off parameter.number
-  def apply(arcType: ArcTypes.Value, // scalastyle:ignore
-            minSegLen: Option[Int],
-            maxSegLen: Option[Int],
-            x1Col: String,
+  // scalastyle:off method.length
+  def apply(x1Col: String,
             y1Col: String,
             x2Col: String,
             y2Col: String,
             valueCol: Option[String],
             xyBounds: Option[(Double, Double, Double, Double)],
+            arcType: ArcTypes.Value,
+            minSegLen: Option[Int],
+            maxSegLen: Option[Int],
             zoomLevels: Seq[Int],
             tileSize: Int = DefaultTileSize,
             tms: Boolean = true)
-           (input: DataFrame): RDD[SeriesData[(Int, Int, Int), (Int, Int), Double, (Double, Double)]] = {
+           (input: DataFrame):
+  RDD[SeriesData[(Int, Int, Int), (Int, Int), Double, (Double, Double)]] = {
     val valueExtractor: (Row) => Option[Double] = valueCol match {
       case Some(colName: String) => (r: Row) => {
         val rowIndex = r.schema.fieldIndex(colName)
@@ -133,6 +135,9 @@ object CartesianSegmentOp {
   }
 }
 
+/**
+  * Enumerates valid segment arc types.
+  */
 object ArcTypes extends Enumeration {
   val FullLine, LeaderLine, FullArc, LeaderArc = Value
 }

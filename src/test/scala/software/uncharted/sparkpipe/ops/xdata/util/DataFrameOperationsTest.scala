@@ -73,7 +73,7 @@ class DataFrameOperationsTest extends SparkFunSpec {
 
     it("should work with a .csv with an explicit schema and a custom settings") {
       val settings = Map(
-        "delimiter" -> "*",
+        "sep" -> "*",
         "quote" -> "+",
         "ignoreTrailingWhiteSpaces" -> "false",
         "ignoreLeadingWhiteSpaces" -> "false",

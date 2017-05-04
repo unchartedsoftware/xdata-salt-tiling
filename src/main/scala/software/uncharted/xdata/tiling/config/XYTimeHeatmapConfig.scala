@@ -33,13 +33,55 @@ import software.uncharted.sparkpipe.ops.xdata.text.util.RangeDescription
 
 import scala.util.Try
 
-// Parse config for geoheatmap sparkpipe op
+/**
+  * Parse general tiling parameters out of a config container and instantiates a `XYTimeHeatmapConfig`
+  * object from them.
+  *
+  * @param config The configuration container.
+  * @return A `Try` containing the `XYTimeHeatmapConfig` object.
+  */
 case class XYTimeHeatmapConfig(xCol: String,
                                yCol: String,
                                timeCol: String,
                                valueCol: Option[String],
                                timeRange: RangeDescription[Long],
                                projection: ProjectionConfig)
+
+/**
+  * Provides functions for parsing time-based heatmap tile data out of `com.typesafe.config.Config` objects.
+  *
+  * Valid properties are:
+  *
+  *   - `xColumn` - The assigned name of the column containing the X values
+  *   - `yColumn` - The assigned name of the column containing the Y values
+  *   - `valueColumn` - The assigned name of column containing the a count value to use when creating the heatmap. If
+  *                     unset, a count of 1 is associated with each row. [OPTIONAL]
+  *   - `timeColumn` - The assigned name of the column containing the time value.  Can be a dataframe column of unix
+  *                    timestamp in ms, or a Spark `Date` column.
+  *   - `min` - The minimum accepted time as a unix timestamp in ms
+  *   - `step` - The time bucket size in ms
+  *   - `count` - The number of time bucktes to apply.
+  *   - `projection` - One of `cartesian` or `mercator`
+  *   - `xyBounds` - Projection bounds as [minX, minY, maxX, maxY].  Points outside of these bounds will be
+  *                  ignored.  This value is OPTIONAL for `mercator`, but required for `cartesian`.
+  *
+  *  Example from config file (in [[https://github.com/typesafehub/config#using-hocon-the-json-superset HOCON]] notation):
+  *
+  *  {{{
+  *  xyTimeHeatmap {
+  *    xColumn = lon
+  *    yColumn = lat
+  *    valueColumn = text
+  *    timeColumn = timestamp
+  *    min = 1493640000000
+  *    step = 86400000
+  *    count = 30
+  *    projection = cartesian
+  *    xyBounds = [-84.0, 13.0, -50,0, 26.0]
+  *  }
+  *  }}}
+  *
+  */
 object XYTimeHeatmapConfig extends ConfigParser {
 
   val rootKey = "xyTimeHeatmap"
@@ -51,6 +93,13 @@ object XYTimeHeatmapConfig extends ConfigParser {
   private val timeCountKey =  "count"
   private val valueColumnKey = "valueColumn"
 
+  /**
+    * Parse time heatmap parameters out of a config container and instantiates a `XYTimeHeatmapConfig`
+    * object from them.
+    *
+    * @param config The configuration container.
+    * @return A `Try` containing the `XYTimeHeatmapConfig` object.
+    */
   def parse(config: Config): Try[XYTimeHeatmapConfig] = {
     for (
       heatmapConfig <- Try(config.getConfig(rootKey));

@@ -39,7 +39,7 @@ import software.uncharted.xdata.spark.SparkFunSpec
 
 object HBaseTest extends Tag("hbc.test")
 
-class HBaseConnectorTest extends SparkFunSpec with BeforeAndAfterAll {
+class HBaseClientTest extends SparkFunSpec with BeforeAndAfterAll {
 
   private def createConfig() = {
     val config = HBaseConfiguration.create()
@@ -88,8 +88,8 @@ class HBaseConnectorTest extends SparkFunSpec with BeforeAndAfterAll {
     hbc.close
   }
 
-  private val configFile = Seq(classOf[HBaseConnectorTest].getResource("/hbase-site.xml").toURI.getPath)
-  private lazy val hbc = HBaseConnector(configFile)
+  private val configFile = Seq(classOf[HBaseClientTest].getResource("/hbase-site.xml").toURI.getPath)
+  private lazy val hbc = HBaseClient(configFile)
 
   private val testColFamilyName = "tileData"
   private val testColMetaDataName = "tileMetaData"
@@ -100,8 +100,8 @@ class HBaseConnectorTest extends SparkFunSpec with BeforeAndAfterAll {
   private val nonExistentTable3 = "nonExistentTable3"
   private val nonExistentTable4 = "nonExistentTable4"
 
-  private val qualifier1 = "layer"
-  private val qualifier2 = "anotherLayer"
+  private val qualifier1 = Some("layer")
+  private val qualifier2 = Some("anotherLayer")
 
   private val data = Seq[Byte](0, 1, 2, 3, 4, 5)
 
@@ -115,7 +115,7 @@ class HBaseConnectorTest extends SparkFunSpec with BeforeAndAfterAll {
     describe("getConnection") {
       it("should create a connection object based on the config file that allows client to write to HBase", HBaseTest) {
         val rddData: RDD[(String, Seq[Byte])] = sc.parallelize(data2)
-        val testHBCObject = HBaseConnector(configFile)
+        val testHBCObject = HBaseClient(configFile)
         assertResult(true)(testHBCObject.writeTileData(tableName =  testTable)(rddData))
         testHBCObject.close
       }
@@ -156,7 +156,7 @@ class HBaseConnectorTest extends SparkFunSpec with BeforeAndAfterAll {
         val connection = createConfig()
         //get table
         val rowDataTable = connection.getTable(TableName.valueOf(testTable))
-        val rowData = rowDataTable.get(new Get("5,4,5".getBytes).addColumn(testColFamilyName.getBytes, qualifier2.getBytes)).value().toSeq
+        val rowData = rowDataTable.get(new Get("5,4,5".getBytes).addColumn(testColFamilyName.getBytes, qualifier2.get.getBytes)).value().toSeq
         assertResult(data)(rowData)
         connection.close()
       }
@@ -211,7 +211,7 @@ class HBaseConnectorTest extends SparkFunSpec with BeforeAndAfterAll {
           val connection = createConfig()
           //get table
           val rowDataTable = connection.getTable(TableName.valueOf(testTable))
-          val rowData = rowDataTable.get(new Get("testID".getBytes).addColumn(testColMetaDataName.getBytes, qualifier2.getBytes)).value().toSeq
+          val rowData = rowDataTable.get(new Get("testID".getBytes).addColumn(testColMetaDataName.getBytes, qualifier2.get.getBytes)).value().toSeq
           assertResult(data)(rowData)
           connection.close()
         }

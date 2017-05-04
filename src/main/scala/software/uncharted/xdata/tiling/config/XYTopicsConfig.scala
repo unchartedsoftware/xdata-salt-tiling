@@ -37,6 +37,17 @@ import software.uncharted.sparkpipe.ops.xdata.salt.TopicsOp
 import scala.collection.JavaConverters._ //scalastyle:off
 import scala.util.Try
 
+/**
+  * Configuration specifying how basic XY topic tiling is to be performed.
+  *
+  * @param xCol The dataframe column storing the X data
+  * @param yCol The dataframe column storing the Y data
+  * @param textCol The dataframe column storing count the text the topics will be extracted from.
+  * @param topicLimit Number of topics to retain per tile.
+  * @param termList a file or resource path pointing to a list of terms of interest.
+  * @param stopList a list of words to ignore when count word frequencies
+  * @param projection The projection from data space to (tile, bin) space.
+  */
 case class XYTopicsConfig(xCol: String,
                           yCol: String,
                           textCol: String,
@@ -47,25 +58,18 @@ case class XYTopicsConfig(xCol: String,
 
 
 /**
-  * Code for parsing XY Topic configuration settings.  Parameters are:
+  * Provides functions for parsing topic tile data out of `com.typesafe.config.Config` objects.
   *
-  * xColumn - name of the column containing X values in the input DataFrame
-  *
-  * yColumn - name of the column containing Y values in the input DataFrame
-  *
-  * textColumn - the name of the column containing the text values in the input DataFrame
-  *
-  * topicLimit - OPTIONAL number of topics to track per tile
-  *
-  * terms - OPTIONAL file or resource path pointing to a list of terms of interest.  Rows that do not contain at
+  * - `xColumn` - name of the column containing X values in the input DataFrame
+  * - `yColumn` - name of the column containing Y values in the input DataFrame
+  * - `textColumn` - the name of the column containing the text values in the input DataFrame
+  * - `topicLimit` - OPTIONAL number of topics to track per tile
+  * - `terms` - OPTIONAL file or resource path pointing to a list of terms of interest.  Rows that do not contain at
   *   least one of the terms from the list will be filtered out of the data set prior to tiling.
-  *
-  * stopwords - OPTIONAL file or resource path point to a list of words to ignore when computing term frequencies
+  * - `stopwords` - OPTIONAL file or resource path pointing to a list of words to ignore when computing term frequencies
   *   for a tile
-  *
-  * projection - a string value of 'mercator' or 'cartesian' indicating the projection to apply
-  *
-  * xyBounds - a tuple of doubles indicating the min and max bounds (minX, minY, maxX, maxY).  Rows with X,Y
+  * - `projection` - a string value of 'mercator' or 'cartesian' indicating the projection to apply
+  * - `xyBounds` - a tuple of doubles indicating the min and max bounds (minX, minY, maxX, maxY).  Rows with X,Y
   *   values outside of this region will be filtered out of the data set prior to tiling.  Bounds are required
   *   for cartesian projections, but will be defaulted to (-180, -90, 180, 90) for mercator projections if not
   *   supplied
@@ -96,6 +100,13 @@ object XYTopicsConfig extends ConfigParser {
     }
   }
 
+  /**
+    * Parse general tiling parameters out of a config container and instantiates a `XYTopicsConfig`
+    * object from them.
+    *
+    * @param config The configuration container.
+    * @return A `Try` containing the `XYTopicsConfig` object.
+    */
   private def readTerms(path: String) = {
     val file = new File(path)
     if (file.exists()) {

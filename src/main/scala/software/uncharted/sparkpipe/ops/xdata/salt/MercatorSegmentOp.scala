@@ -39,7 +39,7 @@ import software.uncharted.salt.xdata.projection.MercatorLineProjection
 import scala.util.Try
 
 /**
-  * Segment operation using the mercator projection
+  * Factory to generate segement op functions based on mercator projections.
   */
 object MercatorSegmentOp {
   // scalastyle:off method.length
@@ -47,34 +47,37 @@ object MercatorSegmentOp {
   val DefaultMaxSegLen = 1024
 
   /**
-    * Segment operation using the mercator projection
+    * Uses Salt to generate heatmap tiles from an input Dataframe.  Inputs consist of
+    * to and from (x,y) locations that will be mapped into a (tile,bin) coordinate
+    * space using a mercator projection.  A segment will be created between the two endpoints using
+    * the supplied segment parameters.
     *
-    * @param minSegLen  The minimum length of line (in bins) to project
-    * @param maxSegLen  The maximum length of line (in bins) to project
     * @param x1Col      The start x coordinate
     * @param y1Col      The start y coordinate
     * @param x2Col      The end x coordinate
     * @param y2Col      The end y coordinate
     * @param valueCol   The name of the column which holds the value for a given row
+    * @param minSegLen  The minimum length of line (in bins) to project
+    * @param maxSegLen  The maximum length of line (in bins) to project
     * @param xyBounds   The min/max x and y bounds (minX, minY, maxX, maxY)
     * @param zoomLevels The zoom levels onto which to project
     * @param tileSize   The size of a tile in bins
-    * @param tms        If true, the Y axis for tile coordinates only is flipped
     * @param input      The input data
-    * @return An RDD of tiles
+    * @return An RDD of tile data
     */
   // scalastyle:off parameter.number
-  def apply(minSegLen: Option[Int],
-            maxSegLen: Option[Int] = Some(DefaultMaxSegLen),
-            x1Col: String,
+  def apply(x1Col: String,
             y1Col: String,
             x2Col: String,
             y2Col: String,
             valueCol: Option[String],
             xyBounds: Option[(Double, Double, Double, Double)],
+            minSegLen: Option[Int],
+            maxSegLen: Option[Int] = Some(DefaultMaxSegLen),
             zoomLevels: Seq[Int],
             tileSize: Int = DefaultTileSize)
-           (input: DataFrame): RDD[SeriesData[(Int, Int, Int), (Int, Int), Double, (Double, Double)]] = {
+           (input: DataFrame):
+  RDD[SeriesData[(Int, Int, Int), (Int, Int), Double, (Double, Double)]] = {
 
     val valueExtractor: (Row) => Option[Double] = valueCol match {
       case Some(colName: String) => (r: Row) => {

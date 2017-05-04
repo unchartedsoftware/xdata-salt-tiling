@@ -34,23 +34,50 @@ import scala.util.Try
 
 /**
   * A config object representing information specific to IP tiling jobs
+  *
   * @param ipCol The column in which an IP address is to be found
   * @param valueCol Optional column container containing a count value to be used.  If unset,
   *                 count value defaults to 1.
   */
 case class IPHeatmapConfig (ipCol: String, valueCol: Option[String])
 
+/**
+  * Provides functions for parsing IP heatmap data out of `com.typesafe.config.Config` objects.
+  *
+  * Valid properties are:
+  *
+  *   - `ipColumn` - The assigned name of the column containing the IPv4 or IPv6 address string.
+  *   - `valueColumn` - The assigned name of column containing the a count value to use when creating the heatmap. If none
+  *                     if unset, a count of 1 is associated with each row. [OPTIONAL]
+  *
+  *  Example from config file (in [[https://github.com/typesafehub/config#using-hocon-the-json-superset HOCON]] notation):
+  *
+  *  {{{
+  *  ipHeatmap {
+  *    ipColumn = ip_v4_addr
+  *    valueColumn = ip_v4_counts
+  *  }
+  *  }}}
+  *
+  */
 object IPHeatmapConfig extends ConfigParser {
-  val rootKey = "ipHeatmap"
-  private val ipColumnKey = "ipColumn"
-  private val valueColumnKey = "valueColumn"
+  val RootKey = "ipHeatmap"
+  private val IpColumnKey = "ipColumn"
+  private val ValueColumnKey = "valueColumn"
 
+  /**
+    * Parse general tiling parameters out of a config container and instantiates a `IPHeatmapConfig`
+    * object from them.
+    *
+    * @param config The configuration container.
+    * @return A `Try` containing the `IPHeatmapConfig` object.
+    */
   def parse (config: Config): Try[IPHeatmapConfig] = {
     Try{
-      val ipConfig = config.getConfig(rootKey)
+      val ipConfig = config.getConfig(RootKey)
       IPHeatmapConfig(
-        ipConfig.getString(ipColumnKey),
-        getStringOption(ipConfig, valueColumnKey)
+        ipConfig.getString(IpColumnKey),
+        getStringOption(ipConfig, ValueColumnKey)
       )
     }
   }

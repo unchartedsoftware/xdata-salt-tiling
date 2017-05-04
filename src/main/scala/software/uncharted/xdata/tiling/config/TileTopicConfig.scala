@@ -32,25 +32,66 @@ import com.typesafe.config.Config
 
 import scala.util.Try
 
+/**
+  * Configuration specifying how term frequency based tiling is to be performed.
+  *
+  * @param xColumn The dataframe column storing the X data
+  * @param yColumn The dataframe column storing the Y data
+  * @param textColumn The dataframe column storing the text from which to generate the topics
+  * @param projectionConfig The projection from data space to (tile, bin) space.
+  */
 case class TileTopicConfig(xColumn: String,
                            yColumn: String,
                            textColumn: String,
                            projectionConfig: ProjectionConfig)
-object TileTopicConfig extends ConfigParser {
-  private val SECTION_KEY = "topics"
-  private val X_COLUMN_KEY = "xColumn"
-  private val Y_COLUMN_KEY = "yColumn"
-  private val TEXT_COLUMN_KEY = "textColumn"
 
+/**
+  * Provides functions for parsing topic tile data out of `com.typesafe.config.Config` objects.
+  *
+  * Valid properties are:
+  *
+  *   - `xColumn` - The assigned name of the column containing the X values
+  *   - `yColumn` - The assigned name of the column containing the Y values
+  *   - `textColumn` - The assigned name of column containing the text to generate term frequencies from.
+  *   - `projection` - One of `cartesian` or `mercator`
+  *   - `xyBounds` - Projection bounds as [minX, minY, maxX, maxY].  Points outside of these bounds will be
+  *                  ignored.  This value is OPTIONAL for `mercator`, but required for `cartesian`.
+  *
+  *  Example from config file (in [[https://github.com/typesafehub/config#using-hocon-the-json-superset HOCON]] notation):
+  *
+  *  {{{
+  *  topics {
+  *    xColumn = x_vals
+  *    yColumn = y_vals
+  *    textColumn = text
+  *    projection = cartesian
+  *    xyBounds = [0.0, 0.0, 100.0, 300.0]
+  *  }
+  *  }}}
+  *
+  */
+object TileTopicConfig extends ConfigParser {
+  private val SectionKey = "topics"
+  private val XColumnKey = "xColumn"
+  private val YColumnKey = "yColumn"
+  private val TextColumnKey = "textColumn"
+
+  /**
+    * Parse general tiling parameters out of a config container and instantiates a `TileTopicConfig`
+    * object from them.
+    *
+    * @param config The configuration container.
+    * @return A `Try` containing the `TileTopicConfig` object.
+    */
   def parse (config: Config): Try[TileTopicConfig] = {
     for (
-      section <- Try(config.getConfig(SECTION_KEY));
+      section <- Try(config.getConfig(SectionKey));
       projection <- ProjectionConfig.parse(section)
     ) yield {
       TileTopicConfig(
-        section.getString(X_COLUMN_KEY),
-        section.getString(Y_COLUMN_KEY),
-        section.getString(TEXT_COLUMN_KEY),
+        section.getString(XColumnKey),
+        section.getString(YColumnKey),
+        section.getString(TextColumnKey),
         projection
       )
     }

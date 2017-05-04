@@ -37,6 +37,9 @@ import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import java.sql.{Timestamp,Date}
 import scala.util.Try
 
+/**
+  * Helper functions for working with dataframes.
+  */
 object DataFrameOperations {
 
   /**
@@ -104,11 +107,11 @@ object DataFrameOperations {
 
     setParserBoolean("ignoreLeadingWhiteSpaces", default = true, parserSettings.setIgnoreLeadingWhitespaces)
     setParserBoolean("ignoreTrailingWhiteSpaces", default = true, parserSettings.setIgnoreTrailingWhitespaces)
-    setParserCharacter("delimiter", ',', parserFormat.setDelimiter)
+    setParserCharacter("sep", ',', parserFormat.setDelimiter)
     setParserCharacter("quote", '\"', parserFormat.setQuote)
     setParserCharacter("escape", '\\', parserFormat.setQuoteEscape)
     setParserCharacter("comment", '\u0000', parserFormat.setComment)
-    setParserBoolean("useHeader", default = false, parserSettings.setHeaderExtractionEnabled)
+    setParserBoolean("header", default = false, parserSettings.setHeaderExtractionEnabled)
 
     parserSettings.setFormat(parserFormat)
     new CsvParser(parserSettings)

@@ -36,44 +36,65 @@ import scala.util.Try
 
 
 /**
-  * Configuration specifying how TF*IDF is to be performed
+  * Configuration specifying how tile based TF*IDF is to be performed
   *
   * @param tf The algorithm to perform the term-frequency calculation
   * @param idf The algorithm to perform the inverse-document-frequency calculation
+  * @param dictionaryConfig Settings associated with the corpus dictionary
+  * @param wordsToKeep Number of words to retain per tile, sorted by computed score
   */
 case class TFIDFConfig(tf: TFType,
                        idf: IDFType,
                        dictionaryConfig: DictionaryConfig,
                        wordsToKeep: Int)
 
+/**
+  * Provides functions for parsing Tile-based TFIDF data out of `com.typesafe.config.Config` objects.
+  *
+  * Valid properties are:
+  *
+  *   - `tf` - The function used to compute term frequency - one of `binary`, `raw`, `normalized`, `sublinear` or
+  *            `double-normalized`.  [OPTIONAL] defaults to `sublinear`.`
+  *   - `idf` - The function used to compute document frequency - one of `unary`, `linear`, `log`, `log-smooth` or
+  *             `probabilistic`.  [OPTIONAL] defaults to `log-smooth`.
+  *   - `k` - Additional `k` value required when computing `double-normalized` TF.
+  *   - `words` - Number of terms to retain per tile.  Terms are sorted by score,selection is top N.
+  *   - `dictionary` - A `DictionaryConfig` block - see docs for that class for details.
+  *
+  *  Example from config file (in [[https://github.com/typesafehub/config#using-hocon-the-json-superset HOCON]] notation):
+  *
+  *  {{{
+  *  tfidf {
+  *    tf = raw
+  *    df = log
+  *    words = 10
+  *    dictionary = {
+  *      minDf = 0.1
+  *    }
+  *  }
+  *  }}}
+  *
+  */
 object TFIDFConfigParser extends ConfigParser {
-  private val SECTION_KEY = "tf-idf"
-  private val TYPE_KEY = "type"
+  private val RootKey = "tf-idf"
+  private val TypeKey = "type"
 
-  // Primary section title for term-frequency section
-  private val TF_SECTION_KEY_1 = "term-frequency"
-  // Shortened section title for term-frequency section
-  private val TF_SECTION_KEY_2 = "tf"
   // Keys by which our variations of term-frequency should be known
-  private val TF_TYPE_BINARY = "binary"
-  private val TF_TYPE_RAW = "raw"
-  private val TF_TYPE_NORMALIZED = "normalized"
-  private val TF_TYPE_SUBLINEAR = "sublinear"
-  private val TF_TYPE_DOUBLE_NORMALIZED = "double-normalized"
+  private val TfTypeBinary = "binary"
+  private val TfTypeRaw = "raw"
+  private val TfTypeNormalized = "normalized"
+  private val TfTypeSublinear = "sublinear"
+  private val TfTypeDoubleNormalized = "double-normalized"
 
   // Parameter for double-normalized TF - see that class for details
-  private val TF_DOUBLE_NORMALIZED_K_KEY = "k"
+  private val TfDoubleNormalizedKey = "k"
 
   // Default term-frequency calculation type
-  private val DEFAULT_TF_TYPE_NAME = TF_TYPE_SUBLINEAR
-  private val DEFAULT_TF_TYPE = analytics.SublinearTF
+  private val DefaultTfTypeName = TfTypeSublinear
+  private val DefaultTfType = analytics.SublinearTF
 
-  // Primary section title for inverse-document-frequency section
-  private val IDF_SECTION_KEY_1 = "inverse-document-frequency"
-  // Shortened section title for inverse-document-frequency section
-  private val IDF_SECTION_KEY_2 = "idf"
   // Keyed variations in how inverse-document-frequency should be calculated
-  private val IDF_TYPES = Map(
+  private val IdfTypes = Map(
     "unary" -> analytics.UnaryIDF,
     "linear" -> analytics.LinearIDF,
     "log" -> analytics.LogIDF,
@@ -81,47 +102,48 @@ object TFIDFConfigParser extends ConfigParser {
     "probabalistic" -> analytics.ProbabilisticIDF
   )
   // Default inverse-document-frequency calculation type
-  private val DEFAULT_IDF_TYPE_NAME = "log-smooth"
+  private val DefaultIdfTypeName = "log-smooth"
 
   // Key pointing to the number of words TF*IDF should keep per record
-  private val WORDS_TO_KEEP = "words"
+  private val WordsToKeep = "words"
 
   // Read the term frequency type
   private def tfConfig(config: Config): Try[analytics.TFType] = {
     Try {
-      getConfigOption(config, SECTION_KEY).map { tfIdfSection =>
-        getConfigOption(config, TF_SECTION_KEY_1, TF_SECTION_KEY_2).map { tfSection =>
-          getString(tfSection, TYPE_KEY, DEFAULT_TF_TYPE_NAME).toLowerCase.trim match {
-            case TF_TYPE_BINARY => analytics.BinaryTF.asInstanceOf
-            case TF_TYPE_RAW => analytics.RawTF
-            case TF_TYPE_NORMALIZED => analytics.DocumentNormalizedTF
-            case TF_TYPE_SUBLINEAR => analytics.SublinearTF
-            case TF_TYPE_DOUBLE_NORMALIZED =>
-              val k = getDoubleOption(tfSection, TF_DOUBLE_NORMALIZED_K_KEY).get
-              analytics.TermNormalizedTF(k)
-          }
-        }.getOrElse(DEFAULT_TF_TYPE)
-      }.getOrElse(DEFAULT_TF_TYPE)
+      getConfigOption(config, RootKey).map { tfIdfSection =>
+        getString(tfIdfSection, TypeKey, DefaultTfTypeName).toLowerCase.trim match {
+          case TfTypeBinary => analytics.BinaryTF.asInstanceOf
+          case TfTypeRaw => analytics.RawTF
+          case TfTypeNormalized => analytics.DocumentNormalizedTF
+          case TfTypeSublinear => analytics.SublinearTF
+          case TfTypeDoubleNormalized =>
+            val k = getDoubleOption(tfIdfSection, TfDoubleNormalizedKey).get
+            analytics.TermNormalizedTF(k)
+        }
+      }.getOrElse(DefaultTfType)
     }
   }
 
   // Read the inverse document frequency type
   private def idfConfig(config: Config): analytics.IDFType = {
-    getConfigOption(config, SECTION_KEY).flatMap { tfIdfSection =>
-      getConfigOption(config, IDF_SECTION_KEY_1, IDF_SECTION_KEY_2).flatMap { section =>
-        IDF_TYPES.get(getString(section, TYPE_KEY, DEFAULT_IDF_TYPE_NAME).toLowerCase.trim)
-      }
-    }.getOrElse(IDF_TYPES(DEFAULT_IDF_TYPE_NAME))
+    getConfigOption(config, RootKey).flatMap { tfIdfSection =>
+        IdfTypes.get(getString(tfIdfSection, TypeKey, DefaultIdfTypeName).toLowerCase.trim)
+    }.getOrElse(IdfTypes(DefaultIdfTypeName))
   }
 
-
+  /**
+    * Parses general tiling parameters out of a config container and instantiates a `TFIDFConfig`
+    * object from them.
+    *
+    * @param config The configuration container.
+    * @return A `Try` containing the `TFIDFConfig` object.
+    */
   def parse(config: Config): Try[TFIDFConfig] = {
     tfConfig(config).map { tfConf =>
-      val section = config.getConfig(SECTION_KEY)
-
+      val section = config.getConfig(RootKey)
       val idfConf = idfConfig(config)
       val dictConf = DictionaryConfigParser.parse(section)
-      val wordsToKeep = section.getInt(WORDS_TO_KEEP)
+      val wordsToKeep = section.getInt(WordsToKeep)
 
       TFIDFConfig(tfConf, idfConf, dictConf, wordsToKeep)
     }

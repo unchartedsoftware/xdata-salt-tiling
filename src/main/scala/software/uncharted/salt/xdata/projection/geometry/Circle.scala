@@ -96,7 +96,28 @@ case class Circle (center: (Double, Double), radius: Double) {
     }
   }
 }
+
+/**
+  * Factory functions for creating circle objects.
+  */
 object Circle {
+  /**
+    * Creates a circle from integral location values.
+    *
+    * @param x The circle x position
+    * @param y The circle y position
+    * @param radius The circle radius
+    * @return The described circle.
+    */
   def apply (x: Int, y: Int, radius: Double): Circle = Circle((x.toDouble, y.toDouble), radius)
+
+  /**
+    * Creates a circle from double location values.
+    *
+    * @param x The circle x position
+    * @param y The circle y position
+    * @param radius The circle radius
+    * @return The described circle
+    */
   def apply (x: Double, y: Double, radius: Double): Circle = Circle((x, y), radius)
 }

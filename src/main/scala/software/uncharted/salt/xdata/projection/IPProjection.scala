@@ -36,14 +36,17 @@ import scala.util.Try
 
 
 /**
-  * A projection from IP space to 2-d cartesian space
+  * A projection from IP space to 2-d cartesian space.  The projection is based on a Z space filling
+  * curve to ensure that addresses close to one another in IP space are close in cartesian space.
+  *
+  * @param zoomLevels A sequence of pyramid zoom levels to support in the project.
   */
 class IPProjection (zoomLevels: Seq[Int]) extends Projection[String, TC, BC] {
   private val cartesian = new CartesianProjection(zoomLevels, MIN_DATA_COORDS, MAX_DATA_COORDS)
 
 
   override def project(rawCoordinate: Option[String], maxBin: BC): Option[Traversable[(TC, BC)]] = {
-    val coords = ipToCartesian(rawCoordinate, maxBin)
+    val coords = ipToCartesian(rawCoordinate)
     cartesian.project(coords, maxBin)
   }
 
@@ -52,6 +55,14 @@ class IPProjection (zoomLevels: Seq[Int]) extends Projection[String, TC, BC] {
 }
 
 
+/**
+  * A projection from IP space to 2-d cartesian space.  The projection is based on a Z space filling
+  * curve to ensure that addresses close to one another in IP space are close in cartesian space.
+  * Differs from <code>IPSegementProjection</code> in that it projects two segment endpoints, and
+  * applies an additional projection to generate a segment between the two endpoints.
+  *
+  * @param zoomLevels A sequence of pyramid zoom levels to support in the project.
+  */
 class IPSegmentProjection (zoomLevels: Seq[Int],
                            segmentProjection: Projection[(Double, Double, Double, Double), TC, BC])
   extends Projection[(String, String), (Int, Int, Int), (Int, Int)]
@@ -61,8 +72,8 @@ class IPSegmentProjection (zoomLevels: Seq[Int],
   override def project(endpoints: Option[(String, String)], maxBin: BC)
   : Option[Traversable[(TC, BC)]] = {
     val coords = endpoints.flatMap{case (fromIP, toIP) =>
-      val fromCoords = ipToCartesian(Some(fromIP), maxBin)
-      val toCoords = ipToCartesian(Some(toIP), maxBin)
+      val fromCoords = ipToCartesian(Some(fromIP))
+      val toCoords = ipToCartesian(Some(toIP))
 
       fromCoords.flatMap(f => toCoords.map(t => (f._1, f._2, t._1, t._2)))
     }
@@ -90,6 +101,8 @@ object IPProjection {
   private def inRange(lowInclusive: Int, highExclusive: Int)(value: Int): Boolean = {
     lowInclusive <= value && value < highExclusive
   }
+
+  /** Checks to see if an address string is a valid IPv4 address. */
   def isIPv4 (value: String): Boolean = {
     // Needs 4 parts, each an integer 0-255
     value.split("\\.").map(entry =>
@@ -106,6 +119,8 @@ object IPProjection {
       }
     }
   }
+
+  /** Checks to see if an address string is a valid IPv6 address. */
   def isIPv6 (value: String): Boolean = {
     // Needs up to 6 parts, each blank or a hex int 0-ffff
     val entryValidity = value.split(":").map(entry =>
@@ -177,8 +192,13 @@ object IPProjection {
   }
 
 
-
-  def ipToCartesian (ip: Option[String], maxBin: BC): Option[(Double, Double)] = {
+  /**
+    * Converts an IPv4 or IPv6 address into a cartesian coordinate using a Z space filling curve.
+    *
+    * @param ip  An IPv4 or IPv6 address
+    * @return A cartesian (x,y) coordinate if address was valid, or <code>None</code> if it wasn't.
+    */
+  def ipToCartesian(ip: Option[String]): Option[(Double, Double)] = {
     (
       parseIPv4(ip).map { ipv4coords =>
         arrayToSpaceFillingCurve(4, 8, (1.0, 1.0))(ipv4coords)

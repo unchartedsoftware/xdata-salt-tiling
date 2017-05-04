@@ -35,6 +35,10 @@ import org.apache.spark.rdd.RDD
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.util.SparseArray
 
+/**
+  * Functions for converting Salt tile output into byte streams, and writing those
+  * streams to File, S3 or HBase clients.
+  */
 package object io extends Logging {
 
   val doubleBytes = 8
@@ -138,7 +142,7 @@ package object io extends Logging {
     * @param qualifierName name of column qualifier where data will be updated
     * @param input         RDD of tile data to be processed and stored into HBase
     */
-  def writeToHBase(configFile: Seq[String], layerName: String, qualifierName: String)
+  def writeToHBase(configFile: Seq[String], layerName: String, qualifierName: Option[String])
                   (input: RDD[((Int, Int, Int), Seq[Byte])]): RDD[((Int, Int, Int), Seq[Byte])] = {
 
     val results = input.mapPartitions { tileDataIter =>
@@ -148,7 +152,7 @@ package object io extends Logging {
         (rowID, tileData._2)
       }
     }
-    val hBaseConnector = HBaseConnector(configFile)
+    val hBaseConnector = HBaseClient(configFile)
     hBaseConnector.writeTileData(layerName, qualifierName)(results)
     hBaseConnector.close
     input
@@ -170,8 +174,8 @@ package object io extends Logging {
     * @param fileName      name of file that the data belongs to. Will be stored as the RowID
     * @param bytes         sequence of bytes to be stored in HBase Table
     */
-  def writeBytesToHBase(configFile: Seq[String], layerName: String, qualifierName: String)(fileName: String, bytes: Seq[Byte]): Unit = {
-    val hBaseConnector = HBaseConnector(configFile)
+  def writeBytesToHBase(configFile: Seq[String], layerName: String, qualifierName: Option[String])(fileName: String, bytes: Seq[Byte]): Unit = {
+    val hBaseConnector = HBaseClient(configFile)
     hBaseConnector.writeMetaData(tableName = layerName, rowID = (layerName + slash + fileName), data = bytes)
     hBaseConnector.close
   }

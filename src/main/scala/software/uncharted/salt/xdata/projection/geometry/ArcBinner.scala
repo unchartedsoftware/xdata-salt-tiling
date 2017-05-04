@@ -30,6 +30,9 @@ package software.uncharted.salt.xdata.projection.geometry
 
 import scala.language.implicitConversions
 
+/**
+  * Helper functions to generate bin counts for arcs that traverse a tile.
+  */
 object ArcBinner {
   private val clockwiseQuarterTurn = DoubleRotation(0, 1, -1, 0)
   private val counterclockwiseQuarterTurn = DoubleRotation(0, -1, 1, 0)
@@ -41,7 +44,7 @@ object ArcBinner {
     * @param end The ending point of the arc
     * @param arcLength The length of the arc, in radians
     * @param clockwise true if the arc goes clockwise from the start to the end; false if it goes counter-clockwise.
-    * @return
+    * @return The center of the arc as an (x,y) pair.
     */
   def getArcCenter (start: DoubleTuple, end: DoubleTuple, arcLength: Double, clockwise: Boolean): DoubleTuple = {
     val delta = end - start
@@ -59,6 +62,7 @@ object ArcBinner {
     * @param start The starting point of the arc
     * @param end The ending point of the arc
     * @param arcLength The length of the arc, in radians
+    * @return radius The radius of the described ars.
     */
   def getArcRadius (start: DoubleTuple, end: DoubleTuple, arcLength: Double): Double = {
     val delta = end - start
@@ -69,24 +73,38 @@ object ArcBinner {
 
   /**
     * Find the angular length of an arc with a given chord length (for a circle of a given radius)
+    *
+    * @param radius The radius of the circle
+    * @param chordLength The chord length on the circle
+    * @return The angular length of the chord in radians
     */
   def getArcLength (radius: Double, chordLength: Double): Double = {
     // sin(1/2 theta) = 1/s chord length / radius
     2.0 * math.asin(chordLength / (2.0 * radius))
   }
 
-  // scalastyle:off cyclomatic.complexity
   /**
-    * Get the octant of the cartesian plane in which a given poitn lies.
-    *
-    * Octant 0 goes from the positive x axis to the 45deg line x=y, octant 1 goes from that line to the positive y
-    * axis, etc.
-    *
+    * Get the octant of the cartesian plane in which a given point lies. Octant 0 goes from the positive
+    * x axis to the 45deg line x=y, octant 1 goes from that line to the positive y axis, etc.
     * Octants are closed on the counter-clockwise side, and open on the clockwise side.
+    *
+    * @param coords The x,y location of the query point expressed as a DoubleTuple
+    * @return The octant number of the query point.
     */
   def getOctant (coords: DoubleTuple): Int = {
     getOctant(coords.x, coords.y)
   }
+
+  /**
+    * Get the octant of the cartesian plane in which a given point lies. Octant 0 goes from the positive
+    * x axis to the 45deg line x=y, octant 1 goes from that line to the positive y axis, etc.
+    * Octants are closed on the counter-clockwise side, and open on the clockwise side.
+    *
+    * @param x The x location of the query point
+    * @param y The y location of the query point
+    * @return The octant number of the query point.
+    */
+  // scalastyle:off cyclomatic.complexity
   def getOctant(x: Double, y: Double): Int = {
     if (0.0 == x && 0.0 == y) {
       0
@@ -101,6 +119,7 @@ object ArcBinner {
     }
   }
   // scalastyle:on cyclomatic.complexity
+
 
   /**
     * Get the sectors between start and end, assuming a cyclical sector system (like quadrants or octants)
@@ -142,20 +161,27 @@ object ArcBinner {
     }.map(n => (n + 2 * numSectors) % numSectors)
   }
 
-  def getSlope (p0: DoubleTuple, p1: DoubleTuple): Double =
-    (p0.y - p1.y) / (p0.x - p1.x)
 
   /**
-    * Find the angle of a a given point on a circle around the origin
+    * Computes the slope of the line between points.
+    * @param p0 First endpoint.
+    * @param p1 Second endpoint.
+    * @return The computed slope value.
     */
-  def getCircleAngle (point: DoubleTuple): Double =
-    math.atan2(point.y, point.x)
+  def getSlope (p0: DoubleTuple, p1: DoubleTuple): Double = (p0.y - p1.y) / (p0.x - p1.x)
+
+
+  /**
+    * Find the angle of a a given point on a circle around the origin.
+    * @param point An (x,y) location to find the angle for
+    * @return the angle to the point in radians
+    */
+  def getCircleAngle (point: DoubleTuple): Double = math.atan2(point.y, point.x)
+
 
   /**
     * Essentially number mod modulus, but with the ability to specify the
-    * output range
-    *
-    * Find the solution to x = number % modulus that is closest to base
+    * output range ie. solution to x = number % modulus that is closest to base
     *
     * @param base The center of the desired output range
     * @param number The number in question
@@ -171,11 +197,13 @@ object ArcBinner {
   }
 }
 
-case class SquareBounds (min: Double, current: Double, max: Double) {
+
+private case class SquareBounds (min: Double, current: Double, max: Double) {
   def asTuple: (Double, Double, Double) = (min, current, max)
 }
 
-case class ArcPointInfo (point: (Int, Int), center: DoubleTuple, slope: Double, octant: Int, inBounds: Boolean,
+
+private case class ArcPointInfo (point: (Int, Int), center: DoubleTuple, slope: Double, octant: Int, inBounds: Boolean,
                          private var xSquared: Option[SquareBounds], private var ySquared: Option[SquareBounds]) {
   def getXSquareBounds: SquareBounds = {
     if (xSquared.isEmpty) {
@@ -259,21 +287,27 @@ class ArcBinner (start: DoubleTuple, end: DoubleTuple, arcLength: Double, clockw
     ArcPointInfo(floor, center, getSlope(floor, center), getOctant(floor - center), isInBounds, None, None)
   }
 
-  val startPointInfo = getInBoundsPointInfo(start)
-  val endPointInfo = getInBoundsPointInfo(end)
+  private val startPointInfo = getInBoundsPointInfo(start)
+  private val endPointInfo = getInBoundsPointInfo(end)
 
-  var currentPoint: Option[ArcPointInfo] = None
-  var nextPoint: Option[ArcPointInfo] = None
-  var previousPoint: Option[ArcPointInfo] = None
+  private var currentPoint: Option[ArcPointInfo] = None
+  private var nextPoint: Option[ArcPointInfo] = None
+  private var previousPoint: Option[ArcPointInfo] = None
 
   resetToStart()
 
+  /**
+    * Set arc iterator to the start of the sequence of arc pixels.
+    */
   def resetToStart(): Unit = {
     currentPoint = Some(startPointInfo)
     nextPoint = Some(startPointInfo)
     previousPoint = None
   }
 
+  /**
+    * Set arc iterator to the end of the sequence of arc pixels.
+    */
   def resetToEnd(): Unit = {
     currentPoint = Some(endPointInfo)
     nextPoint = None
@@ -382,6 +416,10 @@ class ArcBinner (start: DoubleTuple, end: DoubleTuple, arcLength: Double, clockw
     }
   }
 
+  /**
+    * @return true if there's another pixel in the arc sequence, false if the iteration has reached
+    *         the end of the sequence.
+    */
   def hasNext: Boolean = {
     if (nextPoint.isEmpty) {
       nextPoint = Some(
@@ -395,6 +433,10 @@ class ArcBinner (start: DoubleTuple, end: DoubleTuple, arcLength: Double, clockw
     nextPoint.get.inBounds
   }
 
+  /**
+    * @return true if there's a previous pixel in the arc sequence, false if the iterator is at the start
+    *         of the sequence.
+    */
   def hasPrevious: Boolean = {
     if (previousPoint.isEmpty) {
       previousPoint = Some(
@@ -408,6 +450,12 @@ class ArcBinner (start: DoubleTuple, end: DoubleTuple, arcLength: Double, clockw
     previousPoint.get.inBounds
   }
 
+  /**
+    * Moves the iterator to the next pixel in the arc pixel sequence.  Throws an exception
+    * if the end of the sequence has already been reached.
+    *
+    * @return The next pixel in the arc pixel sequence.
+    */
   def next(): (Int, Int) = {
     if (hasNext) {
       previousPoint = Some(currentPoint.get)
@@ -420,6 +468,12 @@ class ArcBinner (start: DoubleTuple, end: DoubleTuple, arcLength: Double, clockw
     }
   }
 
+  /**
+    * Moves the iterator to the previous pixel in the arc pixel sequence.  Throws an
+    * exception if the start of the sequence has already been reached.
+    *
+    * @return The previous pixel in the arc pixel sequence.
+    */
   def previous(): (Int, Int) = {
     if (hasPrevious) {
       nextPoint = Some(currentPoint.get)
@@ -432,17 +486,27 @@ class ArcBinner (start: DoubleTuple, end: DoubleTuple, arcLength: Double, clockw
     }
   }
 
+  /**
+    * @return An Iterator over the remaining pixels in the arc pixel sequence.
+    */
   def remaining: Iterator[(Int, Int)] = new Iterator[(Int, Int)] {
     override def hasNext: Boolean = ArcBinner.this.hasNext
     override def next(): (Int, Int) = ArcBinner.this.next()
   }
 
+  /**
+    * @return An Iterator over the preceding pixels in the arc pixel sequence.
+    */
   def preceding: Iterator[(Int, Int)] = new Iterator[(Int, Int)] {
     override def hasNext: Boolean = ArcBinner.this.hasPrevious
     override def next(): (Int, Int) = ArcBinner.this.previous()
   }
 }
 
+/**
+  * Implicit conversion functions for the DoubleTuple class, to handle conversion to and from Int and Double
+  * 2-tuples.
+  */
 object DoubleTuple {
   implicit def fromTupleOfDouble (tuple: (Double, Double)): DoubleTuple = new DoubleTuple(tuple._1, tuple._2)
   implicit def fromTupleOfInt (tuple: (Int, Int)): DoubleTuple = new DoubleTuple(tuple._1.toDouble, tuple._2.toDouble)
@@ -451,27 +515,72 @@ object DoubleTuple {
 }
 
 // scalastyle:off method.name
+/**
+  * A 2-tuple of Double values with that supports standard mathematical operations.
+  * @param x The x component of the tuple.
+  * @param y The y component of the tuple.
+  */
 case class DoubleTuple (x: Double, y: Double) {
+  /**
+    * Adds left to right DoubleTuple object.
+    */
   def +(that: DoubleTuple): DoubleTuple = DoubleTuple(this.x + that.x, this.y + that.y)
 
+  /**
+    * Subtracts right from left DoubleTuple objects.
+    */
   def -(that: DoubleTuple): DoubleTuple = DoubleTuple(this.x - that.x, this.y - that.y)
 
+  /**
+    * Multiplies left and right DoubleTuple objects.
+    */
   def *(that: DoubleTuple): DoubleTuple = DoubleTuple(this.x * that.x, this.y * that.y)
 
+  /**
+    * Divides left by right DoubleTuple objects.
+    */
   def /(that: DoubleTuple): DoubleTuple = DoubleTuple(this.x / that.x, this.y / that.y)
 
+  /**
+    * Divides left tuple object by right value.
+    */
   def / (that: Double): DoubleTuple = DoubleTuple(this.x / that, this.y / that)
 
+  /**
+    * Computes the length of the DoubleTuple.
+    * @return
+    */
   def length: Double = math.sqrt(x * x + y * y)
 
+  /**
+    * Computes the floor of the DoubleTuple's x and y components.
+    */
   def floor: DoubleTuple = DoubleTuple(x.floor, y.floor)
 
+  /**
+    * Computes the ceiling of the DoubleTuple's x and y components.
+    */
   def ceil: DoubleTuple = DoubleTuple(x.ceil, y.ceil)
 }
 
+/**
+  * A 2D rotation matrix.
+  */
 case class DoubleRotation (r00: Double, r01: Double, r10: Double, r11: Double) {
+  /**
+    * Transforms supplied point by applying the defined rotation matrix.
+    *
+    * @param v  The point to transform.
+    * @return A new rotated point.
+    */
   def rotate(v: DoubleTuple): DoubleTuple = this * v
 
+  /**
+    * Transforms supplied point by applying the defined rotation matrix.
+    *
+    * @param v The point to transform.
+    * @return A new rotated point.
+    */
   def *(v: DoubleTuple): DoubleTuple =
     DoubleTuple(r00 * v.x + r01 * v.y, r10 * v.x + r11 * v.y)
 }

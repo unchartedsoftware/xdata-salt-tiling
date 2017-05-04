@@ -56,6 +56,45 @@ task assemblyJar(type: Jar) {
 assemblyJar.mustRunAfter "jar"
 assemble.dependsOn "assemblyJar"
 
+// generate lib jar
+jar {
+  version =  version
+  dependsOn configurations.runtime
+  from {
+    (configurations.runtime - configurations.provided).collect {
+      it.isDirectory() ? it : zipTree(it)
+    }
+  } {
+    exclude "META-INF/*.SF"
+    exclude "META-INF/*.DSA"
+    exclude "META-INF/*.RSA"
+  }
+}
+
+// generate javadocs
+task docs(type: ScalaDoc) {
+  source = sourceSets.main.allScala
+}
+
+// creates a jar containing the scaladoc output
+task docsJar(type: Jar, dependsOn: docs) {
+  classifier = 'javadoc'
+  from docs.destinationDir
+}
+docsJar.dependsOn docs
+
+// creates a jar containing the source code
+task sourcesJar(type: Jar) {
+  classifier = 'sources'
+  from sourceSets.main.allSource
+}
+
+// creates a jar containing the test source code
+task testJar(type: Jar) {
+  classifier = 'tests'
+  from sourceSets.test.output
+}
+
 // run scala style and code coverage checks as part of the check phase
 check.dependsOn "scalaStyle"
 //check.dependsOn "checkScoverage"
@@ -75,9 +114,11 @@ configurations {
   // force exclude to run tests.
   provided.exclude group: "org.jboss.netty", module: "netty"
 }
-// Add scripts zip to the artifacts of the dist assembly.  This can be used by downstream builds.
+
+// expose artifacts for downstream processing
 artifacts {
   dist assemblyJar
+  archives docsJar, testJar, sourcesJar
 }
 
 // configure the idea plugin
@@ -177,18 +218,21 @@ distributions {
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
-// repositories for dependencies
+// repositories for dependencies - use environment variables to configure an internal
+// maven repository such as an Artifactory instance to install artifacts to.
 repositories {
   mavenCentral()
   mavenLocal()
   maven {
     url = "https://repository.cloudera.com/artifactory/cloudera-repos"
   }
-  maven {
-    url = "${System.env.MAVEN_REPO_URL}/snapshots"
-  }
-  maven {
-    url = "${System.env.MAVEN_REPO_URL}/internal"
+  if (System.env.MAVEN_REPO_URL) {
+    maven {
+      url = "${System.env.MAVEN_REPO_URL}/snapshots"
+    }
+    maven {
+      url = "${System.env.MAVEN_REPO_URL}/internal"
+    }
   }
 }
 
@@ -198,6 +242,9 @@ publishing {
   publications {
     maven(MavenPublication) {
       from components.java
+      artifact docsJar
+      artifact sourcesJar
+      artifact testJar
     }
   }
 }
@@ -214,6 +261,18 @@ publishing {
         password "${System.env.MAVEN_REPO_PASSWORD}"
       }
     }
+  }
+}
+
+publish << {
+  if (System.env.MAVEN_REPO_URL == null) {
+    throw new GradleException("Can't publish - missing MAVEN_REPO_URL environment variable")
+  }
+  if (System.env.MAVEN_REPO_USERNAME == null) {
+    throw new GradleException("Can't publish - missing MAVEN_REPO_USERNAME environment variable")
+  }
+  if (System.env.MAVEN_REPO_PASSWORD == null) {
+    throw new GradleException("Can't publish - missing MAVEN_REPO_PASSWORD environment variable")
   }
 }
 

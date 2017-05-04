@@ -306,6 +306,20 @@ class SimpleArcProjection(zoomLevels: Seq[Int],
 
 // scalastyle:off cyclomatic.complexity
 // scalastyle:off method.length
+/**
+  * A line projection that projects straight from leader arcs to raster bins in one pass.  All leader arcs are drawn with the same
+  * curvature, and go clockwise from source to destination.  A leader arc differs from a basic arc in that it draws a fixed
+  * portion of the arc from the starting point, rather than the complete arc from start to end.
+  *
+  * @param zoomLevels   The zoom levels onto which to project
+  * @param min          The minimum coordinates of the data space
+  * @param max          The maximum coordinates of the data space
+  * @param leaderLength The length of the portion of the arc to be drawn
+  * @param arcLength    The curvature of the arcs drawn, in radians
+  * @param minLengthOpt The minimum length of line (in bins) to project
+  * @param maxLengthOpt The maximum length of line (in bins) to project
+  * @param tms          if true, the Y axis for tile coordinates only is flipped     *
+  */
 class SimpleLeaderArcProjection(zoomLevels: Seq[Int],
                                 min: (Double, Double),
                                 max: (Double, Double),
@@ -407,8 +421,8 @@ class SimpleLeaderArcProjection(zoomLevels: Seq[Int],
 
 
 object MercatorLineProjection {
-  val mercatorMin = (-180.0, -85.05112878)
-  val mercatorMax = (180.0, 85.05112878)
+  val MercatorMin = (-180.0, -85.05112878)
+  val MercatorMax = (180.0, 85.05112878)
 }
 
 /**
@@ -421,8 +435,8 @@ object MercatorLineProjection {
   * @param zoomLevels   the TMS/WMS zoom levels to project into
   */
 class MercatorLineProjection(zoomLevels: Seq[Int],
-                             minBounds: (Double, Double) = MercatorLineProjection.mercatorMin,
-                             maxBounds: (Double, Double) = MercatorLineProjection.mercatorMax,
+                             minBounds: (Double, Double) = MercatorLineProjection.MercatorMin,
+                             maxBounds: (Double, Double) = MercatorLineProjection.MercatorMax,
                              minLengthOpt: Option[Int] = None,
                              maxLengthOpt: Option[Int] = None,
                              tms: Boolean = true)
