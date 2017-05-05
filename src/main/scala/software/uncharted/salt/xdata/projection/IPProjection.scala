@@ -67,8 +67,6 @@ class IPSegmentProjection (zoomLevels: Seq[Int],
                            segmentProjection: Projection[(Double, Double, Double, Double), TC, BC])
   extends Projection[(String, String), (Int, Int, Int), (Int, Int)]
 {
-  private val cartesian = new CartesianProjection(zoomLevels, MIN_DATA_COORDS, MAX_DATA_COORDS)
-
   override def project(endpoints: Option[(String, String)], maxBin: BC)
   : Option[Traversable[(TC, BC)]] = {
     val coords = endpoints.flatMap{case (fromIP, toIP) =>

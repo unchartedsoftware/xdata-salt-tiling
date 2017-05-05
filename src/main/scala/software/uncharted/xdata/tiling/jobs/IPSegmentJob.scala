@@ -61,8 +61,7 @@ object IPSegmentJob extends AbstractJob {
     }.get
 
     val tilingOp = IPSegmentOp(ipConfig.ipFromCol,ipConfig.ipToCol, ipConfig.valueCol.get,
-      ipConfig.projectionConfig, ipConfig.arcType, ipConfig.projectionConfig.xyBounds, ipConfig.minSegLen,
-      ipConfig.maxSegLen, tilingConfig.levels)(_)
+      ipConfig.arcType, ipConfig.minSegLen, ipConfig.maxSegLen, tilingConfig.levels)(_)
 
     val seqCols = Seq(ipConfig.ipFromCol, ipConfig.ipToCol, ipConfig.valueCol.get)
     val selectCols = seqCols.map(new Column(_))

@@ -46,8 +46,7 @@ case class IPSegmentConfig(arcType: ArcTypes.Value,
                            maxSegLen: Option[Int] = None,
                            ipFromCol: String,
                            ipToCol: String,
-                           valueCol: Option[String],
-                           projectionConfig: ProjectionConfig)
+                           valueCol: Option[String])
 
 /**
   * Provides functions for parsing IP segement heatmap data out of `com.typesafe.config.Config` objects.
@@ -90,10 +89,9 @@ object IPSegmentConfig extends ConfigParser {
     * @return A `Try` containing the `IPSegmentConfig` object.
     */
   def parse(config: Config): Try[IPSegmentConfig] = {
-    for (
-      segmentConfig <- Try(config.getConfig(RootKey));
-      projection <- ProjectionConfig.parse(segmentConfig)
-    ) yield {
+    Try {
+      val segmentConfig = config.getConfig(RootKey)
+
       val arcType: ArcTypes.Value = segmentConfig.getString(ArcTypeKey).toLowerCase match {
         case "fullline" => ArcTypes.FullLine
         case "leaderline" => ArcTypes.LeaderLine
@@ -106,8 +104,7 @@ object IPSegmentConfig extends ConfigParser {
         if (segmentConfig.hasPath(MaxSegLenKey)) Some(segmentConfig.getInt(MaxSegLenKey)) else None,
         segmentConfig.getString(IpFromCol),
         segmentConfig.getString(IpToCol),
-        getStringOption(segmentConfig, ValueColumnKey),
-        projection
+        getStringOption(segmentConfig, ValueColumnKey)
       )
     }
   }

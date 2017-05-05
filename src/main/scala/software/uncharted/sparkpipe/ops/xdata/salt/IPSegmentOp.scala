@@ -34,11 +34,10 @@ import software.uncharted.salt.core.generation.{Series, TileGenerator}
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.generation.request.TileLevelRequest
 import software.uncharted.salt.xdata.projection.{
-  IPSegmentProjection, MercatorLineProjection, SimpleLineProjection, SimpleLeaderLineProjection,
+  IPSegmentProjection, SimpleLineProjection, SimpleLeaderLineProjection,
   SimpleArcProjection, SimpleLeaderArcProjection}
 import software.uncharted.sparkpipe.ops.core.dataframe
 import software.uncharted.sparkpipe.Pipe
-import software.uncharted.xdata.tiling.config.{CartesianProjectionConfig, MercatorProjectionConfig, ProjectionConfig}
 
 /**
   * Factory function for generating IP segment op functions.
@@ -50,6 +49,8 @@ object IPSegmentOp {
   val DefaultTileSize = 256
   val StringType = "string"
   val LeaderLineLength = 1024
+  val MinBounds = (0.0, 0.0)
+  val MaxBounds = (1.0, 1.0)
 
   /**
     * Uses Salt to generate heatmap tiles from an input Dataframe.  Inputs consist of
@@ -60,7 +61,6 @@ object IPSegmentOp {
     * @param ipFromCol      start IP address
     * @param ipToCol        end IP address
     * @param valueCol       The name of the column which holds the value for a given row
-    * @param projectionType Type of Projection to use
     * @param arcType        The type of line projection specified by the ArcType enum
     * @param xyBounds       The min/max x and y bounds (minX, minY, maxX, maxY)
     * @param minSegLen      The minimum length of line (in bins) to project
@@ -75,9 +75,7 @@ object IPSegmentOp {
             String,
             ipToCol: String,
             valueCol: String,
-            projectionType: ProjectionConfig,
             arcType: ArcTypes.Value,
-            xyBounds: Option[(Double, Double, Double, Double)],
             minSegLen: Option[Int],
             maxSegLen: Option[Int],
             zoomLevels: Seq[Int],
@@ -85,40 +83,24 @@ object IPSegmentOp {
             tms: Boolean = true)(input: DataFrame):
   RDD[SeriesData[(Int, Int, Int), (Int, Int), Double, (Double, Double)]] = {
 
-
-    val projection = projectionType match {
-      case _: MercatorProjectionConfig => new IPSegmentProjection(
+    val projection = new IPSegmentProjection(
         zoomLevels,
-        new MercatorLineProjection(
-          zoomLevels,
-          if (xyBounds.isDefined) (xyBounds.get._1, xyBounds.get._2) else MercatorLineProjection.MercatorMin,
-          if (xyBounds.isDefined) (xyBounds.get._3, xyBounds.get._4) else MercatorLineProjection.MercatorMax,
-          minSegLen, maxSegLen)
+        arcType match {
+          case ArcTypes.FullLine =>
+            new SimpleLineProjection(zoomLevels, MinBounds, MaxBounds,
+              minLengthOpt = minSegLen, maxLengthOpt = maxSegLen, tms = tms)
+          case ArcTypes.LeaderLine =>
+            new SimpleLeaderLineProjection(zoomLevels, MinBounds, MaxBounds, LeaderLineLength,
+              minLengthOpt = minSegLen, maxLengthOpt = maxSegLen, tms = tms)
+          case ArcTypes.FullArc =>
+            new SimpleArcProjection(zoomLevels, MinBounds, MaxBounds,
+              minLengthOpt = minSegLen, maxLengthOpt = maxSegLen, tms = tms)
+          case ArcTypes.LeaderArc =>
+            new SimpleLeaderArcProjection(zoomLevels, MinBounds, MaxBounds, LeaderLineLength,
+              minLengthOpt = minSegLen, maxLengthOpt = maxSegLen, tms = tms)
+          case _ => throw new Exception("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
+        }
       )
-      case _: CartesianProjectionConfig => {
-        val minBounds = if (xyBounds.isDefined) (xyBounds.get._1, xyBounds.get._2) else (0.0, 0.0)
-        val maxBounds = if (xyBounds.isDefined) (xyBounds.get._3, xyBounds.get._4) else (1.0, 1.0)
-
-        new IPSegmentProjection(
-          zoomLevels,
-          arcType match {
-            case ArcTypes.FullLine =>
-              new SimpleLineProjection(zoomLevels, minBounds, maxBounds,
-                minLengthOpt = minSegLen, maxLengthOpt = maxSegLen, tms = tms)
-            case ArcTypes.LeaderLine =>
-              new SimpleLeaderLineProjection(zoomLevels, minBounds, maxBounds, LeaderLineLength,
-                minLengthOpt = minSegLen, maxLengthOpt = maxSegLen, tms = tms)
-            case ArcTypes.FullArc =>
-              new SimpleArcProjection(zoomLevels, minBounds, maxBounds,
-                minLengthOpt = minSegLen, maxLengthOpt = maxSegLen, tms = tms)
-            case ArcTypes.LeaderArc =>
-              new SimpleLeaderArcProjection(zoomLevels, minBounds, maxBounds, LeaderLineLength,
-                minLengthOpt = minSegLen, maxLengthOpt = maxSegLen, tms = tms)
-          }
-        )
-      }
-      case _ => throw new Exception("Unknown projection ${topicsConfig.projection}"); sys.exit(-1)
-    }
 
     // Use the pipeline to convert x/y cols to doubles, and select them along with v col first
     val frame = Pipe(input).to(dataframe.castColumns(Map(ipFromCol -> StringType, ipToCol -> StringType))).run()
