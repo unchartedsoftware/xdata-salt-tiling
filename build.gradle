@@ -1,6 +1,6 @@
 description = "XDATA salt tiling pipelines"
 group = "software.uncharted.xdata"
-version = "0.2.1"
+version = "0.1.1"
 
 // project level shared version variables
 ext {
