@@ -1,6 +1,6 @@
 # Tile Based Visual Analytic Pipelines and Operations
 
-`xdata-salt-tiling` provides a number of Tile Based Visual Analytics [Cheng 2013](https://uncharted.software/assets/tile-based-visual-analytics-for-twitter.pdf),[Langevin 2015](https://uncharted.software/assets/global-to-local-pattern-of-life-analysis.pdf) developed for the DARPA XDATA program using Uncharted's [Salt](http://unchartedsoftware.github.io/salt-core/) and [Sparkpipe](http://unchartedsoftware.github.io/sparkpipe-core/) libraries.  A number of core Sparkpipe operations are
+`xdata-salt-tiling` provides a number of Tile Based Visual Analytics [[Cheng 2013](https://uncharted.software/assets/tile-based-visual-analytics-for-twitter.pdf),[Langevin 2015](https://uncharted.software/assets/global-to-local-pattern-of-life-analysis.pdf)] developed for the DARPA XDATA program using Uncharted's [Salt](http://unchartedsoftware.github.io/salt-core/) and [Sparkpipe](http://unchartedsoftware.github.io/sparkpipe-core/) libraries.  A number of core Sparkpipe operations are
  provided that perform Salt tiling tasks, and these operations are incorporated into larger pre-defined pipelines that implement loading, filtering, tiling and output steps.
 
 The following tiling operations are supported:
@@ -33,7 +33,7 @@ In addition to the distribution, a JAR consisting of `xdata-salt-tiling` class b
 
 `./gradlew publish`
 
-Note that The above command requires that MAVEN_REPO_URL, MAVEN_REPO_USERNAME and MAVEN_REPO_PASSWORD be defined as environment variables.
+Note that The above command requires that `MAVEN_REPO_URL`, `MAVEN_REPO_USERNAME` and `MAVEN_REPO_PASSWORD` be defined as environment variables.
 
 ## Running A Tiling Job
 
