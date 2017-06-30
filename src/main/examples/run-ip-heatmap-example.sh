@@ -1,6 +1,6 @@
 #!/bin/sh
 
 ${SPARK_HOME}/bin/spark-submit \
-    --class software.uncharted.xdata.tiling.jobs.IPHeatmapJob \
-    ../lib/xdata-salt-tiling.jar \
+    --class software.uncharted.contrib.tiling.jobs.IPHeatmapJob \
+    ../lib/salt-tiling-contrib.jar \
     ip-heatmap-example.conf
