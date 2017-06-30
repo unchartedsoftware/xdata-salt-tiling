@@ -1,6 +1,6 @@
 description = "contributed salt tiling pipelines"
 group = "software.uncharted.salt"
-version = "0.2.0-SNAPSHOT"
+version = "0.3.0-SNAPSHOT"
 
 // project level shared version variables
 ext {
