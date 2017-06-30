@@ -1,5 +1,5 @@
-description = "XDATA salt tiling pipelines"
-group = "software.uncharted.xdata"
+description = "contributed salt tiling pipelines"
+group = "software.uncharted.salt"
 version = "0.2.0-SNAPSHOT"
 
 // project level shared version variables
@@ -180,7 +180,7 @@ testScoverage {
 // execution scripts.
 distributions {
   main {
-    baseName = 'xdata-salt-tiling'
+    baseName = 'salt-tiling-contrib'
     contents {
       // Copy the run scripts over
       into ("examples"){
