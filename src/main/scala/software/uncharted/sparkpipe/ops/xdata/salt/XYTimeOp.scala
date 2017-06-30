@@ -41,7 +41,7 @@ import software.uncharted.salt.core.generation.request.TileRequest
 import software.uncharted.salt.xdata.projection.XYTimeProjection
 import software.uncharted.sparkpipe.Pipe
 import software.uncharted.sparkpipe.ops.core.dataframe.castColumns
-import software.uncharted.sparkpipe.ops.xdata.text.util.RangeDescription
+import software.uncharted.sparkpipe.ops.text.util.RangeDescription
 
 /**
   * A superclass for operations which generate X,Y,Time tile layers from a DataFrame, using Salt.

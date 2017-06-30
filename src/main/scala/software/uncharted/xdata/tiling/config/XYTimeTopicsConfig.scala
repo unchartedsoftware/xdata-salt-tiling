@@ -32,7 +32,7 @@ import java.io.{File, FileReader}
 import java.nio.file.Files
 
 import com.typesafe.config.Config
-import software.uncharted.sparkpipe.ops.xdata.text.util.RangeDescription
+import software.uncharted.sparkpipe.ops.text.util.RangeDescription
 
 import scala.collection.JavaConverters._ //scalastyle:off
 import scala.util.Try

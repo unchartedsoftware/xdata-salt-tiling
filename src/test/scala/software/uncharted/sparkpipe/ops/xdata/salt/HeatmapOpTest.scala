@@ -31,7 +31,7 @@ package software.uncharted.sparkpipe.ops.xdata.salt
 import org.apache.spark.sql.DataFrame
 import software.uncharted.salt.core.projection.numeric.CartesianProjection
 import software.uncharted.salt.xdata.projection.XYTimeProjection
-import software.uncharted.sparkpipe.ops.xdata.text.util.RangeDescription
+import software.uncharted.sparkpipe.ops.text.util.RangeDescription
 import software.uncharted.xdata.spark.SparkFunSpec
 
 // scalastyle:off magic.number

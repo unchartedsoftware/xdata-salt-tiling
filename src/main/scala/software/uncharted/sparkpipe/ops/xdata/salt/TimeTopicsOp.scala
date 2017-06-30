@@ -35,7 +35,7 @@ import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.generation.request.TileLevelRequest
 import software.uncharted.salt.core.projection.numeric.NumericProjection
 import software.uncharted.salt.xdata.projection.XYTimeProjection
-import software.uncharted.sparkpipe.ops.xdata.text.util.RangeDescription
+import software.uncharted.sparkpipe.ops.text.util.RangeDescription
 
 /**
   * Factory function for create time topic operations.

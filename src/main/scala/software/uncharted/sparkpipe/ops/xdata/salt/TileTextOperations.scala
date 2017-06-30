@@ -33,7 +33,7 @@ import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.generation.request.TileLevelRequest
 import software.uncharted.salt.core.projection.numeric.NumericProjection
 import software.uncharted.salt.xdata.analytic.WordCounter
-import software.uncharted.sparkpipe.ops.xdata.text.transformations.{getDictionaries, getDictionary}
+import software.uncharted.sparkpipe.ops.text.transformations.{getDictionaries, getDictionary}
 import software.uncharted.xdata.tiling.config.TFIDFConfig
 
 import scala.reflect.ClassTag

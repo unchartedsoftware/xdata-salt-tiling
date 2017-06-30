@@ -32,8 +32,8 @@ package software.uncharted.sparkpipe.ops.xdata.salt
 import org.apache.spark.rdd.RDD
 import software.uncharted.salt.core.generation.output.SeriesData
 import software.uncharted.salt.core.util.SparseArray
-import software.uncharted.sparkpipe.ops.xdata.text.analytics
-import software.uncharted.sparkpipe.ops.xdata.text.analytics.{DictionaryConfig, LDAConfig}
+import software.uncharted.sparkpipe.ops.text.analytics
+import software.uncharted.sparkpipe.ops.text.analytics.{DictionaryConfig, LDAConfig}
 
 import scala.collection.mutable
 

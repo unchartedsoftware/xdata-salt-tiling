@@ -29,8 +29,8 @@
 package software.uncharted.xdata.tiling.config
 
 import com.typesafe.config.Config
-import software.uncharted.sparkpipe.ops.xdata.text.analytics
-import software.uncharted.sparkpipe.ops.xdata.text.analytics.{DictionaryConfig, IDFType, TFType}
+import software.uncharted.sparkpipe.ops.text.analytics
+import software.uncharted.sparkpipe.ops.text.analytics.{DictionaryConfig, IDFType, TFType}
 
 import scala.util.Try
 

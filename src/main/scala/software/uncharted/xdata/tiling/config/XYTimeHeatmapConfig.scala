@@ -29,7 +29,7 @@
 package software.uncharted.xdata.tiling.config
 
 import com.typesafe.config.Config
-import software.uncharted.sparkpipe.ops.xdata.text.util.RangeDescription
+import software.uncharted.sparkpipe.ops.text.util.RangeDescription
 
 import scala.util.Try
 

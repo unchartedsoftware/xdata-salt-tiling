@@ -31,8 +31,7 @@ package software.uncharted.sparkpipe.ops.xdata.salt
 import org.apache.spark.sql.DataFrame
 import software.uncharted.salt.core.projection.numeric.CartesianProjection
 import software.uncharted.salt.xdata.projection.XYTimeProjection
-import software.uncharted.sparkpipe.ops.xdata.text.util.RangeDescription
-import software.uncharted.sparkpipe.ops.xdata.io.intScoreListToByteArray
+import software.uncharted.sparkpipe.ops.text.util.RangeDescription
 import software.uncharted.xdata.spark.SparkFunSpec
 
 case class TimeTopicTestData(x: Double, y: Double, time: Long, text: List[String])

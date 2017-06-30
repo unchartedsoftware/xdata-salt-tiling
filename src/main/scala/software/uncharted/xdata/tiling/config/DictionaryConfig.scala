@@ -29,7 +29,7 @@
 package software.uncharted.xdata.tiling.config
 
 import com.typesafe.config.Config
-import software.uncharted.sparkpipe.ops.xdata.text.analytics.DictionaryConfig
+import software.uncharted.sparkpipe.ops.text.analytics.DictionaryConfig
 
 /**
   * Provides functions for parsing word dictionary data out of `com.typesafe.config.Config` objects.
